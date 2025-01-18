@@ -64,6 +64,7 @@
                                             <option value="" disabled>Role</option>
                                             <option value="admin" {% if utilisateur.role == 'admin' %}selected{% endif %}>admin</option>
                                             <option value="utilisateur" {% if utilisateur.role == 'utilisateur' %}selected{% endif %}>Utilisateur</option>
+                                            <option value="entraineur" {% if utilisateur.role == 'entraineur' %}selected{% endif %}>Entraineur</option>
                                         </select>
                                         <label for="role">Role</label>
                                     </div>

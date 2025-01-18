@@ -111,8 +111,8 @@
                                         <td>{{ entraineur.enfant }}</td>
                                         
                                         <td>
-                                            <a class="btn btn-sm btn-primary" href="">Modifier</a>
-                                            <a class="btn btn-sm btn-danger" href="">Supprimer</a>
+                                            <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_entraineur', id=entraineur.id_entraineur) }}">Modifier</a>
+                                            <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_entraineur', id=entraineur.id_entraineur) }}">Supprimer</a>
                                         </td>
                                     </tr>
                                     {% endfor %}
