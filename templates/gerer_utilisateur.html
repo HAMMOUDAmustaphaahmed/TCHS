@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+    <style>
+        /* Custom Stylesheet for Table Sorting */
+        .sortable th {
+            cursor: pointer;
+        }
+        .sortable th .arrow {
+            font-size: 12px;
+            margin-left: 5px;
+            display: none;
+        }
+        .sortable th.sort-asc .arrow.asc,
+        .sortable th.sort-desc .arrow.desc {
+            display: inline;
+        }
+    </style>
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+    <div class="container-xxl position-relative bg-light d-flex p-0">
+        <!-- Sign In Start -->
+        <div class="container-fluid">
+            <div class="row h-200 align-items-center justify-content-center" style="min-height: 100vh;">
+                <div class="col-12 col-sm-8">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <a href="{{ url_for('admin') }}">
+                                <h3 class="text-primary text-center">TCHS.</h3>
+                            </a>
+                        </div>
+                        <form class="d-none d-md-flex">
+                            <input id="searchInput" class="form-control border-1" type="search" placeholder="Rechercher un utilisateur" onkeyup="rechercherUtilisateur()">
+                        </form>
+                        <div class="table-responsive">
+                            <table id="UtilisateursTable" class="table text-start align-middle table-bordered table-hover mb-0 sortable">
+                                <thead>
+                                    <tr class="text-dark">
+                                        <th onclick="sortTable(0)">Utilisateur<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                                        <th onclick="sortTable(1)">Rôle<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                                        <th scope="col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for utilisateur in utilisateurs %}
+                                    <tr>
+                                        <td>{{ utilisateur.utilisateur }}</td>
+                                        <td>{{ utilisateur.role }}</td>
+                                        <td>
+                                            <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_utilisateur', id=utilisateur.id) }}">Modifier</a>
+                                            <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_utilisateur', id=utilisateur.id) }}">Supprimer</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Sign In End -->
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <script>
+        function sortTable(columnIndex) {
+            var table = document.getElementById("UtilisateursTable");
+            var rows = Array.prototype.slice.call(table.tBodies[0].rows, 0);
+            var sortedRows;
+            var currentSortOrder = table.querySelector('th:nth-child(' + (columnIndex + 1) + ')').classList.contains('sort-asc') ? 'asc' : 'desc';
+
+            // Inverser l'ordre de tri
+            if (currentSortOrder === 'asc') {
+                sortedRows = rows.sort(function(a, b) {
+                    return a.cells[columnIndex].textContent.localeCompare(b.cells[columnIndex].textContent);
+                });
+                table.querySelectorAll('th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+                table.querySelector('th:nth-child(' + (columnIndex + 1) + ')').classList.add('sort-desc');
+            } else {
+                sortedRows = rows.sort(function(a, b) {
+                    return b.cells[columnIndex].textContent.localeCompare(a.cells[columnIndex].textContent);
+                });
+                table.querySelectorAll('th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+                table.querySelector('th:nth-child(' + (columnIndex + 1) + ')').classList.add('sort-asc');
+            }
+
+            // Réattacher les lignes triées
+            var tbody = table.tBodies[0];
+            tbody.innerHTML = '';
+            sortedRows.forEach(function(row) {
+                tbody.appendChild(row);
+            });
+        }
+
+        function rechercherUtilisateur() {
+            var input = document.getElementById("searchInput");
+            var filter = input.value.toLowerCase();
+            var table = document.getElementById("UtilisateursTable");
+            var lignes = table.querySelectorAll("tbody tr");
+
+            lignes.forEach(ligne => {
+                if (ligne.innerHTML.toLowerCase().includes(filter)) {
+                    ligne.style.display = "";
+                } else {
+                    ligne.style.display = "none";
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

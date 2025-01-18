@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+    <div class="container-xxl position-relative bg-white d-flex p-0">
+        <!-- Sign In Start -->
+        <div class="container-fluid" style="background-image: url(https://www.commune-paucourt.fr/paucourt/images/racket-g29eec7782_1920.jpg);">
+            <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
+                <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
+                    <div class="">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <a href="{{ url_for('admin') }}">
+                                <h3 class="text-primary text-center">TCHS.</h3>
+                            </a>
+                        </div>
+                        <form method="post" action="{{ url_for('modifier_adherent', id=adherent.adherent_id) }}">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="floatingInputNom" name="nom" placeholder="Nom" value="{{ adherent.nom }}" required>
+                                        <label for="floatingInputNom">Nom</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="floatingInputPrenom" name="prenom" placeholder="Prénom" value="{{ adherent.prenom }}" required>
+                                        <label for="floatingInputPrenom">Prénom</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="date" class="form-control" id="floatingInputDateNaissance" name="date_naissance" placeholder="Date de Naissance" value="{{ adherent.date_naissance }}" required>
+                                        <label for="floatingInputDateNaissance">Date de Naissance</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="floatingInputTel1" name="tel1" placeholder="Téléphone 1" value="{{ adherent.tel1 }}">
+                                        <label for="floatingInputTel1">Téléphone 1</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="floatingInputTel2" name="tel2" placeholder="Téléphone 2" value="{{ adherent.tel2 }}">
+                                        <label for="floatingInputTel2">Téléphone 2</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <select id="type_abonnement" name="type_abonnement" class="form-control" required>
+                                            <option value="" disabled>Type d'abonnement</option>
+                                            <option value="Loisir" {% if adherent.type_abonnement == 'Loisir' %}selected{% endif %}>Loisir</option>
+                                            <option value="Ecole" {% if adherent.type_abonnement == 'Ecole' %}selected{% endif %}>Ecole</option>
+                                            <option value="Compétitif" {% if adherent.type_abonnement == 'Compétitif' %}selected{% endif %}>Compétitif</option>
+                                            <option value="Pré-Compétitif" {% if adherent.type_abonnement == 'Pré-Compétitif' %}selected{% endif %}>Pré-Compétitif</option>
+                                            <option value="Ecole d'été" {% if adherent.type_abonnement == "Ecole d'été" %}selected{% endif %}>Ecole d'été</option>
+                                            <option value="Adulte" {% if adherent.type_abonnement == 'Adulte' %}selected{% endif %}>Adulte</option>
+                                            <option value="N/D" {% if adherent.type_abonnement == 'N/D' %}selected{% endif %}>N/D</option>
+                                        </select>
+                                        <label for="type_abonnement">Type d'abonnement</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <select id="ancien_abonne" name="ancien_abonnee" class="form-control" required>
+                                            <option value="" disabled>Ancien Abonné</option>
+                                            <option value="Oui" {% if adherent.ancien_abonnee == 'Oui' %}selected{% endif %}>Oui</option>
+                                            <option value="Non" {% if adherent.ancien_abonnee == 'Non' %}selected{% endif %}>Non</option>
+                                        </select>
+                                        <label for="ancien_abonne">Ancien Abonné</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="floatingInputGroupe" name="groupe" placeholder="Groupe" value="{{ adherent.groupe }}">
+                                        <label for="floatingInputGroupe">Groupe</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <select id="entraineur" name="entraineur" class="form-control" required>
+                                            <option value="" disabled>Entraîneur</option>
+                                            {% for e in entraineurs %}
+                                            <option value="{{ e.nom }} {{ e.prenom }}" {% if adherent.entraineur == e.nom + ' ' + e.prenom %}selected{% endif %}>{{ e.nom }} {{ e.prenom }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <label for="entraineur">Entraîneur</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="email" class="form-control" id="floatingInputEmail" name="email" placeholder="Email" value="{{ adherent.email }}">
+                                        <label for="floatingInputEmail">Email</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <select id="sexe" name="sexe" class="form-control" required>
+                                            <option value="" disabled>Sexe</option>
+                                            <option value="M" {% if adherent.sexe == 'M' %}selected{% endif %}>Homme</option>
+                                            <option value="F" {% if adherent.sexe == 'F' %}selected{% endif %}>Femme</option>
+                                        </select>
+                                        <label for="sexe">Sexe</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <select id="status" name="status" class="form-control" required>
+                                            <option value="" disabled>Status</option>
+                                            <option value="Actif" {% if adherent.status == 'Actif' %}selected{% endif %}>Actif</option>
+                                            <option value="Non-Actif" {% if adherent.status == 'Non-Actif' %}selected{% endif %}>Non-Actif</option>
+                                        </select>
+                                        <label for="status">Status</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary py-3 w-100 mb-4">Confirmer</button>
+                        </form>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Sign In End -->
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}" rel="stylesheet"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}" rel="stylesheet"></script>
+</body>
+
+</html>
