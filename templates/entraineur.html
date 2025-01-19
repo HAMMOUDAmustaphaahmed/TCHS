@@ -60,7 +60,7 @@
               <a href="{{ url_for('ajouter_utilisateur') }}" class="dropdown-item">
                 <i class="fa fa-user-plus me-2"></i>Ajouter un Groupe
               </a>
-              <a href="{{ url_for('gerer_utilisateur') }}" class="dropdown-item">
+              <a href="" class="dropdown-item">
                 <i class="fa fa-users-cog me-2"></i>Gérer Les Groupes
               </a>
             </div>
@@ -75,8 +75,13 @@
                 <i class="fa fa-boxes me-2"></i>Équipement
             </a>
         </div>
+        <div class="nav-item">
+          <a href="{{ url_for('discussions') }}" class="nav-link">
+            <i class="fab fa-facebook-messenger"></i>Discussions
+          </a>
+      </div>
 
-
+        
         <!-- Déconnexion -->
         <div class="nav-item">
             <a href="{{ url_for('logout') }}" class="nav-link">
@@ -110,67 +115,73 @@
             <h6 class="mb-0">Bienvenue {{ entraineur.nom }} {{ entraineur.prenom }}</h6>
 
           </div>
-          <div class="container-fluid">
-            <div class="row">
-              <div class="col-6">
-                <h5>Créer un nouveau groupe</h5>
-                <form method="POST" action="{{ url_for('entraineur') }}">
-                  <input type="hidden" name="action" value="create_group">
-                  <div class="form-group">
-                    <label for="nom_groupe">Nom du groupe</label>
-                    <input type="text" name="nom_groupe" id="nom_groupe" class="form-control" required>
-                  </div>
-                  <button type="submit" class="btn btn-primary mt-3">Créer</button>
-                </form>
-              </div>
-
-              <div class="col-6">
-                <h5>Ajouter un adhérent à un groupe</h5>
-                <form method="POST" action="{{ url_for('entraineur') }}">
-                  <input type="hidden" name="action" value="add_adherent">
-                  <div class="form-group">
-                    <label for="adherent_id">Adhérent</label>
-                    <select name="adherent_id" id="adherent_id" class="form-control" required>
-                      {% for adherent in adherents_disponibles %}
-                        <option value="{{ adherent.adherent_id }}">{{ adherent.nom }} {{ adherent.prenom }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                </form>
-                <form method="POST" action="{{ url_for('entraineur') }}"></form>
-                <div class="form-group mt-3">
-                  <label for="groupe_nom">Groupe</label>
-                  <select name="groupe_nom" id="groupe_nom" class="form-control" required>
-                    {% for groupe in stats %}
-                      <option value="{{ groupe.groupe }}">{{ groupe.groupe }}</option>
+          <div class="table-responsive">
+            <table id="UtilisateursTable" class="table text-start align-middle table-bordered table-hover mb-0 sortable">
+                <thead>
+                    <tr class="text-dark">
+                        <th onclick="sortTable(0)">Nom du Groupe<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                        <th>Adhérents</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in groupes_data %}
+                        <tr>
+                            <!-- Nom du Groupe -->
+                            <td class="align-middle"><strong>{{ data.groupe.nom_groupe }}</strong></td>
+        
+                            <!-- Table des Adhérents -->
+                            <td class="align-middle">
+                                <table class="table table-bordered mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Matricule</th>
+                                            <th>Nom</th>
+                                            <th>Prénom</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for adherent in data.adherents %}
+                                            <tr>
+                                                <td>{{ adherent.matricule }}</td>
+                                                <td>{{ adherent.nom }}</td>
+                                                <td>{{ adherent.prenom }}</td>
+                                                <td>
+                                                  <a class="btn btn-sm btn-primary" href="{{ url_for('associer_adherent_autre_groupe', adherent_id=adherent.adherent_id) }}">
+                                                    Modifier
+                                                </a>
+                                                
+                                                    <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_adherent_groupe', adherent_id=adherent.adherent_id) }}">
+                                                      Supprimer
+                                                  </a>
+                                                  
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </td>
+        
+                            <!-- Actions pour le Groupe -->
+                            <td class="align-middle">
+                              <a class="btn btn-sm btn-danger" href="{{ url_for('ajouter_adherent_groupe', groupe_id=data.groupe.id_groupe) }}">
+                                Ajouter une seance
+                            </a>
+                            <a >
+                              
+                          </a>
+                              <a class="btn btn-sm btn-primary" href="{{ url_for('ajouter_adherent_groupe', groupe_id=data.groupe.id_groupe) }}">
+                                Ajouter un nouvel adhérent
+                            </a>
+                            
+                            </td>
+                        </tr>
                     {% endfor %}
-                  </select>
-                </div>
-                <button type="submit" class="btn btn-primary mt-3">Ajouter</button>
-              </form>
-            </div>
-          </div>
-
-          <div class="mt-5">
-            <h5>Groupes et Participants</h5>
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Groupe</th>
-                  <th>Participants</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for groupe in stats %}
-                  <tr>
-                    <td>{{ groupe.groupe }}</td>
-                    <td>{{ groupe.participants }}</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
+                </tbody>
             </table>
-          </div>
         </div>
+        
 
       </div>
 
