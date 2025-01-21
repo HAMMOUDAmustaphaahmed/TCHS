@@ -41,15 +41,14 @@ def admin():
 
     return render_template('admin.html')
 
+from sqlalchemy import or_
 
 @app.route('/entraineur', methods=['GET', 'POST'])
 def entraineur():
-    # Vérifier l'accès
     if 'user_id' not in session or session.get('role') != 'entraineur':
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
 
-    # Récupérer l'utilisateur connecté
     username = session.get('username')
     if not username:
         flash("Session invalide.", "danger")
@@ -58,26 +57,31 @@ def entraineur():
     try:
         nom, prenom = username.split('.')
     except ValueError:
-        flash("Le format du nom d'utilisateur est invalide. Utilisez 'nom.prenom'.", "danger")
+        flash("Format du nom d'utilisateur invalide.", "danger")
         return redirect(url_for('login'))
 
-    # Récupérer l'entraîneur
     entraineur = Entraineur.query.filter_by(nom=nom, prenom=prenom).first()
     if not entraineur:
         flash("Entraîneur introuvable.", "danger")
         return redirect(url_for('login'))
-    print("voici le nom et le prenom de l'entraineur :",nom,prenom)
-    nom_de_entraineur=nom+' '+prenom
-    print('nom_de_entraineur :',nom_de_entraineur)
-    # Récupérer les groupes gérés par cet entraîneur
-    groupes = Groupe.query.filter_by(entraineur_nom=nom_de_entraineur).all()
-    print('les groupes gerés par cet entraineur sont : ',groupes)
-    # Récupérer les adhérents disponibles
-    adherents_disponibles = Adherent.query.filter_by(
-        groupe=None, type_abonnement=entraineur.type_abonnement
+
+    # Récupérer les groupes et adhérents
+    groupes = Groupe.query.filter_by(entraineur_nom=f"{nom} {prenom}").all()
+    adherents_disponibles = [
+    {
+        'adherent_id': adherent.adherent_id,
+        'nom': adherent.nom,
+        'prenom': adherent.prenom,
+        'matricule': adherent.matricule,
+        'type_abonnement': adherent.type_abonnement
+    }
+    for adherent in Adherent.query.filter(
+        or_(Adherent.groupe == None, Adherent.groupe == ""),
+        Adherent.type_abonnement == entraineur.type_abonnement
     ).all()
-    print('les adherents disponibles qui n ont pas des groupes sont: ',adherents_disponibles)
-    # Préparer les données des groupes
+]
+
+
     groupes_data = []
     for groupe in groupes:
         adherents = Adherent.query.filter_by(groupe=groupe.nom_groupe).all()
@@ -85,69 +89,7 @@ def entraineur():
             'groupe': groupe,
             'adherents': adherents
         })
-    print('groupes_data : ',groupes_data)
-    # Gestion des actions POST
-    if request.method == 'POST':
-        action = request.form.get('action')
 
-        if action == 'create_group':
-            nom_groupe = request.form.get('nom_groupe')
-            if not nom_groupe:
-                flash("Le nom du groupe est obligatoire.", "danger")
-            elif Groupe.query.filter_by(nom_groupe=nom_groupe).first():
-                flash("Le nom du groupe existe déjà.", "danger")
-            else:
-                nouveau_groupe = Groupe(
-                    nom_groupe=nom_groupe,
-                    entraineur_nom=entraineur.nom,
-                    type_abonnement=entraineur.type_abonnement
-                )
-                try:
-                    db.session.add(nouveau_groupe)
-                    db.session.commit()
-                    flash(f"Groupe '{nom_groupe}' créé avec succès.", "success")
-                except Exception as e:
-                    db.session.rollback()
-                    flash(f"Erreur lors de la création du groupe : {str(e)}", "danger")
-
-        elif action == 'add_adherent':
-            adherent_id = request.form.get('adherent_id')
-            groupe_nom = request.form.get('groupe_nom')
-            adherent = Adherent.query.get(adherent_id)
-
-            if not adherent:
-                flash("Adhérent introuvable.", "danger")
-            elif adherent.groupe:
-                flash("Cet adhérent est déjà associé à un groupe.", "danger")
-            elif adherent.type_abonnement != entraineur.type_abonnement:
-                flash("Le type d'abonnement de l'adhérent ne correspond pas.", "danger")
-            else:
-                try:
-                    adherent.groupe = groupe_nom
-                    db.session.commit()
-                    flash(f"Adhérent ajouté au groupe '{groupe_nom}' avec succès.", "success")
-                except Exception as e:
-                    db.session.rollback()
-                    flash(f"Erreur lors de l'ajout de l'adhérent : {str(e)}", "danger")
-
-        elif action == 'remove_adherent':
-            adherent_id = request.form.get('adherent_id')
-            adherent = Adherent.query.get(adherent_id)
-
-            if not adherent:
-                flash("Adhérent introuvable.", "danger")
-            elif adherent.groupe != request.form.get('groupe_nom'):
-                flash("Cet adhérent n'appartient pas à ce groupe.", "danger")
-            else:
-                try:
-                    adherent.groupe = None
-                    db.session.commit()
-                    flash("Adhérent supprimé du groupe avec succès.", "success")
-                except Exception as e:
-                    db.session.rollback()
-                    flash(f"Erreur lors de la suppression de l'adhérent : {str(e)}", "danger")
-
-    # Rendre la page HTML avec les données
     return render_template(
         'entraineur.html',
         entraineur=entraineur,
@@ -156,28 +98,7 @@ def entraineur():
     )
 
 
-@app.route('/ajouter_adherent_groupe/<int:groupe_id>', methods=['POST', 'GET'])
-def ajouter_adherent_groupe(groupe_id):
-    if 'user_id' not in session or session.get('role') != 'entraineur':
-        flash("Accès non autorisé.", "danger")
-        return redirect(url_for('login'))
 
-    groupe = Groupe.query.get_or_404(groupe_id)
-    if request.method == 'POST':
-        adherent_id = request.form['adherent_id']
-        adherent = Adherent.query.get(adherent_id)
-        if not adherent:
-            flash("Adhérent introuvable.", "danger")
-        elif adherent.groupe:
-            flash("Cet adhérent est déjà associé à un groupe.", "danger")
-        else:
-            adherent.groupe = groupe.nom_groupe
-            db.session.commit()
-            flash(f"L'adhérent {adherent.nom} {adherent.prenom} a été ajouté au groupe {groupe.nom_groupe}.", "success")
-        return redirect(url_for('entraineur'))  # Retour à la page de l'entraîneur
-
-    adherents = Adherent.query.filter_by(groupe=None).all()
-    return render_template('ajouter_adherent_groupe.html', groupe=groupe, adherents=adherents)
 
 @app.route('/supprimer_adherent_groupe/<int:adherent_id>', methods=['POST', 'GET'])
 def supprimer_adherent_groupe(adherent_id):
@@ -191,22 +112,90 @@ def supprimer_adherent_groupe(adherent_id):
     flash("L'adhérent a été retiré du groupe.", "success")
     return redirect(url_for('entraineur'))  # Retour à la page de l'entraîneur
 
-@app.route('/associer_adherent_autre_groupe/<int:adherent_id>', methods=['POST', 'GET'])
-def associer_adherent_autre_groupe(adherent_id):
-    if 'user_id' not in session or session.get('role') != 'entraineur':
-        flash("Accès non autorisé.", "danger")
-        return redirect(url_for('login'))
+@app.route('/ajouter_adherent_groupe/<int:groupe_id>', methods=['POST'])
+def ajouter_adherent_groupe(groupe_id):
+    matricule = request.form.get('matricule')
 
-    adherent = Adherent.query.get_or_404(adherent_id)
-    if request.method == 'POST':
-        nouveau_groupe_nom = request.form['nouveau_groupe']
-        adherent.groupe = nouveau_groupe_nom
+    groupe = Groupe.query.get(groupe_id)
+    if not groupe:
+        return "Groupe non trouvé", 404
+
+    adherent = Adherent.query.filter_by(matricule=matricule).first()
+    if not adherent:
+        return "Adhérent non trouvé", 404
+
+    if adherent.groupe:
+        return "Cet adhérent est déjà associé à un groupe.", 400
+
+    adherent.groupe = groupe.nom_groupe
+    adherent.entraineur = groupe.entraineur_nom
+    db.session.commit()
+
+    return "Adhérent ajouté avec succès", 200
+
+
+
+
+@app.route('/ajouter_seance/<int:groupe_id>', methods=['POST'])
+def ajouter_seance(groupe_id):
+    data = request.get_json()
+
+    # Vérification des données
+    date = data.get('date')
+    heure = data.get('time')
+    entraineur = data.get('entraineur')
+
+    if not date or not heure or not entraineur:
+        return "Date, heure ou entraîneur manquant.", 400
+
+    groupe = Groupe.query.get(groupe_id)
+    if not groupe:
+        return "Groupe introuvable.", 404
+
+    # Ajouter la séance
+    try:
+        nouvelle_seance = Seance(
+            date=date,
+            heure=heure,
+            groupe=groupe.nom_groupe,
+            entraineur=entraineur
+        )
+        db.session.add(nouvelle_seance)
         db.session.commit()
-        flash(f"L'adhérent {adherent.nom} a été déplacé dans le groupe {nouveau_groupe_nom}.", "success")
-        return redirect(url_for('entraineur'))  # Retour à la page de l'entraîneur
+        return "Séance ajoutée avec succès.", 200
+    except Exception as e:
+        db.session.rollback()
+        return f"Erreur lors de l'ajout de la séance : {str(e)}", 500
 
-    groupes = Groupe.query.all()
-    return render_template('associer_adherent_autre_groupe.html', adherent=adherent, groupes=groupes)
+@app.route('/ajouter_groupe', methods=['POST'])
+def ajouter_groupe():
+    data = request.get_json()
+
+    # Récupérer les données du formulaire
+    group_name = data.get('groupName')
+    entraineur = data.get('entraineur')
+
+    if not group_name or not entraineur:
+        return "Le nom du groupe ou l'entraîneur est manquant.", 400
+
+    # Vérifier si le groupe existe déjà
+    if Groupe.query.filter_by(nom_groupe=group_name).first():
+        return "Un groupe avec ce nom existe déjà.", 400
+
+    # Ajouter le nouveau groupe
+    try:
+        type_abonnement = Entraineur.query.filter_by(nom=entraineur.split()[0], prenom=entraineur.split()[1]).first().type_abonnement
+        nouveau_groupe = Groupe(
+            nom_groupe=group_name,
+            entraineur_nom=entraineur,
+            type_abonnement=type_abonnement
+        )
+        db.session.add(nouveau_groupe)
+        db.session.commit()
+        return "Groupe ajouté avec succès.", 200
+    except Exception as e:
+        db.session.rollback()
+        return f"Erreur lors de l'ajout du groupe : {str(e)}", 500
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -680,9 +669,28 @@ class Adherent(db.Model):
     paye = db.Column(db.Enum('O', 'N'), nullable=False)
     status = db.Column(db.Enum('Actif', 'Non-Actif'), nullable=False)
 
-
     def __repr__(self):
         return f'<Adherent {self.nom} {self.prenom}>'
+
+    def to_dict(self):
+        return {
+            "adherent_id": self.adherent_id,
+            "nom": self.nom,
+            "prenom": self.prenom,
+            "date_naissance": self.date_naissance.isoformat(),  # Convert date to string format
+            "date_inscription": self.date_inscription.isoformat(),
+            "sexe": self.sexe,
+            "tel1": self.tel1,
+            "tel2": self.tel2,
+            "type_abonnement": self.type_abonnement,
+            "ancien_abonne": self.ancien_abonne,
+            "matricule": self.matricule,
+            "groupe": self.groupe,
+            "entraineur": self.entraineur,
+            "email": self.email,
+            "paye": self.paye,
+            "status": self.status
+        }
 
 class Entraineur(db.Model):
     __tablename__ = 'entraineur'
@@ -759,6 +767,7 @@ class Message(db.Model):
 
     def __repr__(self):
         return f"<Message {self.objet}>"
+
 
 
 import os

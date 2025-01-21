@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1
--- Généré le : lun. 20 jan. 2025 à 17:13
+-- Généré le : mar. 21 jan. 2025 à 17:17
 -- Version du serveur : 10.4.32-MariaDB
 -- Version de PHP : 8.0.30
 
@@ -52,7 +52,7 @@ CREATE TABLE `adherent` (
 
 INSERT INTO `adherent` (`adherent_id`, `nom`, `prenom`, `date_naissance`, `sexe`, `date_inscription`, `tel1`, `tel2`, `type_abonnement`, `ancien_abonne`, `matricule`, `groupe`, `entraineur`, `email`, `paye`, `status`) VALUES
 (6, 'hammouda', 'ahmed', '1996-08-30', 'M', '2025-01-20', '54391747', '54391747', 'Loisir', 'Non', 1, 'john.doe', 'john doe', 'ahmed@gmail.com', 'N', 'Actif'),
-(7, 'mohamed', 'ali', '1990-01-01', 'M', '2025-01-20', '12345678', '123546789', 'Loisir', 'Non', 2, 'john.doe2', 'john doe', 'user@gmail.com', 'N', 'Actif'),
+(7, 'mohamed', 'ali', '1990-01-01', 'M', '2025-01-20', '12345678', '123546789', 'Loisir', 'Non', 2, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif'),
 (8, 'mohamed', 'saleh', '1994-01-01', 'M', '2025-01-20', '1234', '12345', 'Loisir', 'Non', 3, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif');
 
 -- --------------------------------------------------------
@@ -118,7 +118,7 @@ CREATE TABLE `entraineur` (
 --
 
 INSERT INTO `entraineur` (`id_entraineur`, `nom`, `prenom`, `sexe`, `type_abonnement`, `enfant`, `status`) VALUES
-(1, 'test', 'tedst', 'M', 'N/D', '', 'Actif'),
+(1, 'test', 'tedst', 'M', 'N/D', 'Non', 'Actif'),
 (10, 'john', 'doe', 'M', 'Loisir', 'Oui', 'Actif');
 
 -- --------------------------------------------------------
@@ -167,7 +167,8 @@ INSERT INTO `messages` (`id`, `expediteur`, `destinataires`, `objet`, `corps`, `
 (5, 'john.doe', ',admin', 'test2', 'test2', '2025-01-20 14:02:37', 'non lu'),
 (6, 'john.doe', ',admin,manager', 'test3', 'test3', '2025-01-20 14:03:04', 'non lu'),
 (7, 'john.doe', 'admin', 'a', 'a', '2025-01-20 15:11:04', 'non lu'),
-(8, 'admin', '', 'aaaa', 'aaaa', '2025-01-20 15:47:45', 'non lu');
+(8, 'admin', '', 'aaaa', 'aaaa', '2025-01-20 15:47:45', 'non lu'),
+(9, 'admin', '', 'hello', 'hello', '2025-01-21 07:08:03', 'non lu');
 
 -- --------------------------------------------------------
 
@@ -202,6 +203,28 @@ CREATE TABLE `revenu` (
 -- --------------------------------------------------------
 
 --
+-- Structure de la table `seances`
+--
+
+CREATE TABLE `seances` (
+  `seance_id` int(11) NOT NULL,
+  `date` date NOT NULL,
+  `heure` time NOT NULL,
+  `groupe` varchar(100) NOT NULL,
+  `entraineur` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Déchargement des données de la table `seances`
+--
+
+INSERT INTO `seances` (`seance_id`, `date`, `heure`, `groupe`, `entraineur`) VALUES
+(1, '2025-01-01', '11:30:00', 'john.doe', 'john doe'),
+(2, '2025-01-01', '11:30:00', 'john.doe', 'john doe');
+
+-- --------------------------------------------------------
+
+--
 -- Structure de la table `utilisateurs`
 --
 
@@ -219,7 +242,6 @@ CREATE TABLE `utilisateurs` (
 INSERT INTO `utilisateurs` (`id`, `utilisateur`, `password`, `role`) VALUES
 (1, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'admin'),
 (3, 'manager', '32ccf5889dcae26d988e57e9d9c9abea9ce9eb2cc541153b18c6ee9ef8855182', 'admin'),
-(5, 'john.doe', 'a18ceb2154111dd7e9bdfe59a36ae187ef6880bdbe676fb47ca1bb796f3dcbc1', 'entraineur'),
 (6, 'john.doe', 'a18ceb2154111dd7e9bdfe59a36ae187ef6880bdbe676fb47ca1bb796f3dcbc1', 'entraineur');
 
 --
@@ -275,6 +297,12 @@ ALTER TABLE `revenu`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Index pour la table `seances`
+--
+ALTER TABLE `seances`
+  ADD PRIMARY KEY (`seance_id`);
+
+--
 -- Index pour la table `utilisateurs`
 --
 ALTER TABLE `utilisateurs`
@@ -318,7 +346,7 @@ ALTER TABLE `groupe`
 -- AUTO_INCREMENT pour la table `messages`
 --
 ALTER TABLE `messages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT pour la table `presence`
@@ -331,6 +359,12 @@ ALTER TABLE `presence`
 --
 ALTER TABLE `revenu`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `seances`
+--
+ALTER TABLE `seances`
+  MODIFY `seance_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT pour la table `utilisateurs`
