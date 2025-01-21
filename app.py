@@ -1,6 +1,6 @@
 from flask import send_file
 from flask import send_from_directory
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session,jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
@@ -197,6 +197,111 @@ def ajouter_groupe():
         db.session.rollback()
         return f"Erreur lors de l'ajout du groupe : {str(e)}", 500
 
+@app.route('/api/groupes_seances', methods=['GET'])
+def api_groupes_seances():
+    groupes = Groupe.query.all()
+    groupes_data = []
+
+    for groupe in groupes:
+        seances = Seance.query.filter_by(groupe=groupe.nom_groupe).all()
+        groupes_data.append({
+            'groupe': {
+                'id': groupe.id_groupe,
+                'nom': groupe.nom_groupe,
+            },
+            'seances': [
+                {
+                    'id': seance.seance_id,
+                    'date': seance.date.strftime('%Y-%m-%d'),
+                    'heure': seance.heure.strftime('%H:%M')
+                }
+                for seance in seances
+            ]
+        })
+
+    return jsonify(groupes_data), 200
+@app.route('/api/marquer_presence/<int:seance_id>', methods=['POST'])
+def api_marquer_presence(seance_id):
+    data = request.get_json()
+    presences = data.get('presences', [])
+
+    seance = Seance.query.get(seance_id)
+    if not seance:
+        return "Séance introuvable", 404
+
+    try:
+        for presence in presences:
+            new_presence = Presence(
+                groupe_nom=seance.groupe,
+                adherent_matricule=presence['matricule'],
+                entraineur_nom=seance.entraineur,
+                date_seance=seance.date,
+                heure_debut=seance.heure,
+                est_present=presence['est_present']
+            )
+            db.session.add(new_presence)
+        db.session.commit()
+        return "Présence enregistrée avec succès", 200
+    except Exception as e:
+        db.session.rollback()
+        return f"Erreur lors de l'enregistrement des présences : {str(e)}", 500
+    
+@app.route('/api/get_adherents/<int:seance_id>', methods=['GET'])
+def api_get_adherents(seance_id):
+    seance = Seance.query.get(seance_id)
+    if not seance:
+        return jsonify({"error": "Séance introuvable"}), 404
+
+    adherents = Adherent.query.filter_by(groupe=seance.groupe).all()
+    if not adherents:
+        return jsonify({"error": "Aucun adhérent trouvé pour cette séance"}), 404
+
+    adherents_list = [
+        {"matricule": adherent.matricule, "nom": adherent.nom, "prenom": adherent.prenom}
+        for adherent in adherents
+    ]
+    return jsonify({"adherents": adherents_list}), 200
+
+
+@app.route('/changer_mot_de_passe', methods=['POST'])
+def changer_mot_de_passe():
+    # Vérifier si l'utilisateur est connecté (présence du 'username' dans la session)
+    username = session.get('username')
+    if not username:
+        return jsonify({"error": "Vous devez être connecté pour changer votre mot de passe."}), 401
+
+    # Récupérer les données du front-end
+    data = request.get_json()
+    nouveau_mot_de_passe = data.get('nouveau_mot_de_passe')
+    confirmation_mot_de_passe = data.get('confirmation_mot_de_passe')
+    print(nouveau_mot_de_passe)
+    print(confirmation_mot_de_passe)
+
+    # Vérification des champs
+    if not nouveau_mot_de_passe or not confirmation_mot_de_passe:
+        return jsonify({"error": "Veuillez remplir tous les champs."}), 400
+
+    if nouveau_mot_de_passe != confirmation_mot_de_passe:
+        return jsonify({"error": "Les mots de passe ne correspondent pas."}), 400
+
+    # Rechercher l'utilisateur par username
+    user = User.query.filter_by(utilisateur=username).first()
+    print(user)
+
+    if not user:
+        return jsonify({"error": "Utilisateur introuvable."}), 404
+
+    # Hachage du nouveau mot de passe
+    hashed_password = hashlib.sha256(nouveau_mot_de_passe.encode()).hexdigest()
+    print(hashed_password)
+
+    # Mettre à jour le mot de passe de l'utilisateur
+    user.password = hashed_password
+
+    # Sauvegarder les modifications dans la base de données
+    db.session.commit()
+
+    return jsonify({"message": "Mot de passe mis à jour avec succès."}), 200
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -715,7 +820,6 @@ class Presence(db.Model):
     entraineur_nom = db.Column(db.String(100), nullable=False)
     date_seance = db.Column(db.Date, nullable=False)
     heure_debut = db.Column(db.Time, nullable=False)
-    heure_fin = db.Column(db.Time, nullable=False)
     est_present = db.Column(db.Enum('O', 'N'), nullable=False, default='N')
 
     def __repr__(self):

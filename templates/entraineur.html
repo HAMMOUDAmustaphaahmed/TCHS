@@ -51,20 +51,84 @@
           <a href="{{ url_for('entraineur') }}" class="nav-item nav-link active">
             <i class="fa fa-tachometer-alt me-2"></i>Dashboard
           </a>
-
-          <div class="nav-item dropdown">
-            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
-              <i class="fa fa-user me-2"></i>Groupe
+          <div class="nav-item">
+            <a href="javascript:void(0);" class="nav-link" id="changePasswordLink">
+              <i class="fa fa-key"></i> Mot de Passe
             </a>
-            <div class="dropdown-menu bg-transparent border-0">
-              <a href="{{ url_for('ajouter_utilisateur') }}" class="dropdown-item">
-                <i class="fa fa-user-plus me-2"></i>Ajouter un Groupe
-              </a>
-              <a href="" class="dropdown-item">
-                <i class="fa fa-users-cog me-2"></i>Gérer Les Groupes
-              </a>
-            </div>
           </div>
+          
+          <!-- Formulaire dans une fenêtre modale -->
+          <div id="modalChangerMotDePasse" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000;">
+            <h4>Changer le mot de passe</h4>
+            <div>
+              <label for="nouveauMotDePasse">Nouveau mot de passe :</label>
+              <input type="password" id="nouveauMotDePasse" required><br>
+            </div>
+            <div>
+              <label for="confirmationMotDePasse">Confirmer le mot de passe :</label>
+              <input type="password" id="confirmationMotDePasse" required><br>
+            </div>
+            <button id="submitMotDePasse" style="margin-top: 10px;">Soumettre</button>
+            <button onclick="fermerModal()" style="margin-top: 10px;">Annuler</button>
+          </div>
+<script>
+    // Fonction pour ouvrir la fenêtre modale
+function ouvrirModal() {
+  document.getElementById('modalChangerMotDePasse').style.display = 'block';
+}
+
+// Fonction pour fermer la fenêtre modale
+function fermerModal() {
+  document.getElementById('modalChangerMotDePasse').style.display = 'none';
+}
+
+// Attacher un événement au clic sur le lien "Mot de Passe"
+document.getElementById('changePasswordLink').addEventListener('click', function() {
+  ouvrirModal(); // Ouvre la modale lorsque le lien est cliqué
+});
+
+// Soumettre le changement de mot de passe
+document.getElementById('submitMotDePasse').addEventListener('click', function() {
+  const nouveauMotDePasse = document.getElementById('nouveauMotDePasse').value;
+  const confirmationMotDePasse = document.getElementById('confirmationMotDePasse').value;
+
+  // Vérification des mots de passe
+  if (nouveauMotDePasse !== confirmationMotDePasse) {
+    alert("Les mots de passe ne correspondent pas.");
+    return;
+  }
+
+  // Créer l'objet pour la requête
+  const data = {
+    nouveau_mot_de_passe: nouveauMotDePasse,
+    confirmation_mot_de_passe: confirmationMotDePasse
+  };
+
+  // Envoyer la requête POST pour changer le mot de passe
+  fetch('/changer_mot_de_passe', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.message) {
+      alert(data.message);
+    } else {
+      alert(data.error);
+    }
+    fermerModal(); // Fermer la fenêtre modale après soumission
+  })
+  .catch(error => {
+    console.error('Erreur:', error);
+    alert('Une erreur est survenue.');
+    fermerModal(); // Fermer la fenêtre modale en cas d'erreur
+  });
+});
+
+</script>          
           <div class="nav-item">
             <a href="{{ url_for('equipement') }}" class="nav-link">
                 <i class="fa fa-trophy me-2"></i>Tournois
@@ -364,118 +428,213 @@ function confirmSeanceAdd() {
 </script>
             <!-- Widgets Start -->
             <div class="container-fluid pt-4 px-4">
-                <div class="row g-4">
-                    <div class="col-sm-12 col-md-6 col-xl-4">
-                        <div class="h-100 bg-light rounded p-4">
-                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                <h6 class="mb-0">Messages</h6>
-                                <a href="">Show All</a>
-                            </div>
-                            <div class="d-flex align-items-center border-bottom py-3">
-                                <div class="w-100 ms-3">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-0">Jhon Doe</h6>
-                                        <small>15 minutes ago</small>
-                                    </div>
-                                    <span>Short message goes here...</span>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center border-bottom py-3">
-                                <div class="w-100 ms-3">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-0">Jhon Doe</h6>
-                                        <small>15 minutes ago</small>
-                                    </div>
-                                    <span>Short message goes here...</span>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center border-bottom py-3">
-                                <div class="w-100 ms-3">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-0">Jhon Doe</h6>
-                                        <small>15 minutes ago</small>
-                                    </div>
-                                    <span>Short message goes here...</span>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center pt-3">
-                                <div class="w-100 ms-3">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-0">Jhon Doe</h6>
-                                        <small>15 minutes ago</small>
-                                    </div>
-                                    <span>Short message goes here...</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-12 col-md-6 col-xl-4">
-                        <div class="h-100 bg-light rounded p-4">
-                            <div class="d-flex align-items-center justify-content-between mb-4">
-                                <h6 class="mb-0">Calender</h6>
-                                <a href="">Show All</a>
-                            </div>
-                            <div id="calender"></div>
-                        </div>
-                    </div>
-                    <div class="col-sm-12 col-md-6 col-xl-4">
-                        <div class="h-100 bg-light rounded p-4">
-                            <div class="d-flex align-items-center justify-content-between mb-4">
-                                <h6 class="mb-0">To Do List</h6>
-                                <a href="">Show All</a>
-                            </div>
-                            <div class="d-flex mb-2">
-                                <input class="form-control bg-transparent" type="text" placeholder="Enter task">
-                                <button type="button" class="btn btn-primary ms-2">Add</button>
-                            </div>
-                            <div class="d-flex align-items-center border-bottom py-2">
-                                <input class="form-check-input m-0" type="checkbox">
-                                <div class="w-100 ms-3">
-                                    <div class="d-flex w-100 align-items-center justify-content-between">
-                                        <span>Short task goes here...</span>
-                                        <button class="btn btn-sm"><i class="fa fa-times"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center border-bottom py-2">
-                                <input class="form-check-input m-0" type="checkbox">
-                                <div class="w-100 ms-3">
-                                    <div class="d-flex w-100 align-items-center justify-content-between">
-                                        <span>Short task goes here...</span>
-                                        <button class="btn btn-sm"><i class="fa fa-times"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center border-bottom py-2">
-                                <input class="form-check-input m-0" type="checkbox" checked>
-                                <div class="w-100 ms-3">
-                                    <div class="d-flex w-100 align-items-center justify-content-between">
-                                        <span><del>Short task goes here...</del></span>
-                                        <button class="btn btn-sm text-primary"><i class="fa fa-times"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center border-bottom py-2">
-                                <input class="form-check-input m-0" type="checkbox">
-                                <div class="w-100 ms-3">
-                                    <div class="d-flex w-100 align-items-center justify-content-between">
-                                        <span>Short task goes here...</span>
-                                        <button class="btn btn-sm"><i class="fa fa-times"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center pt-2">
-                                <input class="form-check-input m-0" type="checkbox">
-                                <div class="w-100 ms-3">
-                                    <div class="d-flex w-100 align-items-center justify-content-between">
-                                        <span>Short task goes here...</span>
-                                        <button class="btn btn-sm"><i class="fa fa-times"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <div class="table-responsive">
+                    <table id="groupesTable" class="table text-start align-middle table-bordered table-hover mb-0">
+                      <thead>
+                        <tr>
+                          <th>Nom du Groupe</th>
+                          <th>Séances</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <!-- Contenu généré dynamiquement par JavaScript -->
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  <!-- Formulaire dynamique pour marquer la présence -->
+                  <div id="presenceForm" class="mt-4" style="display:none;">
+                    <h5>Marquer la présence pour la séance du <span id="presenceSeanceDate"></span> à <span id="presenceSeanceTime"></span></h5>
+                    <input type="hidden" id="presenceSeanceId">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th>Nom</th>
+                          <th>Prénom</th>
+                          <th>Présent</th>
+                          <th>Abscent</th>
+                        </tr>
+                      </thead>
+                      <tbody id="adherentPresenceList">
+                        <!-- Adhérents ajoutés dynamiquement via JS -->
+                      </tbody>
+                    </table>
+                    <button class="btn btn-success" onclick="confirmPresence()">Confirmer</button>
+                  </div>
+<script>
+    // Charger les groupes et leurs séances
+function loadGroupesSeances() {
+  fetch('/api/groupes_seances')
+    .then(response => response.json())
+    .then(data => {
+      let tableBody = document.querySelector('#groupesTable tbody');
+      tableBody.innerHTML = ''; // Vider le tableau avant d'ajouter les données
+
+      data.forEach(groupData => {
+        let groupRow = `
+          <tr>
+            <td><strong>${groupData.groupe.nom}</strong></td>
+            <td>
+              <div style="max-height: 200px; overflow-y: auto;">
+                <table class="table table-bordered mb-0">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Heure</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${groupData.seances.map(seance => `
+                      <tr>
+                        <td>${seance.date}</td>
+                        <td>${seance.heure}</td>
+                        <td>
+                          <button class="btn btn-primary btn-sm" onclick="showPresenceForm(${seance.id}, '${seance.date}', '${seance.heure}')">
+                            Marquer la présence
+                          </button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </td>
+          </tr>
+        `;
+        tableBody.innerHTML += groupRow;
+      });
+    })
+    .catch(error => {
+      console.error("Erreur lors du chargement des groupes et des séances :", error);
+      alert("Impossible de charger les données.");
+    });
+}
+
+// Afficher le formulaire pour marquer la présence
+function showPresenceForm(seanceId, date, heure) {
+  document.getElementById('presenceSeanceDate').innerText = date;
+  document.getElementById('presenceSeanceTime').innerText = heure;
+  document.getElementById('presenceSeanceId').value = seanceId;
+
+  fetch(`/api/get_adherents/${seanceId}`)
+    .then(response => response.json())
+    .then(data => {
+      let adherentList = document.getElementById('adherentPresenceList');
+      adherentList.innerHTML = ''; // Vider la liste précédente
+
+      data.adherents.forEach(adherent => {
+        let row = `
+        <tr>
+            <td>${adherent.nom}</td>
+            <td>${adherent.prenom}</td>
+            <td>
+                <input type="radio" name="presence-${adherent.matricule}" value="O"> Présent
+            </td>
+            <td>
+                <input type="radio" name="presence-${adherent.matricule}" value="N"> Absent
+            </td>
+        </tr>
+
+
+        `;
+        adherentList.innerHTML += row;
+      });
+
+      // Afficher le formulaire
+      document.getElementById('presenceForm').style.display = 'block';
+    })
+    .catch(error => {
+      console.error("Erreur lors du chargement des adhérents :", error);
+      alert("Une erreur est survenue.");
+    });
+}
+
+// Confirmer la présence
+
+// Confirmer la présence
+// Confirmer la présence
+function confirmPresence() {
+  let seanceId = document.getElementById('presenceSeanceId').value;
+
+  // Créer un tableau pour stocker les présences
+  let presences = [];
+
+  // Pour chaque ligne de la table, récupérer les boutons radio pour chaque adhérent
+  document.querySelectorAll('#adherentPresenceList tr').forEach(row => {
+    // Récupérer le matricule
+    let matricule = row.querySelector('input[type="radio"]')?.name.split('-')[1]; // Extraire le matricule du nom de l'input
+
+    // Vérifier que le matricule existe
+    if (matricule) {
+      // Vérifier si le bouton radio pour "présent" est sélectionné
+      let presenceRadio = row.querySelector(`input[name="presence-${matricule}"][value="O"]:checked`);
+      // Vérifier si le bouton radio pour "absent" est sélectionné
+      let absenceRadio = row.querySelector(`input[name="presence-${matricule}"][value="N"]:checked`);
+
+      // Log pour déboguer et voir les valeurs récupérées
+      console.log('Matricule:', matricule);
+      console.log('PresenceRadio:', presenceRadio);
+      console.log('AbsenceRadio:', absenceRadio);
+
+      // Si le bouton radio pour "présent" est sélectionné, on marque "O" pour présent
+      if (presenceRadio) {
+        console.log('Présent:', matricule);
+        presences.push({
+          matricule: matricule,
+          est_present: 'O',
+        });
+      }
+      // Si le bouton radio pour "absent" est sélectionné, on marque "N" pour absent
+      else if (absenceRadio) {
+        console.log('Absent:', matricule);
+        presences.push({
+          matricule: matricule,
+          est_present: 'N',
+        });
+      }
+      // Si aucun bouton radio n'est sélectionné, on marque "N" pour absent par défaut
+      else {
+        console.log('Ni présent ni absent:', matricule);
+        presences.push({
+          matricule: matricule,
+          est_present: 'N',
+        });
+      }
+    }
+  });
+
+  // Affichage des données des présences dans la console pour vérifier
+  console.log('Données des présences:', presences);
+
+  // Envoyer les données au serveur
+  fetch(`/api/marquer_presence/${seanceId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ presences }),
+  })
+    .then(response => {
+      if (response.ok) {
+        alert("Présence mise à jour avec succès !");
+        location.reload(); // Recharger la page pour actualiser les données
+      } else {
+        return response.text().then(text => {
+          throw new Error(text);
+        });
+      }
+    })
+    .catch(error => {
+      console.error("Erreur lors de l'enregistrement des présences :", error);
+      alert("Une erreur est survenue : " + error.message);
+    });
+}
+
+// Charger les groupes et les séances au chargement de la page
+document.addEventListener('DOMContentLoaded', loadGroupesSeances);
+
+</script>                                  
             </div>
             <!-- Widgets End -->
 
