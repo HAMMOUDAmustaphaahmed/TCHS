@@ -82,7 +82,7 @@
                                 <div class="col-6">
                                     <div class="form mb-3">
                                         <label for="type_abonnement">Type d'abonnement</label>
-                                        <select id="type_abonnement" name="type_abonnement" class="form-control" required>
+                                        <select id="type_abonnement" name="type_abonnement" class="form-control" >
                                             <option value="" disabled selected>Choisissez un type d'abonnement</option>
                                             <option value="Loisir">Loisir</option>
                                             <option value="Ecole">Ecole</option>
@@ -109,7 +109,7 @@
                                 <div class="col-6">
                                     <div class="form mb-3">
                                         <label for="groupe">Groupe</label>
-                                        <input list="groupes" name="groupe" id="groupe" class="form-control" required>
+                                        <input list="groupes" name="groupe" id="groupe" class="form-control" >
                                         <datalist id="groupes">
                                             {% for groupe in groupes %}
                                                 <option value="{{ groupe.nom_groupe }}" data-abonnement="{{ groupe.type_abonnement }}">
@@ -123,8 +123,11 @@
                                 <div class="col-6">
                                     <div class="form mb-3">
                                         <label for="entraineur">Entraîneur</label>
-                                        <select id="entraineur" name="entraineur" class="form-control" required>
-                                            <option value="" disabled selected>Choisissez un entraîneur</option>
+                                        <select id="entraineur" name="entraineur" class="form-control" >
+                                            
+                                            <option value="" data-abonnement=""></option>
+                                               
+                                            </option>
                                             {% for e in entraineurs %}
                                                 <option value="{{ e.nom }} {{ e.prenom }}" data-abonnement="{{ e.type_abonnement }}">
                                                     {{ e.nom }} {{ e.prenom }} ({{ e.type_abonnement }})
@@ -144,8 +147,8 @@
                                         <label for="sexe">Sexe</label>
                                         <select id="sexe" name="sexe" class="form-control" required>
                                             <option value="" disabled selected>Choisissez une option</option>
-                                            <option value="M">Homme</option>
-                                            <option value="F">Femme</option>
+                                            <option value="M">Masculin</option>
+                                            <option value="F">Feminin</option>
                                         </select>
                                     </div>
                                 </div>
@@ -211,12 +214,7 @@
                 return isValid;
             }
     
-            form.addEventListener('submit', function (e) {
-                if (!validateAbonnement()) {
-                    e.preventDefault();
-                }
-            });
-    
+           
             typeAbonnementSelect.addEventListener('change', validateAbonnement);
             entraineurSelect.addEventListener('change', validateAbonnement);
             groupeInput.addEventListener('input', validateAbonnement);

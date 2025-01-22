@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS Dashboard</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <!-- Favicon -->
+<link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Libraries Stylesheet -->
+<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+<!-- Customized Bootstrap Stylesheet -->
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+<!-- Template Stylesheet -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+</head>
+
+<body>
+  <div class="container-xxl position-relative d-flex p-0">
+
+    <div class="sidebar pe-4 pb-3">
+      <nav class="navbar bg-light navbar-light">
+        <a href="{{ url_for('entraineur') }}" class="navbar-brand mx-4 mb-3">
+          <h3 class="text-primary">TCHS</h3>
+        </a>
+        <div class="d-flex align-items-center ms-4 mb-4">
+          <div class="position-relative">
+            <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
+          </div>
+
+        </div>
+        <div class="navbar-nav w-100">
+          <a href="{{ url_for('entraineur') }}" class="nav-item nav-link active">
+            <i class="fa fa-tachometer-alt me-2"></i>Dashboard
+          </a>
+          <div class="nav-item">
+            <a href="javascript:void(0);" class="nav-link" id="changePasswordLink">
+              <i class="fa fa-key"></i> Mot de Passe
+            </a>
+          </div>
+          
+          <!-- Formulaire dans une fenêtre modale -->
+          <div id="modalChangerMotDePasse" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000;">
+            <h4>Changer le mot de passe</h4>
+            <div>
+              <label for="nouveauMotDePasse">Nouveau mot de passe :</label>
+              <input type="password" id="nouveauMotDePasse" required><br>
+            </div>
+            <div>
+              <label for="confirmationMotDePasse">Confirmer le mot de passe :</label>
+              <input type="password" id="confirmationMotDePasse" required><br>
+            </div>
+            <button id="submitMotDePasse" style="margin-top: 10px;">Soumettre</button>
+            <button onclick="fermerModal()" style="margin-top: 10px;">Annuler</button>
+          </div>
+<script>
+    // Fonction pour ouvrir la fenêtre modale
+function ouvrirModal() {
+  document.getElementById('modalChangerMotDePasse').style.display = 'block';
+}
+
+// Fonction pour fermer la fenêtre modale
+function fermerModal() {
+  document.getElementById('modalChangerMotDePasse').style.display = 'none';
+}
+
+// Attacher un événement au clic sur le lien "Mot de Passe"
+document.getElementById('changePasswordLink').addEventListener('click', function() {
+  ouvrirModal(); // Ouvre la modale lorsque le lien est cliqué
+});
+
+// Soumettre le changement de mot de passe
+document.getElementById('submitMotDePasse').addEventListener('click', function() {
+  const nouveauMotDePasse = document.getElementById('nouveauMotDePasse').value;
+  const confirmationMotDePasse = document.getElementById('confirmationMotDePasse').value;
+
+  // Vérification des mots de passe
+  if (nouveauMotDePasse !== confirmationMotDePasse) {
+    alert("Les mots de passe ne correspondent pas.");
+    return;
+  }
+
+  // Créer l'objet pour la requête
+  const data = {
+    nouveau_mot_de_passe: nouveauMotDePasse,
+    confirmation_mot_de_passe: confirmationMotDePasse
+  };
+
+  // Envoyer la requête POST pour changer le mot de passe
+  fetch('/changer_mot_de_passe', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.message) {
+      alert(data.message);
+    } else {
+      alert(data.error);
+    }
+    fermerModal(); // Fermer la fenêtre modale après soumission
+  })
+  .catch(error => {
+    console.error('Erreur:', error);
+    alert('Une erreur est survenue.');
+    fermerModal(); // Fermer la fenêtre modale en cas d'erreur
+  });
+});
+
+</script>          
+          <div class="nav-item">
+            <a href="{{ url_for('equipement') }}" class="nav-link">
+                <i class="fa fa-trophy me-2"></i>Tournois
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="{{ url_for('equipement') }}" class="nav-link">
+                <i class="fa fa-boxes me-2"></i>Équipement
+            </a>
+        </div>
+        <div class="nav-item">
+          <a href="{{ url_for('discussions') }}" class="nav-link">
+            <i class="fab fa-facebook-messenger"></i>Discussions
+          </a>
+      </div>
+
+        
+        <!-- Déconnexion -->
+        <div class="nav-item">
+            <a href="{{ url_for('logout') }}" class="nav-link">
+                <i class="fa fa-sign-out-alt me-2"></i>Déconnecter
+            </a>
+        </div>
+        </div>
+      </nav>
+    </div>
+    <div class="content">
+      <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+        <a href="" class="navbar-brand d-flex d-lg-none me-4">
+          <h2 class="text-primary mb-0"></h2>
+        </a>
+        <a href="#" class="sidebar-toggler flex-shrink-0">
+          <i class="fa fa-bars"></i>
+        </a>
+
+
+      </nav>
+
+
+
+      <div class="container-fluid pt-4 px-4">
+        <div class="bg-light text-center rounded p-4">
+          <div class="d-flex align-items-center justify-content-between mb-4">
+                <a href="{{ url_for('entraineur') }}" class="navbar-brand mx-4 mb-3">
+                    <h3 class="text-primary">TCHS</h3>
+                </a>
+                
+              <h6>Bienvenue </h6>
+            </div>
+            <div class="text-start mb-4">
+                <!-- Bouton pour afficher le formulaire d'ajout de groupe -->
+                <button class="btn btn-primary" onclick="showGroupForm()">Ajouter un groupe</button>
+            </div>
+            
+            <!-- Formulaire dynamique pour ajouter un groupe -->
+            <div id="groupForm" class="mt-2" style="display:none;">
+                <h5>Créer un nouveau groupe</h5>
+                <!-- Sélection de la catégorie -->
+                <select id="groupCategory" class="form-control mt-2">
+                    <option value="">Choisissez une catégorie</option>
+                    <option value="Lutin">Lutin</option>
+                    <option value="Poussin">Poussin</option>
+                    <option value="Benjamin">Benjamin</option>
+                    <option value="Minime">Minime</option>
+                    <option value="KD">KD</option>
+                    <option value="Ecole">École</option>
+                    <option value="Loisir">Loisir</option>
+                    <option value="Adulte">Adulte</option>
+                </select>
+                <!-- Champ pour le numéro -->
+                <input type="number" id="groupNumber" class="form-control mt-2" placeholder="Numéro (1-9)" min="1" max="9">
+                <!-- Champ pour la lettre -->
+                <input type="text" id="groupLetter" class="form-control mt-2" placeholder="Lettre (A-Z)" maxlength="1">
+                <!-- Sélection de l'entraîneur -->
+                <select id="groupEntraineur" class="form-control mt-2">
+                    <option value="">Choisissez un entraîneur</option>
+                    {% for entraineur in entraineurs %}
+                    <option value="{{ entraineur.id }}">{{ entraineur.nom }} {{ entraineur.prenom }}</option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Bouton pour confirmer l'ajout -->
+                <button class="btn btn-success mt-2" onclick="confirmGroupAdd()">Confirmer</button>
+            </div>
+            
+            <!-- Script pour le formulaire d'ajout de groupe -->
+            <script>
+                function showGroupForm() {
+                    document.getElementById("groupForm").style.display = "block";
+                }
+            
+                function confirmGroupAdd() {
+                    let category = document.getElementById("groupCategory").value;
+                    console.log(category);
+                    let number = document.getElementById("groupNumber").value;
+                    console.log(number);
+                    let letter = document.getElementById("groupLetter").value;
+                    console.log(letter);
+                    let entraineurId = document.getElementById("groupEntraineur").value;
+if (!entraineurId) {
+    console.log("Aucun entraîneur sélectionné !");
+    alert("Veuillez choisir un entraîneur.");
+    return;
+}
+console.log("ID entraîneur :", entraineurId);
+
+            
+                    if (!category || !number || !letter || !entraineurId) {
+                        alert("Veuillez remplir tous les champs.");
+                        return;
+                    }
+            
+                    let groupName = `${category}-${number}-${letter}`;
+            
+                    fetch(`/ajouter_groupe`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ groupName, entraineurId }),
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            alert("Groupe ajouté avec succès !");
+                            location.reload();
+                        } else {
+                            return response.text().then(text => {
+                                throw new Error(text);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Erreur lors de l'ajout du groupe :", error);
+                        alert("Une erreur est survenue : " + error.message);
+                    });
+                }
+            </script>
+            
+            <!-- Tableau des groupes -->
+            <div class="table-responsive">
+                <h5 class="text-start mb-4">Les Groupes</h5>
+                <table class="table text-start align-middle table-bordered table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nom du Groupe</th>
+                            <th>Adhérents</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in groupes_data %}
+                        <tr>
+                            <td><strong>{{ data.groupe.nom_groupe }}</strong></td>
+                            <td>
+                                <table class="table table-bordered mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Matricule</th>
+                                            <th>Nom</th>
+                                            <th>Prénom</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for adherent in data.adherents %}
+                                        <tr>
+                                            <td>{{ adherent.matricule }}</td>
+                                            <td>{{ adherent.nom }}</td>
+                                            <td>{{ adherent.prenom }}</td>
+                                            <td>
+                                                <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_adherent_groupe', adherent_id=adherent.adherent_id) }}">
+                                                    Supprimer
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </td>
+                            <td>
+                                <button class="btn btn-primary" onclick="showAddForm('{{ data.groupe.id_groupe }}', '{{ data.groupe.nom_groupe }}')">Ajouter un adhérent</button>
+                                <button class="btn btn-success" onclick="showSeanceForm('{{ data.groupe.id_groupe }}', '{{ data.groupe.nom_groupe }}')">Ajouter une séance</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Formulaires dynamiques pour ajout d'adhérents et de séances -->
+            <div id="addForm" class="mt-4" style="display:none;"></div>
+            <div id="seanceForm" class="mt-4" style="display:none;"></div>
+            
+          
+            
+          </div>
+          
+          
+
+
+                 
+
+            <!-- Footer Start -->
+            <div class="container-fluid pt-4 px-4">
+                <div class="bg-light rounded-top p-4">
+                    <div class="row">
+                        <div class="col-12 col-sm-6 text-center text-sm-start">
+                            &copy; <a href="#">TCHS</a>, All Right Reserved. 
+                        </div>
+                        <div class="col-12 col-sm-6 text-center text-sm-end">
+                            <!--/*** This template is free as long as you keep the footer author’s credit link/attribution link/backlink. If you'd like to use the template without the footer author’s credit link/attribution link/backlink, you can purchase the Credit Removal License from "https://htmlcodex.com/credit-removal". Thank you for your support. ***/-->
+                            Designed by <a>AMH</a>
+                        </br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer End -->
+        </div>
+        <!-- Content End -->
+
+
+        <!-- Back to Top -->
+        <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+    </div>
+
+    <!-- JavaScript Libraries -->
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+<!-- Template Javascript -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+</body>
+
+</html>

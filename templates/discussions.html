@@ -49,16 +49,24 @@
                             <div class="form-group">
                                 <label for="destinataires">Destinataires</label>
                                 <div id="destinataires-container" style="position: relative;">
-                                    <input type="text" id="destinataires" name="destinataires" class="form-control" placeholder="Tapez le nom ou prénom" autocomplete="off" />
+                                    <!-- Input pour taper les noms -->
+                                    <input 
+                                        type="text" 
+                                        id="destinataires-input" 
+                                        class="form-control" 
+                                        placeholder="Tapez le nom ou prénom" 
+                                        autocomplete="off"
+                                    />
+                                    <!-- Suggestions -->
                                     <div id="suggestions" class="list-group" style="position: absolute; z-index: 1000; width: 100%;"></div>
                                 </div>
                             </div>
                         
-                            <!-- Champ caché pour envoyer la liste des destinataires -->
+                            <!-- Champ caché qui sera envoyé avec la liste des destinataires -->
                             <input type="hidden" id="destinataires-hidden" name="destinataires" />
                         
                             <div id="destinataires-list">
-                                <!-- Afficher les destinataires sélectionnés ici -->
+                                <!-- Les destinataires sélectionnés s'affichent ici -->
                             </div>
                         
                             <div class="form-group">
@@ -73,82 +81,82 @@
                         
                             <button type="submit" class="btn btn-primary">Envoyer</button>
                         </form>
-                        
-                        <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            const destinatairesInput = document.getElementById('destinataires');
-                            const suggestionsContainer = document.getElementById('suggestions');
-                            const destinatairesList = document.getElementById('destinataires-list');
-                            const hiddenInput = document.getElementById('destinataires-hidden');
-                            
-                            // Liste des utilisateurs passés depuis Flask
-                            const usersList = {{ users | tojson }};  // Cette variable est rendue par Jinja2
-                        
-                            destinatairesInput.addEventListener('input', function() {
-                                const searchTerm = destinatairesInput.value.trim().toLowerCase();
-                        
-                                if (searchTerm) {
-                                    suggestionsContainer.innerHTML = '';  // Vider les suggestions précédentes
-                        
-                                    // Filtrer les utilisateurs en fonction du terme de recherche
-                                    const filteredUsers = usersList.filter(user =>
-                                        user.username.toLowerCase().includes(searchTerm)
-                                    );
-                        
-                                    // Afficher les suggestions filtrées
-                                    filteredUsers.forEach(user => {
-                                        const suggestionItem = document.createElement('div');
-                                        suggestionItem.classList.add('list-group-item');
-                                        suggestionItem.textContent = user.username;
-                                        suggestionsContainer.appendChild(suggestionItem);
-                        
-                                        // Ajouter un événement pour sélectionner un destinataire
-                                        suggestionItem.addEventListener('click', function() {
-                                            // Ajouter le destinataire à la liste visible
-                                            let destinataires = hiddenInput.value ? hiddenInput.value.split(',') : [];
-                                            if (!destinataires.includes(user.username)) {
-                                                destinataires.push(user.username);
-                        
-                                                // Créer un élément pour afficher le destinataire avec un bouton "x"
-                                                const recipientItem = document.createElement('div');
-                                                recipientItem.classList.add('destinataire-item');
-                                                recipientItem.textContent = user.username;
-                        
-                                                // Créer le bouton "x" pour supprimer le destinataire
-                                                const removeButton = document.createElement('span');
-                                                removeButton.textContent = 'x';
-                                                removeButton.classList.add('remove-destinataire');
-                                                removeButton.style.color = 'red';
-                                                removeButton.style.cursor = 'pointer';
-                        
-                                                // Ajouter l'événement de suppression du destinataire
-                                                removeButton.addEventListener('click', function() {
-                                                    // Supprimer le destinataire de la liste visible
-                                                    destinatairesList.removeChild(recipientItem);
-                                                    // Retirer le destinataire de la liste des destinataires
-                                                    destinataires = destinataires.filter(d => d !== user.username);
-                                                    hiddenInput.value = destinataires.join(',');  // Mettre à jour le champ caché
-                                                });
-                        
-                                                // Ajouter le bouton "x" à l'élément du destinataire
-                                                recipientItem.appendChild(removeButton);
-                                                destinatairesList.appendChild(recipientItem);
-                        
-                                                // Mettre à jour le champ caché avec la liste des destinataires
-                                                hiddenInput.value = destinataires.join(',');
-                        
-                                                // Vider le champ de saisie et les suggestions
-                                                destinatairesInput.value = '';
-                                                suggestionsContainer.innerHTML = '';
-                                            }
-                                        });
-                                    });
-                                } else {
-                                    suggestionsContainer.innerHTML = '';  // Si le champ est vide, ne pas afficher les suggestions
-                                }
-                            });
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+    const destinatairesInput = document.getElementById("destinataires-input");
+    const suggestionsContainer = document.getElementById("suggestions");
+    const destinatairesList = document.getElementById("destinataires-list");
+    const hiddenInput = document.getElementById("destinataires-hidden");
+
+    const usersList = {{ users | tojson }}; // Liste des utilisateurs rendue par Flask
+
+    destinatairesInput.addEventListener("input", function () {
+        const searchTerm = destinatairesInput.value.trim().toLowerCase();
+
+        if (searchTerm) {
+            suggestionsContainer.innerHTML = ""; // Efface les suggestions précédentes
+
+            // Filtrer les utilisateurs par le terme recherché
+            const filteredUsers = usersList.filter((user) =>
+                user.username.toLowerCase().includes(searchTerm)
+            );
+
+            // Afficher les suggestions filtrées
+            filteredUsers.forEach((user) => {
+                const suggestionItem = document.createElement("div");
+                suggestionItem.classList.add("list-group-item");
+                suggestionItem.textContent = user.username;
+
+                // Ajouter un événement pour sélectionner un utilisateur
+                suggestionItem.addEventListener("click", function () {
+                    // Ajouter le destinataire sélectionné
+                    let destinataires = hiddenInput.value
+                        ? hiddenInput.value.split(",")
+                        : [];
+                    if (!destinataires.includes(user.username)) {
+                        destinataires.push(user.username);
+
+                        // Créer un élément de destinataire affiché
+                        const recipientItem = document.createElement("div");
+                        recipientItem.classList.add("destinataire-item");
+                        recipientItem.textContent = user.username;
+
+                        // Bouton "x" pour supprimer
+                        const removeButton = document.createElement("span");
+                        removeButton.textContent = " x";
+                        removeButton.style.color = "red";
+                        removeButton.style.cursor = "pointer";
+
+                        // Supprimer le destinataire sélectionné
+                        removeButton.addEventListener("click", function () {
+                            destinatairesList.removeChild(recipientItem);
+                            destinataires = destinataires.filter(
+                                (d) => d !== user.username
+                            );
+                            hiddenInput.value = destinataires.join(",");
                         });
-                        </script>
+
+                        recipientItem.appendChild(removeButton);
+                        destinatairesList.appendChild(recipientItem);
+
+                        // Mettre à jour l'input caché
+                        hiddenInput.value = destinataires.join(",");
+
+                        // Réinitialiser le champ de recherche et suggestions
+                        destinatairesInput.value = "";
+                        suggestionsContainer.innerHTML = "";
+                    }
+                });
+
+                suggestionsContainer.appendChild(suggestionItem);
+            });
+        } else {
+            suggestionsContainer.innerHTML = ""; // Effacer les suggestions si aucun terme de recherche
+        }
+    });
+});
+
+</script>                        
                         <div class="container mt-4">
                             <h2>Messages Envoyés</h2>
                             <form class="d-none d-md-flex">

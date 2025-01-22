@@ -76,10 +76,11 @@ def entraineur():
         'type_abonnement': adherent.type_abonnement
     }
     for adherent in Adherent.query.filter(
-        or_(Adherent.groupe == None, Adherent.groupe == ""),
-        Adherent.type_abonnement == entraineur.type_abonnement
+        or_(Adherent.groupe == None, Adherent.groupe == ""),  # groupe est None ou vide
+        or_(Adherent.entraineur == None, Adherent.entraineur == ""),  
     ).all()
 ]
+
 
 
     groupes_data = []
@@ -89,6 +90,8 @@ def entraineur():
             'groupe': groupe,
             'adherents': adherents
         })
+    print("************************")
+    print(adherents_disponibles)
 
     return render_template(
         'entraineur.html',
@@ -100,6 +103,129 @@ def entraineur():
 
 
 
+@app.route('/directeur_technique', methods=['GET', 'POST'])
+def directeur_technique():
+    if 'user_id' not in session or session.get('role') != 'directeur_technique':
+        flash("Accès non autorisé.", "danger")
+        return redirect(url_for('login'))
+
+    username = session.get('username')
+    if not username:
+        flash("Session invalide.", "danger")
+        return redirect(url_for('login'))
+
+    # Récupérer toutes les données nécessaires
+    entraineurs = Entraineur.query.all()
+    adherents_disponibles = Adherent.query.filter(
+        or_(Adherent.groupe == None, Adherent.groupe == ""),
+        or_(Adherent.entraineur == None, Adherent.entraineur == "")
+    ).all()
+    groupes = Groupe.query.all()
+
+    groupes_data = []
+    for groupe in groupes:
+        adherents = Adherent.query.filter_by(groupe=groupe.nom_groupe).all()
+        seances = Seance.query.filter_by(groupe=groupe.nom_groupe).all()
+        groupes_data.append({
+            'groupe': groupe,
+            'adherents': adherents,
+            'seances': seances
+        })
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        # Création d'un groupe
+        if action == 'creer_groupe':
+            categorie = request.form.get('categorie')
+            numero = request.form.get('numero')
+            alphabet = request.form.get('alphabet')
+            entraineur_id = request.form.get('entraineur_id')
+
+            nom_groupe = f"{categorie}-{numero}-{alphabet}"
+            if Groupe.query.filter_by(nom_groupe=nom_groupe).first():
+                flash("Ce groupe existe déjà.", "danger")
+            else:
+                groupe = Groupe(nom_groupe=nom_groupe, categorie=categorie, entraineur_id=entraineur_id)
+                db.session.add(groupe)
+                db.session.commit()
+                flash(f"Groupe {nom_groupe} créé avec succès.", "success")
+
+        # Modification d'un groupe
+        elif action == 'modifier_groupe':
+            groupe_id = request.form.get('groupe_id')
+            groupe = Groupe.query.get(groupe_id)
+            if not groupe:
+                flash("Groupe introuvable.", "danger")
+            else:
+                groupe.categorie = request.form.get('categorie', groupe.categorie)
+                groupe.entraineur_id = request.form.get('entraineur_id', groupe.entraineur_id)
+                db.session.commit()
+                flash(f"Groupe {groupe.nom_groupe} modifié avec succès.", "success")
+
+        # Suppression d'un groupe
+        elif action == 'supprimer_groupe':
+            groupe_id = request.form.get('groupe_id')
+            groupe = Groupe.query.get(groupe_id)
+            if not groupe:
+                flash("Groupe introuvable.", "danger")
+            else:
+                db.session.delete(groupe)
+                db.session.commit()
+                flash(f"Groupe {groupe.nom_groupe} supprimé avec succès.", "success")
+
+        # Ajouter un adhérent à un groupe
+        elif action == 'ajouter_adherent':
+            adherent_id = request.form.get('adherent_id')
+            groupe_id = request.form.get('groupe_id')
+            adherent = Adherent.query.get(adherent_id)
+            groupe = Groupe.query.get(groupe_id)
+            if not adherent or not groupe:
+                flash("Adhérent ou groupe introuvable.", "danger")
+            else:
+                adherent.groupe = groupe.nom_groupe
+                db.session.commit()
+                flash(f"Adhérent {adherent.nom} ajouté au groupe {groupe.nom_groupe}.", "success")
+
+        # Retirer un adhérent d'un groupe
+        elif action == 'retirer_adherent':
+            adherent_id = request.form.get('adherent_id')
+            adherent = Adherent.query.get(adherent_id)
+            if not adherent:
+                flash("Adhérent introuvable.", "danger")
+            else:
+                adherent.groupe = None
+                db.session.commit()
+                flash(f"Adhérent {adherent.nom} retiré du groupe.", "success")
+
+        # Création d'une séance
+        elif action == 'creer_seance':
+            groupe_id = request.form.get('groupe_id')
+            date_seance = request.form.get('date_seance')
+            heure_debut = request.form.get('heure_debut')
+            groupe = Groupe.query.get(groupe_id)
+            if not groupe:
+                flash("Groupe introuvable.", "danger")
+            else:
+                seance = Seance(
+                    groupe=groupe.nom_groupe,
+                    date_seance=date_seance,
+                    heure_debut=heure_debut,
+                    heure_fin=None  # Par défaut, calculée automatiquement
+                )
+                db.session.add(seance)
+                db.session.commit()
+                flash(f"Séance ajoutée pour le groupe {groupe.nom_groupe}.", "success")
+
+    return render_template(
+        'directeur_technique.html',
+        entraineurs=entraineurs,
+        groupes_data=groupes_data,
+        adherents_disponibles=adherents_disponibles
+    )
+
+
+
 @app.route('/supprimer_adherent_groupe/<int:adherent_id>', methods=['POST', 'GET'])
 def supprimer_adherent_groupe(adherent_id):
     if 'user_id' not in session or session.get('role') != 'entraineur':
@@ -108,19 +234,25 @@ def supprimer_adherent_groupe(adherent_id):
 
     adherent = Adherent.query.get_or_404(adherent_id)
     adherent.groupe = None
+    adherent.entraineur = None
     db.session.commit()
     flash("L'adhérent a été retiré du groupe.", "success")
     return redirect(url_for('entraineur'))  # Retour à la page de l'entraîneur
 
 @app.route('/ajouter_adherent_groupe/<int:groupe_id>', methods=['POST'])
 def ajouter_adherent_groupe(groupe_id):
+
     matricule = request.form.get('matricule')
 
+
     groupe = Groupe.query.get(groupe_id)
+    print(groupe)
     if not groupe:
         return "Groupe non trouvé", 404
 
     adherent = Adherent.query.filter_by(matricule=matricule).first()
+
+    print(adherent)
     if not adherent:
         return "Adhérent non trouvé", 404
 
@@ -199,27 +331,33 @@ def ajouter_groupe():
 
 @app.route('/api/groupes_seances', methods=['GET'])
 def api_groupes_seances():
-    groupes = Groupe.query.all()
+    username = session.get('username')
+    nom, prenom = username.split('.')
+    entraineur = Entraineur.query.filter_by(nom=nom, prenom=prenom).first()
+    groupes = Groupe.query.filter_by(entraineur_nom=f"{nom} {prenom}").all()
     groupes_data = []
+    if groupes :
+        for groupe in groupes:
+            seances = Seance.query.filter_by(groupe=groupe.nom_groupe).all()
+            groupes_data.append({
+                'groupe': {
+                    'id': groupe.id_groupe,
+                    'nom': groupe.nom_groupe,
+                },
+                'seances': [
+                    {
+                        'id': seance.seance_id,
+                        'date': seance.date.strftime('%Y-%m-%d'),
+                        'heure': seance.heure.strftime('%H:%M')
+                    }
+                    for seance in seances
+                ]
+            })
 
-    for groupe in groupes:
-        seances = Seance.query.filter_by(groupe=groupe.nom_groupe).all()
-        groupes_data.append({
-            'groupe': {
-                'id': groupe.id_groupe,
-                'nom': groupe.nom_groupe,
-            },
-            'seances': [
-                {
-                    'id': seance.seance_id,
-                    'date': seance.date.strftime('%Y-%m-%d'),
-                    'heure': seance.heure.strftime('%H:%M')
-                }
-                for seance in seances
-            ]
-        })
+        return jsonify(groupes_data), 200
+    else :
+        return jsonify(groupes_data), 200
 
-    return jsonify(groupes_data), 200
 @app.route('/api/marquer_presence/<int:seance_id>', methods=['POST'])
 def api_marquer_presence(seance_id):
     data = request.get_json()
@@ -316,7 +454,13 @@ def login():
             session['username'] = user.utilisateur
             session['role'] = user.role
             flash('Connexion réussie.', 'success')
-            return redirect(url_for('admin'))  # Changez la redirection selon votre logique
+            return redirect(url_for('admin'))  
+        elif user and user.password == hashed_password and user.role == 'directeur_technique':
+            session['user_id'] = user.id
+            session['username'] = user.utilisateur
+            session['role'] = user.role
+            flash('Connexion réussie.', 'success')
+            return redirect(url_for('directeur_technique'))
         elif user and user.password == hashed_password and user.role == 'entraineur':
             session['user_id'] = user.id
             session['username'] = user.utilisateur
@@ -419,9 +563,11 @@ def ajouter_adherent():
     groupes = Groupe.query.all()  # Récupérer tous les groupes pour le formulaire
 
     if request.method == 'POST':
-        nom_groupe = request.form['groupe']
-        entraineur_nom = request.form['entraineur']
-        type_abonnement = request.form['type_abonnement']
+        nom_groupe = request.form.get('groupe') or None
+        entraineur_nom = request.form.get('entraineur') or None
+        type_abonnement = request.form.get('type_abonnement') or None
+
+
 
         # Calculer le matricule de l'adhérent
         dernier_adherent = Adherent.query.order_by(Adherent.matricule.desc()).first()
@@ -446,19 +592,20 @@ def ajouter_adherent():
         )
 
         
+        # Vérifier si le groupe est not None
+        if nom_groupe is not None :
+            # Vérifier si le groupe existe déjà
+            groupe_exist = Groupe.query.filter_by(nom_groupe=nom_groupe).first()
 
-        # Vérifier si le groupe existe déjà
-        groupe_exist = Groupe.query.filter_by(nom_groupe=nom_groupe).first()
-
-        # Si le groupe n'existe pas, le créer
-        if not groupe_exist:
-            nouvel_groupe = Groupe(
-                nom_groupe=nom_groupe,
-                entraineur_nom=entraineur_nom,
-                type_abonnement=type_abonnement
-            )
-            db.session.add(nouvel_groupe)
-            db.session.commit()
+            # Si le groupe n'existe pas, le créer
+            if not groupe_exist:
+                nouvel_groupe = Groupe(
+                    nom_groupe=nom_groupe,
+                    entraineur_nom=entraineur_nom,
+                    type_abonnement=type_abonnement
+                )
+                db.session.add(nouvel_groupe)
+                db.session.commit()
 
         
         
@@ -542,7 +689,9 @@ def ajouter_entraineur():
                 prenom=request.form['prenom'],
                 sexe=request.form['sexe'],
                 type_abonnement=request.form['type_abonnement'],
-                enfant=request.form.get('enfant'),
+                tel=request.form.get('tel'),
+                addresse =request.form.get('addresse'),
+                compte_bancaire=request.form.get('compte_bancaire'),
                 status='Actif',
             )
             # Ajout de l'entraîneur dans la base de données
@@ -556,7 +705,11 @@ def ajouter_entraineur():
 
             # Mot de passe par défaut pour l'entraîneur
             password = 'entraineur'
-            user = str(nouveau_entraineur.nom) + '.' + str(nouveau_entraineur.prenom)
+            user_nom = nouveau_entraineur.nom
+            user_nom=user_nom.replace(" ", "").lower()
+            user_prenom = nouveau_entraineur.prenom
+            user_prenom=user_prenom.replace(" ", "").lower()
+            user = str(user_nom) + '.' + str(user_prenom)
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
             print(f"Mot de passe haché : {hashed_password}")
 
@@ -765,11 +918,11 @@ class Adherent(db.Model):
     sexe = db.Column(db.String(1), nullable=False)
     tel1 = db.Column(db.String(15), nullable=True)
     tel2 = db.Column(db.String(15), nullable=True)
-    type_abonnement = db.Column(db.String(50), nullable=False)
+    type_abonnement = db.Column(db.String(50), nullable=True)
     ancien_abonne = db.Column(db.String(50), nullable=False)
     matricule = db.Column(db.Integer, unique=True, nullable=False)
     groupe = db.Column(db.String(100), nullable=True)
-    entraineur = db.Column(db.String(50), nullable=False)
+    entraineur = db.Column(db.String(50), nullable=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     paye = db.Column(db.Enum('O', 'N'), nullable=False)
     status = db.Column(db.Enum('Actif', 'Non-Actif'), nullable=False)
@@ -805,7 +958,9 @@ class Entraineur(db.Model):
     prenom = db.Column(db.String(100), nullable=False)
     sexe = db.Column(db.Enum('M', 'F'), nullable=False)
     type_abonnement = db.Column(db.String(50), nullable=True, default=None)
-    enfant = db.Column(db.Enum('Oui', 'Non'), nullable=False)
+    tel = db.Column(db.String(100), nullable=True)
+    addresse = db.Column(db.String(100), nullable=True)
+    compte_bancaire = db.Column(db.String(100), nullable=True)
     status = db.Column(db.Enum('Actif', 'Non-Actif'), nullable=False)
 
     def __repr__(self):
@@ -834,6 +989,7 @@ class Groupe(db.Model):
     nom_groupe = db.Column(db.String(100), nullable=False)
     entraineur_nom = db.Column(db.String(50), nullable=False)
     type_abonnement = db.Column(db.String(50), nullable=False)
+    categorie = db.Column(db.String(50), nullable=False)
 
     def __repr__(self):
         return f'<Groupe {self.nom_groupe} géré par {self.entraineur_nom}>'

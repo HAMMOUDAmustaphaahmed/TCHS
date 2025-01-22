@@ -70,18 +70,25 @@
                                         <option value="F">Femme</option>
                                     </select>
                                 </div>
+                                <div class="form-floating mb-4">
+                                    <input type="text" class="form-control" name="tel" placeholder="Téléphone" required>
+                                    <label for="floatingInput">Téléphone</label>
+                                </div>
+                                <div class="form-floating mb-4">
+                                    <input type="text" class="form-control" name="addresse" placeholder="Addresse" required>
+                                    <label for="floatingInput">Adresse</label>
+                                </div>
+                                <div class="form-floating mb-4">
+                                    <input type="text" class="form-control" name="compte_bancaire" placeholder="Compte Bancaire" required>
+                                    <label for="floatingInput">Compte Bancaire</label>
+                                </div>
                             <div class="form mb-4">
-                                <label for="floatingInput">Enfant</label>
-                                <select class="form-control" name="enfant" required>
-                                    <option value=""></option>
-                                    <option value="Oui">Oui</option>
-                                    <option value="Non">Non</option>
-                                </select>
-                            </div>
-                            <div class="form mb-4">
-                                <label for="type_abonnement">Type d'abonnement</label>
+                                <label for="Catégorie">Catégorie</label>
                                         <select id="type_abonnement" name="type_abonnement" class="form-control">
                                             <option value="" disabled selected></option>
+                                            <option value="Adjoint">Adjoint</option>
+                                            <option value="Directeur Technique">Directeur Technique</option>
+                                            <option value="Polyvalent">Polyvalent</option>
                                             <option value="Loisir">Loisir</option>
                                             <option value="Ecole">Ecole</option>
                                             <option value="Compétitif">Compétitif</option>

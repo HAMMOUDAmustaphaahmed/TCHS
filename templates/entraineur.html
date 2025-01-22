@@ -171,16 +171,16 @@ document.getElementById('submitMotDePasse').addEventListener('click', function()
 
       <div class="container-fluid pt-4 px-4">
         <div class="bg-light text-center rounded p-4">
-            <div class="d-flex align-items-center justify-content-between mb-4">
+          <div class="d-flex align-items-center justify-content-between mb-4">
                 <a href="{{ url_for('entraineur') }}" class="navbar-brand mx-4 mb-3">
                     <h3 class="text-primary">TCHS</h3>
                 </a>
                 
               <h6>Bienvenue {{ entraineur.nom }} {{ entraineur.prenom }}</h6>
             </div>
-            <div class="text-start mb-4">
-                <!-- Bouton pour afficher le formulaire d'ajout de groupe -->
-                <button class="btn btn-primary" onclick="showGroupForm()">Ajouter un groupe</button>
+              <div class="text-start mb-4">
+                  <!-- Bouton pour afficher le formulaire d'ajout de groupe -->
+                  <button class="btn btn-primary" onclick="showGroupForm()">Ajouter un groupe</button>
               </div>
               
               <!-- Formulaire dynamique pour ajouter un groupe -->
@@ -193,46 +193,47 @@ document.getElementById('submitMotDePasse').addEventListener('click', function()
                 <!-- Bouton pour confirmer l'ajout -->
                 <button class="btn btn-success mt-2" onclick="confirmGroupAdd()">Confirmer</button>
               </div>
-<script>
-    function showGroupForm() {
-  document.getElementById("groupForm").style.display = "block"; // Affiche le formulaire
-}
+            <script>
+                function showGroupForm() {
+              document.getElementById("groupForm").style.display = "block"; // Affiche le formulaire
+            }
 
-function confirmGroupAdd() {
-  let groupName = document.getElementById("groupName").value;
-  let entraineur = document.getElementById("selectedEntraineur").value;
+            function confirmGroupAdd() {
+              let groupName = document.getElementById("groupName").value;
+              let entraineur = document.getElementById("selectedEntraineur").value;
 
-  if (!groupName) {
-    alert("Veuillez entrer un nom pour le groupe.");
-    return;
-  }
+              if (!groupName) {
+                alert("Veuillez entrer un nom pour le groupe.");
+                return;
+              }
 
-  fetch(`/ajouter_groupe`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ groupName, entraineur }),
-  })
-    .then(response => {
-      if (response.ok) {
-        alert("Groupe ajouté avec succès !");
-        location.reload();
-      } else {
-        return response.text().then(text => {
-          throw new Error(text);
-        });
-      }
-    })
-    .catch(error => {
-      console.error("Erreur lors de l'ajout du groupe :", error);
-      alert("Une erreur est survenue : " + error.message);
-    });
-}
+              fetch(`/ajouter_groupe`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ groupName, entraineur }),
+              })
+                .then(response => {
+                  if (response.ok) {
+                    alert("Groupe ajouté avec succès !");
+                    location.reload();
+                  } else {
+                    return response.text().then(text => {
+                      throw new Error(text);
+                    });
+                  }
+                })
+                .catch(error => {
+                  console.error("Erreur lors de l'ajout du groupe :", error);
+                  alert("Une erreur est survenue : " + error.message);
+                });
+            }
 
-</script>              
+            </script>              
             <div class="table-responsive">
-                
+
+                <div class="text-start mb-4">Les Groupes</div>
                 
               <table class="table text-start align-middle table-bordered table-hover mb-0">
                 <thead>
@@ -240,7 +241,7 @@ function confirmGroupAdd() {
                   <tr>
                     <th>Nom du Groupe</th>
                     <th>Adhérents</th>
-                    <th>Actions</th>
+                    
                   </tr>
                 </thead>
                 <tbody>
@@ -254,7 +255,7 @@ function confirmGroupAdd() {
                             <th>Matricule</th>
                             <th>Nom</th>
                             <th>Prénom</th>
-                            <th>Actions</th>
+                            
                           </tr>
                         </thead>
                         <tbody>
@@ -263,43 +264,29 @@ function confirmGroupAdd() {
                             <td>{{ adherent.matricule }}</td>
                             <td>{{ adherent.nom }}</td>
                             <td>{{ adherent.prenom }}</td>
-                            <td>
-                              <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_adherent_groupe', adherent_id=adherent.adherent_id) }}">
-                                Supprimer
-                              </a>
-                            </td>
+                           
                           </tr>
                           {% endfor %}
                         </tbody>
                       </table>
                     </td>
-                    <td>
-                      <!-- Bouton pour afficher le formulaire d'ajout -->
-                      <button class="btn btn-primary" onclick="showAddForm('{{ data.groupe.id_groupe }}', '{{ data.groupe.nom_groupe }}')">
-                        Ajouter un adhérent
-                      </button>
-                      
-                        <!-- Bouton Ajouter une séance -->
-                        <button class="btn btn-success" onclick="showSeanceForm('{{ data.groupe.id_groupe }}', '{{ data.groupe.nom_groupe }}')">
-                          Ajouter une séance
-                        </button>
-                      
-                        
-                      
-                      
-                    </td>
+                    
                   </tr>
                   
                   {% endfor %}
                     <!-- Formulaire dynamique -->
                     <div id="addForm" class="mt-4" style="display:none;">
-                        <h5>Ajouter un adhérent au groupe <span id="selectedGroup"></span></h5>
-                        <!-- Champ caché pour stocker l'ID du groupe -->
-                        <input type="hidden" id="selectedGroupId">
-                        <input type="text" id="searchAdherent" class="form-control" placeholder="Rechercher par matricule..." onkeyup="filterAdherents()">
-                        <ul id="adherentList" class="list-group mt-2"></ul>
-                        <button class="btn btn-success mt-2" onclick="confirmAdd()">Confirmer</button>
+                      <h5>Ajouter un adhérent au groupe <span id="selectedGroup"></span></h5>
+                      <!-- Champ caché pour stocker l'ID du groupe -->
+                      <input type="hidden" id="selectedGroupId">
+                      <!-- Champ de recherche -->
+                      <input type="text" id="searchAdherent" class="form-control" placeholder="Rechercher un adhérent...">
+                      <!-- Liste déroulante des adhérents -->
+                      <ul id="adherentList" class="list-group mt-2" style="display:none;"></ul>
+                      <button class="btn btn-success mt-2" onclick="confirmAdd()">Confirmer</button>
                     </div>
+                    
+                    
 
                     <!-- Formulaire dynamique pour ajouter une séance -->
                     <div id="seanceForm" class="mt-2" style="display:none;">
@@ -322,68 +309,97 @@ function confirmGroupAdd() {
             
           </div>
           
-<script>
-    let adherents = {{ adherents_disponibles | tojson }}; // Transférer les adhérents disponibles depuis le backend
-
-function showAddForm(group_id, group_name) {
-  document.getElementById("selectedGroup").innerText = group_name; // Nom du groupe
-  document.getElementById("selectedGroupId").value = group_id; // ID du groupe
-  document.getElementById("addForm").style.display = "block"; // Affiche le formulaire
-}
-
-function filterAdherents() {
-  let search = document.getElementById("searchAdherent").value.toLowerCase();
-  let list = document.getElementById("adherentList");
-  list.innerHTML = ""; // Clear previous results
-
-  adherents.forEach(adherent => {
-    if (adherent.matricule.toString().includes(search)) {
-      let li = document.createElement("li");
-      li.className = "list-group-item";
-      li.innerText = `${adherent.matricule} - ${adherent.nom} ${adherent.prenom}`;
-      li.onclick = () => selectAdherent(adherent);
-      list.appendChild(li);
-    }
-  });
-}
-
-function selectAdherent(adherent) {
-  document.getElementById("searchAdherent").value = adherent.matricule; // Matricule sélectionnée
-}
-
-function confirmAdd() {
-  let matricule = document.getElementById("searchAdherent").value;
-  let group_id = document.getElementById("selectedGroupId").value;
-
-  if (!matricule || !group_id) {
-    alert("Veuillez sélectionner un matricule et un groupe.");
-    return;
-  }
-
-  fetch(`/ajouter_adherent_groupe/${group_id}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({ matricule }),
-  })
-    .then(response => {
-      if (response.ok) {
-        alert("Adhérent ajouté avec succès !");
-        location.reload();
-      } else {
-        return response.text().then(text => {
-          throw new Error(text);
-        });
-      }
-    })
-    .catch(error => {
-      console.error("Erreur lors de l'ajout de l'adhérent :", error);
-      alert("Une erreur est survenue : " + error.message);
-    });
-}
-
-</script>
+          <script>
+            // Transférer les adhérents disponibles depuis le backend
+            let adherents = {{ adherents_disponibles | tojson }}; 
+        
+            // Affiche le formulaire d'ajout pour un groupe donné
+            function showAddForm(group_id, group_name) {
+                document.getElementById("selectedGroup").innerText = group_name; // Nom du groupe
+                document.getElementById("selectedGroupId").value = group_id; // ID du groupe
+                document.getElementById("addForm").style.display = "block"; // Affiche le formulaire
+            }
+        
+            // Charger les événements DOM
+            document.addEventListener("DOMContentLoaded", function () {
+                // Affiche la liste complète des adhérents lors du clic dans le champ de recherche
+                const searchInput = document.getElementById("searchAdherent");
+                searchInput.addEventListener("focus", () => {
+                    afficherListeAdherents(); // Affiche la liste complète des adhérents
+                });
+        
+                // Filtre la liste selon la saisie utilisateur
+                searchInput.addEventListener("input", () => {
+                    afficherListeAdherents(searchInput.value.toLowerCase());
+                });
+            });
+        
+            // Affiche la liste des adhérents, filtrée selon le critère
+            function afficherListeAdherents(filter = "") {
+                const list = document.getElementById("adherentList");
+                list.innerHTML = ""; // Efface les résultats précédents
+        
+                adherents.forEach(adherent => {
+                    // Filtre par matricule ou nom/prénom
+                    if (
+                        adherent.matricule.toString().includes(filter) ||
+                        adherent.nom.toLowerCase().includes(filter) ||
+                        adherent.prenom.toLowerCase().includes(filter)
+                    ) {
+                        // Crée un élément de liste
+                        const li = document.createElement("li");
+                        li.className = "list-group-item";
+                        li.innerText = `${adherent.matricule} - ${adherent.nom} ${adherent.prenom}`;
+                        li.onclick = () => selectAdherent(adherent); // Ajoute un gestionnaire d'événement
+                        list.appendChild(li);
+                    }
+                });
+        
+                // Affiche ou masque la liste en fonction des résultats
+                list.style.display = list.children.length > 0 ? "block" : "none";
+            }
+        
+            // Sélectionne un adhérent et remplit le champ de recherche avec son matricule
+            function selectAdherent(adherent) {
+                const searchInput = document.getElementById("searchAdherent");
+                searchInput.value = adherent.matricule; // Remplit le champ avec le matricule sélectionné
+                document.getElementById("adherentList").style.display = "none"; // Masque la liste après la sélection
+            }
+        
+            // Confirme l'ajout d'un adhérent à un groupe
+            function confirmAdd() {
+                let matricule = document.getElementById("searchAdherent").value; // Matricule sélectionné
+                let group_id = document.getElementById("selectedGroupId").value; // ID du groupe
+        
+                if (!matricule || !group_id) {
+                    alert("Veuillez sélectionner un matricule et un groupe.");
+                    return;
+                }
+        
+                fetch(`/ajouter_adherent_groupe/${group_id}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    body: new URLSearchParams({ matricule }),
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            alert("Adhérent ajouté avec succès !");
+                            location.reload();
+                        } else {
+                            return response.text().then(text => {
+                                throw new Error(text);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Erreur lors de l'ajout de l'adhérent :", error);
+                        alert("Une erreur est survenue : " + error.message);
+                    });
+            }
+        </script>
+        
 <script>
     function showSeanceForm(group_id, group_name) {
   document.getElementById("selectedGroupIdSeance").value = group_id; // Stocker l'ID du groupe
@@ -428,6 +444,7 @@ function confirmSeanceAdd() {
 </script>
             <!-- Widgets Start -->
             <div class="container-fluid pt-4 px-4">
+              <div class="text-start mb-4">Les Seances</div>
                 <div class="table-responsive">
                     <table id="groupesTable" class="table text-start align-middle table-bordered table-hover mb-0">
                       <thead>
