@@ -2,10 +2,10 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1
--- Generation Time: Jan 22, 2025 at 12:01 AM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.0.30
+-- Hôte : 127.0.0.1
+-- Généré le : mer. 22 jan. 2025 à 17:09
+-- Version du serveur : 10.4.32-MariaDB
+-- Version de PHP : 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,13 +18,13 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `tchs`
+-- Base de données : `tchs`
 --
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `adherent`
+-- Structure de la table `adherent`
 --
 
 CREATE TABLE `adherent` (
@@ -47,18 +47,23 @@ CREATE TABLE `adherent` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `adherent`
+-- Déchargement des données de la table `adherent`
 --
 
 INSERT INTO `adherent` (`adherent_id`, `nom`, `prenom`, `date_naissance`, `sexe`, `date_inscription`, `tel1`, `tel2`, `type_abonnement`, `ancien_abonne`, `matricule`, `groupe`, `entraineur`, `email`, `paye`, `status`) VALUES
 (6, 'hammouda', 'ahmed', '1996-08-30', 'M', '2025-01-20', '54391747', '54391747', 'Loisir', 'Non', 1, 'john.doe', 'john doe', 'ahmed@gmail.com', 'N', 'Actif'),
 (7, 'mohamed', 'ali', '1990-01-01', 'M', '2025-01-20', '12345678', '123546789', 'Loisir', 'Non', 2, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif'),
-(8, 'mohamed', 'saleh', '1994-01-01', 'M', '2025-01-20', '1234', '12345', 'Loisir', 'Non', 3, 'aaa', 'john doe', 'user@gmail.com', 'N', 'Actif');
+(8, 'mohamed', 'saleh', '1994-01-01', 'M', '2025-01-20', '1234', '12345', 'Loisir', 'Non', 3, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif'),
+(9, 'Flen', 'Ben Flen', '2025-01-22', 'M', '2025-01-22', '1234', '1234', 'Loisir', 'Non', 4, 'loisir', 'john doe', 'flen@gmail.com', 'N', 'Actif'),
+(10, 'Abdelmaksoud', 'Thameur', '2000-04-06', 'F', '2025-01-22', '28425595', '', 'N/D', 'Non', 5, 'X', 'test tedst', '', 'N', 'Actif'),
+(11, 'Foulani', 'Foulen', '2025-01-22', 'M', '2025-01-22', '1234', '', 'Compétitif', 'Non', 6, NULL, NULL, '', 'N', 'Actif'),
+(12, 'aaa', 'aaa', '2025-01-22', 'M', '2025-01-22', '134', '', 'Ecole d\'été', 'Non', 7, '', '', 'a@gmail.com', 'N', 'Actif'),
+(13, 'Da7ee7', 'Da7ee7', '2025-01-22', 'M', '2025-01-22', '1234', '', NULL, 'Non', 8, 'groupe_onsjaber', 'Jaber Ons', 'da7ee7@gmail.com', 'N', 'Actif');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `bon_de_recette`
+-- Structure de la table `bon_de_recette`
 --
 
 CREATE TABLE `bon_de_recette` (
@@ -75,7 +80,7 @@ CREATE TABLE `bon_de_recette` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `bon_de_recette`
+-- Déchargement des données de la table `bon_de_recette`
 --
 
 INSERT INTO `bon_de_recette` (`id_bon`, `libelle_bon`, `nom_adherent`, `prenom_adherent`, `type_reglement`, `matricule`, `n_cheque`, `banque`, `date_echeance`, `date_inscription`) VALUES
@@ -86,7 +91,7 @@ INSERT INTO `bon_de_recette` (`id_bon`, `libelle_bon`, `nom_adherent`, `prenom_a
 -- --------------------------------------------------------
 
 --
--- Table structure for table `depense`
+-- Structure de la table `depense`
 --
 
 CREATE TABLE `depense` (
@@ -100,7 +105,7 @@ CREATE TABLE `depense` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `entraineur`
+-- Structure de la table `entraineur`
 --
 
 CREATE TABLE `entraineur` (
@@ -109,22 +114,26 @@ CREATE TABLE `entraineur` (
   `prenom` varchar(100) NOT NULL,
   `sexe` enum('M','F') NOT NULL,
   `type_abonnement` varchar(50) DEFAULT NULL,
-  `enfant` enum('Oui','Non') DEFAULT NULL,
-  `status` enum('Actif','Non-Actif') NOT NULL
+  `status` enum('Actif','Non-Actif') NOT NULL,
+  `tel` varchar(100) DEFAULT NULL,
+  `addresse` varchar(100) DEFAULT NULL,
+  `compte_bancaire` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `entraineur`
+-- Déchargement des données de la table `entraineur`
 --
 
-INSERT INTO `entraineur` (`id_entraineur`, `nom`, `prenom`, `sexe`, `type_abonnement`, `enfant`, `status`) VALUES
-(1, 'test', 'tedst', 'M', 'N/D', '', 'Actif'),
-(10, 'john', 'doe', 'M', 'Loisir', 'Oui', 'Actif');
+INSERT INTO `entraineur` (`id_entraineur`, `nom`, `prenom`, `sexe`, `type_abonnement`, `status`, `tel`, `addresse`, `compte_bancaire`) VALUES
+(1, 'test', 'tedst', 'M', 'N/D', 'Actif', NULL, NULL, NULL),
+(10, 'john', 'doe', 'M', 'Loisir', 'Actif', NULL, NULL, NULL),
+(11, 'Zallila', 'Adam', 'M', 'Compétitif', 'Actif', NULL, NULL, NULL),
+(12, 'Jaber', 'Ons', 'F', 'Directeur Technique', 'Actif', '1234', 'rue x', '123456789');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `groupe`
+-- Structure de la table `groupe`
 --
 
 CREATE TABLE `groupe` (
@@ -135,18 +144,21 @@ CREATE TABLE `groupe` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `groupe`
+-- Déchargement des données de la table `groupe`
 --
 
 INSERT INTO `groupe` (`id_groupe`, `nom_groupe`, `entraineur_nom`, `type_abonnement`) VALUES
 (1, 'john.doe', 'john doe', 'Loisir'),
 (2, 'john.doe2', 'john doe', 'Loisir'),
-(3, 'aaa', 'john doe', 'Loisir');
+(3, 'loisir', 'john doe', 'Loisir'),
+(4, 'X', 'test tedst', 'N/D'),
+(5, '', '', 'Compétitif'),
+(6, 'groupe_onsjaber', 'Jaber Ons', 'Directeur Technique');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `messages`
+-- Structure de la table `messages`
 --
 
 CREATE TABLE `messages` (
@@ -160,7 +172,7 @@ CREATE TABLE `messages` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `messages`
+-- Déchargement des données de la table `messages`
 --
 
 INSERT INTO `messages` (`id`, `expediteur`, `destinataires`, `objet`, `corps`, `date_envoi`, `statut`) VALUES
@@ -169,12 +181,13 @@ INSERT INTO `messages` (`id`, `expediteur`, `destinataires`, `objet`, `corps`, `
 (6, 'john.doe', ',admin,manager', 'test3', 'test3', '2025-01-20 14:03:04', 'non lu'),
 (7, 'john.doe', 'admin', 'a', 'a', '2025-01-20 15:11:04', 'non lu'),
 (8, 'admin', '', 'aaaa', 'aaaa', '2025-01-20 15:47:45', 'non lu'),
-(9, 'admin', '', 'aabb', 'aabb', '2025-01-19 17:39:29', 'non lu');
+(9, 'admin', '', 'hello', 'hello', '2025-01-21 07:08:03', 'non lu'),
+(10, 'jaber.ons', '', 'Test', 'Bonjour', '2025-01-22 14:43:05', 'non lu');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `presence`
+-- Structure de la table `presence`
 --
 
 CREATE TABLE `presence` (
@@ -188,17 +201,19 @@ CREATE TABLE `presence` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `presence`
+-- Déchargement des données de la table `presence`
 --
 
 INSERT INTO `presence` (`id_presence`, `groupe_nom`, `adherent_matricule`, `entraineur_nom`, `date_seance`, `heure_debut`, `est_present`) VALUES
-(16, 'john.doe', '1', 'john doe', '2025-01-21', '23:44:00', 'O'),
-(17, 'john.doe', '2', 'john doe', '2025-01-21', '23:44:00', 'N');
+(1, 'loisir', '4', 'john doe', '2025-01-22', '10:30:00', 'O'),
+(2, 'loisir', '4', 'john doe', '2025-01-22', '10:30:00', 'N'),
+(3, 'groupe_onsjaber', '8', 'Jaber Ons', '2025-01-22', '16:30:00', 'O'),
+(4, 'groupe_onsjaber', '8', 'Jaber Ons', '2025-01-22', '16:30:00', 'N');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `revenu`
+-- Structure de la table `revenu`
 --
 
 CREATE TABLE `revenu` (
@@ -211,7 +226,7 @@ CREATE TABLE `revenu` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `seances`
+-- Structure de la table `seances`
 --
 
 CREATE TABLE `seances` (
@@ -223,19 +238,19 @@ CREATE TABLE `seances` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `seances`
+-- Déchargement des données de la table `seances`
 --
 
 INSERT INTO `seances` (`seance_id`, `date`, `heure`, `groupe`, `entraineur`) VALUES
-(1, '2025-01-14', '12:10:00', 'john.doe', 'john doe'),
-(2, '2025-01-21', '11:00:00', 'john.doe2', 'john doe'),
-(3, '2025-01-02', '12:00:00', 'john.doe', 'john doe'),
-(4, '2025-01-21', '23:44:00', 'john.doe', 'john doe');
+(1, '2025-01-01', '11:30:00', 'john.doe', 'john doe'),
+(2, '2025-01-01', '11:30:00', 'john.doe', 'john doe'),
+(3, '2025-01-22', '10:30:00', 'loisir', 'john doe'),
+(4, '2025-01-22', '16:30:00', 'groupe_onsjaber', 'Jaber Ons');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `utilisateurs`
+-- Structure de la table `utilisateurs`
 --
 
 CREATE TABLE `utilisateurs` (
@@ -246,141 +261,143 @@ CREATE TABLE `utilisateurs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `utilisateurs`
+-- Déchargement des données de la table `utilisateurs`
 --
 
 INSERT INTO `utilisateurs` (`id`, `utilisateur`, `password`, `role`) VALUES
 (1, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'admin'),
 (3, 'manager', '32ccf5889dcae26d988e57e9d9c9abea9ce9eb2cc541153b18c6ee9ef8855182', 'admin'),
-(5, 'john.doe', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', 'entraineur');
+(6, 'john.doe', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', 'entraineur'),
+(7, 'Zallila.Adam', 'a18ceb2154111dd7e9bdfe59a36ae187ef6880bdbe676fb47ca1bb796f3dcbc1', 'entraineur'),
+(8, 'jaber.ons', 'a18ceb2154111dd7e9bdfe59a36ae187ef6880bdbe676fb47ca1bb796f3dcbc1', 'entraineur');
 
 --
--- Indexes for dumped tables
+-- Index pour les tables déchargées
 --
 
 --
--- Indexes for table `adherent`
+-- Index pour la table `adherent`
 --
 ALTER TABLE `adherent`
   ADD PRIMARY KEY (`adherent_id`);
 
 --
--- Indexes for table `bon_de_recette`
+-- Index pour la table `bon_de_recette`
 --
 ALTER TABLE `bon_de_recette`
   ADD PRIMARY KEY (`id_bon`);
 
 --
--- Indexes for table `depense`
+-- Index pour la table `depense`
 --
 ALTER TABLE `depense`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `entraineur`
+-- Index pour la table `entraineur`
 --
 ALTER TABLE `entraineur`
   ADD PRIMARY KEY (`id_entraineur`);
 
 --
--- Indexes for table `groupe`
+-- Index pour la table `groupe`
 --
 ALTER TABLE `groupe`
   ADD PRIMARY KEY (`id_groupe`);
 
 --
--- Indexes for table `messages`
+-- Index pour la table `messages`
 --
 ALTER TABLE `messages`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `presence`
+-- Index pour la table `presence`
 --
 ALTER TABLE `presence`
   ADD PRIMARY KEY (`id_presence`);
 
 --
--- Indexes for table `revenu`
+-- Index pour la table `revenu`
 --
 ALTER TABLE `revenu`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `seances`
+-- Index pour la table `seances`
 --
 ALTER TABLE `seances`
   ADD PRIMARY KEY (`seance_id`);
 
 --
--- Indexes for table `utilisateurs`
+-- Index pour la table `utilisateurs`
 --
 ALTER TABLE `utilisateurs`
   ADD PRIMARY KEY (`id`);
 
 --
--- AUTO_INCREMENT for dumped tables
+-- AUTO_INCREMENT pour les tables déchargées
 --
 
 --
--- AUTO_INCREMENT for table `adherent`
+-- AUTO_INCREMENT pour la table `adherent`
 --
 ALTER TABLE `adherent`
-  MODIFY `adherent_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `adherent_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
--- AUTO_INCREMENT for table `bon_de_recette`
+-- AUTO_INCREMENT pour la table `bon_de_recette`
 --
 ALTER TABLE `bon_de_recette`
   MODIFY `id_bon` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
--- AUTO_INCREMENT for table `depense`
+-- AUTO_INCREMENT pour la table `depense`
 --
 ALTER TABLE `depense`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `entraineur`
+-- AUTO_INCREMENT pour la table `entraineur`
 --
 ALTER TABLE `entraineur`
-  MODIFY `id_entraineur` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id_entraineur` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
--- AUTO_INCREMENT for table `groupe`
+-- AUTO_INCREMENT pour la table `groupe`
 --
 ALTER TABLE `groupe`
-  MODIFY `id_groupe` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_groupe` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
--- AUTO_INCREMENT for table `messages`
+-- AUTO_INCREMENT pour la table `messages`
 --
 ALTER TABLE `messages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
--- AUTO_INCREMENT for table `presence`
+-- AUTO_INCREMENT pour la table `presence`
 --
 ALTER TABLE `presence`
-  MODIFY `id_presence` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id_presence` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
--- AUTO_INCREMENT for table `revenu`
+-- AUTO_INCREMENT pour la table `revenu`
 --
 ALTER TABLE `revenu`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `seances`
+-- AUTO_INCREMENT pour la table `seances`
 --
 ALTER TABLE `seances`
   MODIFY `seance_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
--- AUTO_INCREMENT for table `utilisateurs`
+-- AUTO_INCREMENT pour la table `utilisateurs`
 --
 ALTER TABLE `utilisateurs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
