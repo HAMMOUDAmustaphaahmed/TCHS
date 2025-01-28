@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+    <div class="container-xxl position-relative bg-white d-flex p-0">
+        <div class="container-fluid bg-light">
+            <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
+                <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
+                    <div class="p-4 bg-white shadow rounded">
+                        <a href="{{ url_for('admin') }}">
+                            <h3 class="text-primary text-center">TCHS.</h3>
+                        </a>
+                        <form method="post" action="{{ url_for('modifier_entraineur', id=entraineur.id_entraineur) }}">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="nom" name="nom" placeholder="Nom" value="{{ entraineur.nom }}" required>
+                                <label for="nom">Nom</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="prenom" name="prenom" placeholder="Prénom" value="{{ entraineur.prenom }}" required>
+                                <label for="prenom">Prénom</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <select class="form-control" id="sexe" name="sexe" required>
+                                    <option value="" disabled>Sexe</option>
+                                    <option value="M" {% if entraineur.sexe == 'M' %}selected{% endif %}>Homme</option>
+                                    <option value="F" {% if entraineur.sexe == 'F' %}selected{% endif %}>Femme</option>
+                                </select>
+                                <label for="sexe">Sexe</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <select id="type_abonnement" name="type_abonnement" class="form-control">
+                                    <option value="" disabled {% if not entraineur.type_abonnement %}selected{% endif %}></option>
+                                    <option value="Loisir" {% if entraineur.type_abonnement == 'Loisir' %}selected{% endif %}>Loisir</option>
+                                    <option value="Ecole" {% if entraineur.type_abonnement == 'Ecole' %}selected{% endif %}>Ecole</option>
+                                    <option value="Compétitif" {% if entraineur.type_abonnement == 'Compétitif' %}selected{% endif %}>Compétitif</option>
+                                    <option value="Pré-Compétitif" {% if entraineur.type_abonnement == 'Pré-Compétitif' %}selected{% endif %}>Pré-Compétitif</option>
+                                    <option value="Ecole d'été" {% if entraineur.type_abonnement == "Ecole d'été" %}selected{% endif %}>Ecole d'été</option>
+                                    <option value="Adulte" {% if entraineur.type_abonnement == 'Adulte' %}selected{% endif %}>Adulte</option>
+                                    <option value="N/D" {% if entraineur.type_abonnement == 'N/D' %}selected{% endif %}>N/D</option>
+                                </select>
+                                <label for="type_abonnement">Type d'abonnement</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <select class="form-control" id="enfant" name="enfant" required>
+                                    <option value="Oui" {% if entraineur.enfant == 'Oui' %}selected{% endif %}>Oui</option>
+                                    <option value="Non" {% if entraineur.enfant == 'Non' %}selected{% endif %}>Non</option>
+                                </select>
+                                <label for="enfant">A-t-il des enfants ?</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <select class="form-control" id="status" name="status" required>
+                                    <option value="Actif" {% if entraineur.status == 'Actif' %}selected{% endif %}>Actif</option>
+                                    <option value="Non-Actif" {% if entraineur.status == 'Non-Actif' %}selected{% endif %}>Non-Actif</option>
+                                </select>
+                                <label for="status">Status</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary py-3 w-100">Mettre à jour</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>

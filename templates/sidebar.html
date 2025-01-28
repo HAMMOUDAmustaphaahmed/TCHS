@@ -1,0 +1,114 @@
+<!-- Sidebar Start -->
+<div class="sidebar pe-4 pb-3">
+    <nav class="navbar bg-light navbar-light">
+        <a href="{{ url_for('admin') }}" class="navbar-brand mx-4 mb-3">
+            <h3 class="text-primary">TCHS</h3>
+        </a>
+        <div class="d-flex align-items-center ms-4 mb-4">
+            <div class="position-relative">
+                <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
+            </div>
+            
+        </div>
+        <div class="navbar-nav w-100">
+            <a href="{{ url_for('admin') }}" class="nav-item nav-link active">
+                <i class="fa fa-tachometer-alt me-2"></i>Dashboard
+            </a>
+        
+            <!-- Utilisateurs Dropdown -->
+<div class="nav-item dropdown">
+<a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+<i class="fa fa-user me-2"></i>Utilisateurs
+</a>
+<div class="dropdown-menu bg-transparent border-0">
+<a href="{{ url_for('ajouter_utilisateur') }}" class="dropdown-item">
+    <i class="fa fa-user-plus me-2"></i>Ajouter un Utilisateur
+</a>
+<a href="{{ url_for('gerer_utilisateur') }}" class="dropdown-item">
+    <i class="fa fa-users-cog me-2"></i>Gérer Les Utilisateurs
+</a>
+</div>
+</div>
+
+<!-- Adhérents Dropdown -->
+<div class="nav-item dropdown">
+<a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+<i class="fa fa-users me-2"></i>Adhérents
+</a>
+<div class="dropdown-menu bg-transparent border-0">
+<a href="{{ url_for('ajouter_adherent') }}" class="dropdown-item">
+    <i class="fa fa-user-plus me-2"></i>Ajouter un Adhérent
+</a>
+<a href="{{ url_for('gerer_adherent') }}" class="dropdown-item">
+    <i class="fa fa-users-cog me-2"></i>Gérer Les Adhérents
+</a>
+</div>
+</div>
+
+<!-- Entraîneurs Dropdown -->
+<div class="nav-item dropdown">
+<a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+<i class="fa fa-chalkboard-teacher me-2"></i>Entraîneurs
+</a>
+<div class="dropdown-menu bg-transparent border-0">
+<a href="{{ url_for('ajouter_entraineur') }}" class="dropdown-item">
+    <i class="fa fa-chalkboard-teacher me-2"></i>Ajouter un Entraîneur
+</a>
+<a href="{{ url_for('gerer_entraineur') }}" class="dropdown-item">
+    <i class="fa fa-users-cog me-2"></i>Gérer Les Entraîneurs
+</a>
+</div>
+</div>
+
+        
+            <!-- Paiement, Abonnement, Locations, Equipement -->
+            <div class="nav-item">
+                <a href="{{ url_for('paiement') }}" class="nav-link">
+                    <i class="fa fa-credit-card me-2"></i>Paiement
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('gerer_abonnement') }}" class="nav-link">
+                    <i class="fa fa-file me-2"></i>Abonnements
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('locations') }}" class="nav-link">
+                    <i class="fa fa-home me-2"></i>Locations Terrains
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('equipement') }}" class="nav-link">
+                    <i class="fa fa-trophy me-2"></i>Tournois
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('equipement') }}" class="nav-link">
+                    <i class="fa fa-boxes me-2"></i>Équipement
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a href="{{ url_for('presentation') }}" class="nav-link">
+                    <i class="fa fa-project-diagram me-2"></i>Presentation
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('discussions') }}" class="nav-link">
+                  <i class="fab fa-facebook-messenger"></i>Discussions
+                </a>
+            </div>
+
+            <!-- Déconnexion -->
+            <div class="nav-item">
+                <a href="{{ url_for('logout') }}" class="nav-link">
+                    <i class="fa fa-sign-out-alt me-2"></i>Déconnecter
+                </a>
+            </div>
+
+
+        </div>
+        
+    </nav>
+</div>
+<!-- Sidebar End -->
