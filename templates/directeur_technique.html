@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS Dashboard</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <!-- Favicon -->
+<link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Libraries Stylesheet -->
+<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+<!-- Customized Bootstrap Stylesheet -->
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+<!-- Template Stylesheet -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+<!-- Ajouter dans le head -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+</head>
+
+<body>
+    {% if session.role == 'admin' %}
+    {% include 'sidebar.html' %}
+{% else %}
+    <div class="sidebar pe-4 pb-3">
+      <nav class="navbar bg-light navbar-light">
+        <a href="{{ url_for('entraineur') }}" class="navbar-brand mx-4 mb-3">
+          <h3 class="text-primary">TCHS</h3>
+        </a>
+        <div class="d-flex align-items-center ms-4 mb-4">
+          <div class="position-relative">
+            <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
+          </div>
+
+        </div>
+        <div class="navbar-nav w-100">
+          <a href="{{ url_for('entraineur') }}" class="nav-item nav-link active">
+            <i class="fa fa-tachometer-alt me-2"></i>Dashboard
+          </a>
+          <div class="nav-item">
+            <a href="javascript:void(0);" class="nav-link" id="changePasswordLink">
+              <i class="fa fa-key"></i> Mot de Passe
+            </a>
+          </div>
+          
+          <!-- Formulaire dans une fenêtre modale -->
+          <div id="modalChangerMotDePasse" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000;">
+            <h4>Changer le mot de passe</h4>
+            <div>
+              <label for="nouveauMotDePasse">Nouveau mot de passe :</label>
+              <input type="password" id="nouveauMotDePasse" required><br>
+            </div>
+            <div>
+              <label for="confirmationMotDePasse">Confirmer le mot de passe :</label>
+              <input type="password" id="confirmationMotDePasse" required><br>
+            </div>
+            <button id="submitMotDePasse" style="margin-top: 10px;">Soumettre</button>
+            <button onclick="fermerModal()" style="margin-top: 10px;">Annuler</button>
+          </div>
+            <script>
+                // Fonction pour ouvrir la fenêtre modale
+            function ouvrirModal() {
+            document.getElementById('modalChangerMotDePasse').style.display = 'block';
+            }
+
+            // Fonction pour fermer la fenêtre modale
+            function fermerModal() {
+            document.getElementById('modalChangerMotDePasse').style.display = 'none';
+            }
+
+            // Attacher un événement au clic sur le lien "Mot de Passe"
+            document.getElementById('changePasswordLink').addEventListener('click', function() {
+            ouvrirModal(); // Ouvre la modale lorsque le lien est cliqué
+            });
+
+            // Soumettre le changement de mot de passe
+            document.getElementById('submitMotDePasse').addEventListener('click', function() {
+            const nouveauMotDePasse = document.getElementById('nouveauMotDePasse').value;
+            const confirmationMotDePasse = document.getElementById('confirmationMotDePasse').value;
+
+            // Vérification des mots de passe
+            if (nouveauMotDePasse !== confirmationMotDePasse) {
+                alert("Les mots de passe ne correspondent pas.");
+                return;
+            }
+
+            // Créer l'objet pour la requête
+            const data = {
+                nouveau_mot_de_passe: nouveauMotDePasse,
+                confirmation_mot_de_passe: confirmationMotDePasse
+            };
+
+            // Envoyer la requête POST pour changer le mot de passe
+            fetch('/changer_mot_de_passe', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                alert(data.message);
+                } else {
+                alert(data.error);
+                }
+                fermerModal(); // Fermer la fenêtre modale après soumission
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Une erreur est survenue.');
+                fermerModal(); // Fermer la fenêtre modale en cas d'erreur
+            });
+            });
+
+            </script>          
+          <div class="nav-item">
+            <a href="{{ url_for('equipement') }}" class="nav-link">
+                <i class="fa fa-trophy me-2"></i>Tournois
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="{{ url_for('equipement') }}" class="nav-link">
+                <i class="fa fa-boxes me-2"></i>Équipement
+            </a>
+        </div>
+        <div class="nav-item">
+          <a href="{{ url_for('discussions') }}" class="nav-link">
+            <i class="fab fa-facebook-messenger"></i>Discussions
+          </a>
+      </div>
+
+        
+        <!-- Déconnexion -->
+        <div class="nav-item">
+            <a href="{{ url_for('logout') }}" class="nav-link">
+                <i class="fa fa-sign-out-alt me-2"></i>Déconnecter
+            </a>
+        </div>
+        </div>
+      </nav>
+    </div>
+    {% endif %}
+    <div class="content">
+      <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+        <a href="" class="navbar-brand d-flex d-lg-none me-4">
+          <h2 class="text-primary mb-0"></h2>
+        </a>
+        <a href="#" class="sidebar-toggler flex-shrink-0">
+          <i class="fa fa-bars"></i>
+        </a>
+        
+
+      </nav>
+
+      
+
+      <div class="container-fluid pt-4 px-4">
+        <div class="bg-light text-center rounded p-4">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <a href="{{ url_for('directeur_technique') }}" class="navbar-brand mx-4 mb-3">
+                    <h3 class="text-primary">TCHS</h3>
+                </a>
+                <h6>Bienvenue</h6>
+            </div>
+    
+            <!-- Section Gestion des Groupes -->
+            <div class="text-start mb-4">
+                <button class="btn btn-primary" onclick="showGroupForm()">Ajouter un groupe</button>
+            </div>
+    
+            <!-- Formulaire d'ajout de groupe -->
+            <div id="groupForm" class="mt-2" style="display:none;">
+                <h5>Créer un nouveau groupe</h5>
+                <select id="groupCategory" class="form-control mt-2">
+                    <option value="">Catégorie</option>
+                    <option value="Lutin">Lutin</option>
+                    <option value="Poussin">Poussin</option>
+                    <option value="Benjamin">Benjamin</option>
+                    <option value="Minime">Minime</option>
+                    <option value="KD">KD</option>
+                    <option value="Ecole">École</option>
+                    <option value="Loisir">Loisir</option>
+                    <option value="Adulte">Adulte</option>
+                </select>
+                <input type="number" id="groupNumber" class="form-control mt-2" placeholder="Numéro (1-9)" min="1" max="9">
+                <input type="text" id="groupLetter" class="form-control mt-2" placeholder="Lettre (A-Z)" maxlength="1">
+                <select id="groupEntraineur" class="form-control mt-2">
+                    <option value="">Entraîneur</option>
+                    {% for entraineur in entraineurs %}
+                    <option value="{{ entraineur.id_entraineur }}">{{ entraineur.nom }} {{ entraineur.prenom }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-success mt-2" onclick="confirmGroupAdd()">Confirmer</button>
+            </div>
+    
+            <!-- Tableau des Groupes -->
+            <div class="table-responsive mt-4">
+                <h5 class="text-start mb-4">Les Groupes</h5>
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nom du Groupe</th>
+                            <th>Entraîneur</th>
+                            <th>Séances</th>
+                            <th>Adhérents</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for groupe in groupes %}
+                        <tr>
+                            <td>{{ groupe.nom_groupe }}</td>
+                            <td>
+                                <select class="form-select entraineur-select" data-groupe-id="{{ groupe.id_groupe }}">
+                                    {% for entraineur in entraineurs %}
+                                    <option value="{{ entraineur.id_entraineur }}" 
+                                        {% if entraineur.nom + ' ' + entraineur.prenom == groupe.entraineur_nom %}selected{% endif %}>
+                                        {{ entraineur.nom }} {{ entraineur.prenom }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                
+                                <button class="btn btn-sm btn-primary" onclick="openSessionModal({{ groupe.id_groupe }})">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                              </td>
+                              <td>
+                                <button class="btn btn-sm btn-success" onclick="openAddAdherentModal({{ groupe.id_groupe }})">
+                                  <i class="fas fa-settings"></i> Gestion des adhérents
+                                </button>
+                                
+                            </td>
+                            <td>
+                              <button class="btn btn-sm btn-danger" onclick="deleteGroup({{ groupe.id_groupe }})">
+                                  <i class="fas fa-trash"></i>
+                              </button>
+                          </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Modal Ajouter un Adhérent -->
+
+
+<!-- Ajoutez ce CSS dans la section <head> -->
+    <style>
+        /* Style pour la modal d'ajout d'adhérents */
+        .search-result-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+        
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .selected-adherent {
+            display: inline-flex;
+            align-items: center;
+            background-color: #e9ecef;
+            border-radius: 20px;
+            padding: 4px 12px;
+            margin: 4px;
+        }
+        
+        .selected-adherent span {
+            margin-right: 8px;
+        }
+        
+        .remove-adherent {
+            cursor: pointer;
+            color: #dc3545;
+            margin-left: 8px;
+        }
+        
+        #adherentSearchResults {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+        
+        #selectedAdherents {
+            min-height: 50px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 8px;
+        }
+        /* Style pour le groupe de recherche */
+        .input-group {
+            margin-bottom: 10px;
+        }
+
+        #searchButton {
+            border-radius: 0 4px 4px 0;
+        }
+
+        .search-result-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+        
+        <!-- Modal Ajout Multiple d'Adhérents -->
+<div id="addAdherentModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 700px;">
+    <h4 class="mb-4">Gestion des adhérents</h4>
+    
+    <div class="row">
+        <!-- Colonne des membres existants -->
+        <div class="col-md-6 pe-3 border-end">
+            <h6>Membres actuels :</h6>
+            <div id="currentMembers" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Matricule</th>
+                            <th>Nom</th>
+                            <th>Prénom</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les membres seront chargés ici dynamiquement -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Colonne d'ajout -->
+        <div class="col-md-6 ps-3">
+            <!-- Recherche -->
+            <div class="mb-3">
+                <div class="input-group">
+                    <input type="text" id="adherentSearchInput" class="form-control" placeholder="Rechercher par matricule...">
+                    <button class="btn btn-outline-primary" type="button" id="searchButton">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div id="adherentSearchResults" class="mt-2" style="max-height: 150px; overflow-y: auto;"></div>
+            </div>
+            
+            <!-- Sélectionnés -->
+            <div class="mb-3">
+                <h6>Nouveaux sélectionnés :</h6>
+                <div id="selectedAdherents" style="max-height: 120px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boutons -->
+    <div class="d-flex gap-2 justify-content-end mt-3">
+        <button class="btn btn-secondary" onclick="closeAddAdherentModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="confirmAddAdherents()">Confirmer</button>
+    </div>
+</div>
+<script>
+
+let currentGroupId = null;
+let selectedAdherents = [];
+
+function openAddAdherentModal(groupId) {
+    currentGroupId = groupId;
+    selectedAdherents = [];
+    
+    // Charger les membres existants
+    fetch(`/api/get_adherents_groupe/${groupId}`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('currentMembers');
+            container.innerHTML = '';
+            
+            if (data.adherents.length === 0) {
+                container.innerHTML = '<div class="text-muted p-2">Aucun membre dans ce groupe</div>';
+                return;
+            }
+
+            data.adherents.forEach(adherent => {
+                const div = document.createElement('div');
+                div.className = 'd-flex justify-content-between align-items-center p-2 border-bottom';
+                div.innerHTML = `
+                    <div>
+                        ${adherent.matricule} - ${adherent.nom} ${adherent.prenom}
+                    </div>
+                    <button class="btn btn-sm btn-danger" 
+                            onclick="removeFromGroup('${adherent.matricule}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        });
+
+    updateSelectedDisplay();
+    document.getElementById('adherentSearchInput').value = '';
+    document.getElementById('adherentSearchResults').innerHTML = '';
+    document.getElementById('addAdherentModal').style.display = 'block';
+}
+
+// Nouvelle fonction pour retirer un adhérent
+function removeFromGroup(matricule) {
+    if (!confirm("Retirer cet adhérent du groupe ?")) return;
+
+    fetch(`/retirer_adherent_groupe/${currentGroupId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ matricule })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            openAddAdherentModal(currentGroupId); // Recharger la liste
+        }
+    });
+}
+
+function closeAddAdherentModal() {
+    document.getElementById('addAdherentModal').style.display = 'none';
+    document.getElementById('adherentSearchInput').value = '';
+    document.getElementById('adherentSearchResults').innerHTML = '';
+}
+
+// Gestion de la recherche
+// Supprimer l'événement 'input' et utiliser le bouton
+document.getElementById('searchButton').addEventListener('click', function() {
+    const searchTerm = document.getElementById('adherentSearchInput').value.trim();
+    
+    if (searchTerm.length < 1) {
+        alert("Veuillez entrer un matricule");
+        return;
+    }
+
+    fetch(`/api/search_adherent/${encodeURIComponent(searchTerm)}`)
+        .then(response => response.json())
+        .then(data => {
+            const resultsDiv = document.getElementById('adherentSearchResults');
+            resultsDiv.innerHTML = '';
+            
+            if (data.adherents.length === 0) {
+                resultsDiv.innerHTML = '<div class="text-muted p-2">Aucun résultat trouvé</div>';
+                return;
+            }
+
+            data.adherents.forEach(adherent => {
+                if (!selectedAdherents.find(a => a.matricule === adherent.matricule)) {
+                    const div = document.createElement('div');
+                    div.className = 'search-result-item';
+                    div.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                ${adherent.matricule} - ${adherent.nom} ${adherent.prenom}
+                            </div>
+                            <button class="btn btn-sm btn-success" 
+                                onclick="addToSelected(${JSON.stringify(adherent).replace(/"/g, '&quot;')})">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    `;
+                    resultsDiv.appendChild(div);
+                }
+            });
+        });
+});
+
+// Optionnel : permettre la recherche avec Entrée
+document.getElementById('adherentSearchInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('searchButton').click();
+    }
+});
+function addToSelected(adherent) {
+    if (!selectedAdherents.some(a => a.matricule === adherent.matricule)) {
+        selectedAdherents.push(adherent);
+        updateSelectedDisplay();
+    }
+    document.getElementById('adherentSearchInput').value = '';
+    document.getElementById('adherentSearchResults').innerHTML = '';
+}
+
+function removeFromSelected(matricule) {
+    selectedAdherents = selectedAdherents.filter(a => a.matricule !== matricule);
+    updateSelectedDisplay();
+}
+
+function updateSelectedDisplay() {
+    const container = document.getElementById('selectedAdherents');
+    container.innerHTML = '';
+    
+    selectedAdherents.forEach(adherent => {
+        const div = document.createElement('div');
+        div.className = 'selected-adherent mb-2';
+        div.innerHTML = `
+            <span>${adherent.matricule} - ${adherent.nom} ${adherent.prenom}</span>
+            <button class="btn btn-sm btn-danger" onclick="removeFromSelected('${adherent.matricule}')">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function confirmAddAdherents() {
+    if (selectedAdherents.length === 0) {
+        alert('Veuillez sélectionner au moins un adhérent');
+        return;
+    }
+
+    const matricules = selectedAdherents.map(a => a.matricule);
+    
+    fetch(`/ajouter_adherents_groupe/${currentGroupId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ matricules })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            alert(`${data.added_count} adhérent(s) ajouté(s) avec succès`);
+            closeAddAdherentModal();
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Une erreur est survenue');
+    });
+}
+</script>
+<style>
+#currentMembers table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#currentMembers th,
+#currentMembers td {
+    padding: 8px;
+    border: 1px solid #dee2e6;
+    font-size: 0.9em;
+}
+
+#currentMembers th {
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.remove-member-btn {
+    padding: 2px 6px;
+    font-size: 0.8em;
+}
+</style>
+    </div>
+    
+    <script>
+    function showGroupForm() {
+        document.getElementById("groupForm").style.display = "block";
+    }
+    
+    function confirmGroupAdd() {
+        const category = document.getElementById("groupCategory").value;
+        console.log(category)
+        const number = document.getElementById("groupNumber").value;
+        console.log(number)
+        const letter = document.getElementById("groupLetter").value.toUpperCase();
+        console.log(letter)
+        const entraineurId = document.getElementById("groupEntraineur").value;
+        console.log(entraineurId)
+    
+        if (!category || !number || !letter || !entraineurId) {
+            alert("Veuillez remplir tous les champs");
+            return;
+        }
+    
+        const groupName = `${category}-${number}-${letter}`;
+        console.log(groupName)
+        console.log(entraineurId)
+    
+        fetch('/ajouter_groupe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                groupName: groupName,
+                entraineurId: entraineurId
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert("Erreur lors de la création du groupe");
+            }
+        });
+    }
+    
+    function deleteGroup(groupId) {
+    if (confirm("Supprimer ce groupe et toutes ses séances ?")) {
+        fetch(`/supprimer_groupe/${groupId}`, { 
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                response.json().then(data => alert(data.error));
+            }
+        })
+        .catch(error => console.error('Erreur:', error));
+    }
+}
+    function deleteSession(seanceId) {
+        if (confirm("Supprimer cette séance ?")) {
+
+            fetch('/directeur_technique', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `action=supprimer_seance&seance_id=${seanceId}`
+            }).then(() => location.reload());
+        }
+    }
+    
+    // Gestion changement entraîneur
+    document.querySelectorAll('.entraineur-select').forEach(select => {
+        select.addEventListener('change', function() {
+            const groupeId = this.dataset.groupeId;
+            const entraineurId = this.value;
+            
+            fetch('/directeur_technique', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `action=changer_entraineur&groupe_id=${groupeId}&entraineur_id=${entraineurId}`
+            }).then(() => location.reload());
+        });
+    });
+    </script>
+    
+    <style>
+    .time-slot {
+        min-width: 150px;
+        height: 100px;
+        position: relative;
+        vertical-align: top;
+    }
+    
+    .session-card {
+        background: #e3f2fd;
+        border: 1px solid #90caf9;
+        border-radius: 5px;
+        padding: 5px;
+        margin: 2px;
+        font-size: 0.9em;
+    }
+    
+    .session-header {
+        font-weight: bold;
+        border-bottom: 1px solid #90caf9;
+        margin-bottom: 3px;
+    }
+    
+    .entraineur-select {
+        max-width: 200px;
+    }
+    </style>
+
+
+
+
+<!-- Modal Ajout Séance -->
+<div id="sessionModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 300px;">
+    <h4>Ajouter une séance</h4>
+    <div class="mb-3">
+        <label for="sessionDate" class="form-label">Date :</label>
+        <input type="date" 
+               id="sessionDate" 
+               class="form-control"
+               placeholder="JJ/MM/AAAA"
+               pattern="\d{2}/\d{2}/\d{4}"
+               onfocus="(this.type='date')"
+               onblur="(this.type='text')"
+               required>
+    </div>
+    <div class="mb-3">
+        <label for="sessionTime" class="form-label">Heure de début :</label>
+        <select id="sessionTime" class="form-select" required>
+            {% for creneau in creneaux %}
+            <option value="{{ creneau.start.strftime('%H:%M') }}">
+                {{ creneau.start.strftime('%H:%M') }} - {{ creneau.end.strftime('%H:%M') }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label for="sessionTerrain" class="form-label">Terrain :</label>
+        <select id="sessionTerrain" class="form-select">
+            {% for terrain in terrains %}
+            <option value="{{ terrain }}">Terrain {{ terrain }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="d-flex gap-2 justify-content-end">
+        <button class="btn btn-secondary" onclick="closeSessionModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="addSession()">Confirmer</button>
+    </div>
+</div>
+<script>
+    // Initialisation du datepicker français
+    const frenchDatepicker = flatpickr("#sessionDate", {
+        locale: "fr",
+        dateFormat: "d/m/Y",
+        altInput: true,
+        altFormat: "j F Y",
+        minDate: "today",
+        disableMobile: true
+    });
+    </script>
+    
+    <style>
+    /* Style personnalisé pour le datepicker */
+    .flatpickr-monthDropdown-months {
+        font-size: 14px;
+    }
+    .flatpickr-weekday {
+        color: #666;
+    }
+    .flatpickr-day {
+        border-radius: 3px;
+    }
+    </style>
+<script>
+    
+
+    function openSessionModal(groupId) {
+    currentGroupId = groupId;
+    document.getElementById('sessionModal').style.display = 'block';
+}
+
+function closeSessionModal() {
+    document.getElementById('sessionModal').style.display = 'none';
+}
+
+function addSession() {
+    const date = document.getElementById('sessionDate').value;
+    const time = document.getElementById('sessionTime').value;
+    const terrain = document.getElementById('sessionTerrain').value;
+
+    if (!date || !time || !terrain) {
+        alert('Veuillez remplir tous les champs');
+        return;
+    }
+
+    fetch('/ajouter_seance', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            groupe_id: currentGroupId,
+            date: date,
+            heure_debut: time,
+            terrain: terrain
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+        closeSessionModal();
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Une erreur est survenue');
+        closeSessionModal();
+    });
+}
+</script>
+
+
+
+
+
+
+<!-- Emploi du Temps Général -->
+<div class="mt-5">
+    <h4 class="text-start mb-4">Emploi du Temps Général</h4>
+    
+    <!-- Navigation double -->
+    <div class="mb-3 d-flex justify-content-between">
+        <div>
+            <a href="{{ url_for('directeur_technique', week_offset=week_offset-1, day_offset=0) }}" 
+               class="btn btn-secondary">
+                ← Semaine précédente
+            </a>
+            <a href="{{ url_for('directeur_technique', week_offset=week_offset+1, day_offset=0) }}" 
+               class="btn btn-secondary">
+                Semaine suivante →
+            </a>
+        </div>
+        <div>
+            <a href="{{ url_for('directeur_technique', week_offset=week_offset, day_offset=day_offset-1) }}" 
+               class="btn btn-info {% if current_day.weekday() == 0 %}disabled{% endif %}">
+                ← Jour précédent
+            </a>
+            <a href="{{ url_for('directeur_technique', week_offset=week_offset, day_offset=day_offset+1) }}" 
+               class="btn btn-info {% if current_day.weekday() == 6 %}disabled{% endif %}">
+                Jour suivant →
+            </a>
+        </div>
+    </div>
+    <!-- Ajoutez ce code près des autres boutons de navigation -->
+<div class="mb-3 text-center" >
+<div class="btn-group">
+<button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+<i class="fa fa-file-export"></i> Exporter
+</button>
+<ul class="dropdown-menu">
+<li>
+    <a class="dropdown-item" href="#" onclick="prepareExport('pdf')">
+        <i class="fas fa-file-pdf mr-2"></i>  PDF
+    </a>
+</li>
+<li>
+    <a class="dropdown-item" href="#" onclick="prepareExport('excel')">
+        <i class="fas fa-file-excel mr-2"></i>  Excel
+    </a>
+</li>
+</ul>
+</div>
+
+<!-- Menu de sélection de portée (caché par défaut) -->
+<div id="exportScope" style="display:none; margin-top:5px">
+<div class="btn-group">
+<button type="button" class="btn btn-secondary" onclick="triggerExport('day')">Jour actuel</button>
+<button type="button" class="btn btn-secondary" onclick="triggerExport('week')">Semaine actuelle</button>
+</div>
+</div>
+</div>
+
+<script>
+let currentExportType = null;
+
+function prepareExport(type) {
+currentExportType = type;
+document.getElementById('exportScope').style.display = 'block';
+}
+
+function triggerExport(scope) {
+const url = new URL(window.location.href);
+const params = {
+week_offset: {{ week_offset }},
+day_offset: {{ day_offset }},
+export_type: currentExportType,
+scope: scope
+};
+
+window.location.href = `/export-schedule?${new URLSearchParams(params)}`;
+document.getElementById('exportScope').style.display = 'none';
+}
+</script>
+
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <colgroup>
+            <col style="width: 12%">
+            <col style="width: 8%">
+            {% for _ in creneaux %}<col style="width: 10%">{% endfor %}
+        </colgroup>
+        <thead class="table-dark">
+            <tr>
+                <th colspan="2">
+                    {% set day_fr = {
+                        'Monday': 'Lundi',
+                        'Tuesday': 'Mardi',
+                        'Wednesday': 'Mercredi',
+                        'Thursday': 'Jeudi',
+                        'Friday': 'Vendredi',
+                        'Saturday': 'Samedi',
+                        'Sunday': 'Dimanche'
+                    } %}
+                    {{ day_fr[current_day.strftime('%A')] }} {{ current_day.strftime('%d/%m/%Y') }}
+                </th>
+                {% for creneau in creneaux %}
+                <th>{{ creneau.start.strftime('%H:%M') }} - {{ creneau.end.strftime('%H:%M') }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td rowspan="9" class="align-middle text-center bg-light">
+                    <h6>Terrain</h6>
+                </td>
+                <td>Terrain 1</td>
+                {% for creneau in creneaux %}
+                <td class="time-slot">
+                    {% for seance in seances %}
+                    {% if seance.date == current_day.date() and seance.terrain == 1 
+                        and seance.heure_debut.strftime('%H:%M') == creneau.start.strftime('%H:%M') %}
+                    <div class="session-card">
+                        <small>{{ seance.groupe }}</small>
+                        <div class="text-muted" style="font-size:1em">{{ seance.entraineur}}</div>
+                        <button class="btn btn-xs btn-danger float-middle" 
+                            onclick="deleteSession({{ seance.seance_id }})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button class="btn btn-warning btn-sm" 
+                            onclick="openEditSessionModal({{ seance.seance_id }}, '{{ seance.date }}', '{{ seance.heure_debut }}', '{{ seance.terrain }}', '{{ seance.entraineur_id }}')">
+                            Éditer
+                        </button>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% for terrain in range(2,10) %}
+            <tr>
+                <td>Terrain {{ terrain }}</td>
+                {% for creneau in creneaux %}
+                <td class="time-slot">
+                    {% for seance in seances %}
+                    {% if seance.date == current_day.date() and seance.terrain == terrain 
+                        and seance.heure_debut.strftime('%H:%M') == creneau.start.strftime('%H:%M') %}
+                    <div class="session-card">
+                        <small>{{ seance.groupe }}</small>
+                        <div class="text-muted" style="font-size:1em">{{ seance.entraineur }}</div>
+                        <button class="btn btn-xs btn-danger float-middle" 
+                            onclick="deleteSession({{ seance.seance_id }})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button class="btn btn-warning btn-sm" 
+                            onclick="openEditSessionModal({{ seance.seance_id }}, '{{ seance.date }}', '{{ seance.heure_debut }}', '{{ seance.terrain }}', '{{ seance.entraineur_id }}')">
+                            Éditer
+                        </button>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
+
+
+<!-- Modal Éditer une Séance -->
+<div id="editSessionModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 350px;">
+    <h4 class="mb-3">Éditer la séance</h4>
+    <input type="hidden" id="editSessionId">
+    
+    <div class="mb-3">
+        <label for="editSessionDate" class="form-label">Date :</label>
+        <input type="text" 
+               id="editSessionDate" 
+               class="form-control"
+               placeholder="JJ/MM/AAAA"
+               pattern="\d{2}/\d{2}/\d{4}"
+               autocomplete="off"
+               required>
+    </div>
+
+    <div class="mb-3">
+        <label for="editSessionTime" class="form-label">Créneau horaire :</label>
+        <select id="editSessionTime" class="form-select" required>
+            {% for creneau in creneaux %}
+            <option value="{{ creneau.start.strftime('%H:%M') }}">
+                {{ creneau.start.strftime('%H:%M') }} - {{ creneau.end.strftime('%H:%M') }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="editSessionTerrain" class="form-label">Terrain :</label>
+        <select id="editSessionTerrain" class="form-select">
+            {% for terrain in terrains %}
+            <option value="{{ terrain }}">Terrain {{ terrain }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="editSessionEntraineur" class="form-label">Entraîneur :</label>
+        <select id="editSessionEntraineur" class="form-select">
+            {% for entraineur in entraineurs %}
+            <option value="{{ entraineur.id_entraineur }}">{{ entraineur.nom }} {{ entraineur.prenom }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end">
+        <button class="btn btn-secondary" onclick="closeEditSessionModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="submitEditSession()">Enregistrer</button>
+    </div>
+</div>
+
+<script>
+// Initialisation du datepicker pour l'édition
+const editDatepicker = flatpickr("#editSessionDate", {
+    locale: "fr",
+    dateFormat: "d/m/Y",
+    altInput: true,
+    altFormat: "j F Y",
+    disableMobile: true,
+    allowInput: true
+});
+
+// Fonction pour ouvrir le modal d'édition
+function openEditSessionModal(sessionId, date, heureDebut, terrain, entraineurId) {
+    // Conversion de la date au format FR
+    const [year, month, day] = date.split('-');
+    const formattedDate = `${day}/${month}/${year}`;
+    
+    editDatepicker.setDate(formattedDate);
+    
+    document.getElementById('editSessionId').value = sessionId;
+    document.getElementById('editSessionTime').value = heureDebut;
+    document.getElementById('editSessionTerrain').value = terrain;
+    document.getElementById('editSessionEntraineur').value = entraineurId;
+    
+    document.getElementById('editSessionModal').style.display = 'block';
+}
+</script>
+
+<style>
+/* Style cohérent avec le modal d'ajout */
+#editSessionModal .form-label {
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+}
+
+#editSessionModal .form-select {
+    border-radius: 4px;
+    padding: 0.375rem 0.75rem;
+}
+</style>
+
+<script>
+let currentSessionId = null;
+
+// Ouvrir le modal avec les données existantes
+function openEditSessionModal(sessionId, date, time, terrain, entraineur) {
+currentSessionId = sessionId;
+document.getElementById('editSessionId').value = sessionId;
+document.getElementById('editSessionDate').value = date;
+document.getElementById('editSessionTime').value = time;
+document.getElementById('editSessionTerrain').value = terrain;
+document.getElementById('editSessionEntraineur').value = entraineur;
+document.getElementById('editSessionModal').style.display = 'block';
+}
+
+// Fermer le modal
+function closeEditSessionModal() {
+document.getElementById('editSessionModal').style.display = 'none';
+}
+
+// Soumettre la modification de la séance
+function submitEditSession() {
+const sessionId = document.getElementById('editSessionId').value;
+const date = document.getElementById('editSessionDate').value;
+const time = document.getElementById('editSessionTime').value;
+const terrain = document.getElementById('editSessionTerrain').value;
+const entraineur = document.getElementById('editSessionEntraineur').value;
+
+fetch('/edit_session', {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+},
+body: JSON.stringify({
+session_id: sessionId,
+date: date,
+heure_debut: time,
+terrain: terrain,
+entraineur: entraineur
+})
+})
+.then(response => response.json())
+.then(data => {
+if (data.message) {
+alert(data.message);
+location.reload();
+} else {
+alert(data.error);
+}
+closeEditSessionModal();
+})
+.catch(error => {
+console.error('Erreur :', error);
+alert('Une erreur est survenue.');
+closeEditSessionModal();
+});
+}
+</script>
+
+<style>
+    .time-slot {
+height: 80px;
+vertical-align: top;
+position: relative;
+padding: 3px;
+}
+
+.session-card {
+background: #e3f2fd;
+border: 1px solid #90caf9;
+border-radius: 4px;
+padding: 5px;
+margin: 2px;
+font-size: 0.85em;
+min-height: 70px;
+}
+
+.session-card button {
+padding: 0 3px;
+line-height: 1;
+}
+
+td.align-middle {
+min-width: 120px;
+}
+
+.table-dark th {
+text-align: center;
+vertical-align: middle;
+}
+</style>
+
+
+
+
+
+
+
+
+        <!-- Back to Top -->
+        <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+    </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+<!-- Template Javascript -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+</body>
+
+</html>

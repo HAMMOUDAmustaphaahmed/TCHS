@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS Dashboard</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <!-- Favicon -->
+<link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Libraries Stylesheet -->
+<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+<!-- Customized Bootstrap Stylesheet -->
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+<!-- Template Stylesheet -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+</head>
+
+<body>
+    <div class="container-xxl position-relative d-flex p-0" >
+        
+
+        <!-- Sidebar Start -->
+        {% include 'sidebar.html' %}
+        <!-- Sidebar End -->
+
+
+        <!-- Content Start -->
+        <div class="content">
+            <!-- Navbar Start -->
+            <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+                <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                    <h2 class="text-primary mb-0"></h2>
+                </a>
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
+                
+                
+            </nav>
+            <!-- Navbar End -->
+
+            <div class="container mt-4">
+                <h2>Gestion des Locations de Terrains</h2>
+            
+                <!-- Formulaire de recherche -->
+                <form class="mb-4">
+                    <div class="input-group">
+                        <input type="text" name="search" class="form-control" placeholder="Rechercher par nom de locateur..." value="{{ request.args.get('search', '') }}">
+                        <button type="submit" class="btn btn-primary">Rechercher</button>
+                    </div>
+                </form>
+                <h4>Ajouter Location de Terrain</h4>
+                <!-- Formulaire de réservation -->
+                <div class="card mb-4">
+                    <div class="card-header">Nouvelle Réservation</div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Terrain</label>
+                                    <select name="numero_terrain" class="form-select" required>
+                                        {% for i in range(1,10) %}
+                                        <option value="{{ i }}">Terrain {{ i }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Date</label>
+                                    <input type="date" name="date_location" class="form-control" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Heure début</label>
+                                    <input type="time" name="heure_debut" class="form-control" min="08:00" max="20:00" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Heure fin</label>
+                                    <input type="time" name="heure_fin" class="form-control" min="08:00" max="20:00" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Locateur</label>
+                                    <input type="text" name="locateur" class="form-control" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Montant (TND)</label>
+                                    <input type="number" step="0.01" name="montant" class="form-control" required>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-success">Réserver</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <h4>Tableau Location de Terrain</h4>
+            
+                <!-- Tableau des réservations -->
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Terrain</th>
+                                <th>Date</th>
+                                <th>Heures</th>
+                                <th>Locateur</th>
+                                <th>Montant</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for location in locations %}
+                            <tr>
+                                <td>Terrain {{ location.numero_terrain }}</td>
+                                <td>{{ location.date_location.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ location.heure_debut.strftime('%H:%M') }} - {{ location.heure_fin.strftime('%H:%M') }}</td>
+                                <td>{{ location.locateur }}</td>
+                                <td>{{ "%.2f"|format(location.montant_location) }} TND</td>
+                                <!-- Modifier la colonne Actions -->
+<td>
+    <button class="btn btn-warning btn-sm" 
+            data-bs-toggle="modal" 
+            data-bs-target="#editModal"
+            onclick="fillEditModal(
+                '{{ location.id_location }}',
+                '{{ location.numero_terrain }}',
+                '{{ location.date_location.strftime('%Y-%m-%d') }}',
+                '{{ location.heure_debut.strftime('%H:%M') }}',
+                '{{ location.heure_fin.strftime('%H:%M') }}',
+                '{{ location.locateur }}',
+                '{{ location.montant_location }}'
+            )">
+        <i class="fas fa-edit"></i>
+    </button>
+    <form method="POST" action="{{ url_for('supprimer_location', id=location.id_location) }}" class="d-inline">
+        <button type="submit" class="btn btn-danger btn-sm">
+            <i class="fas fa-trash"></i>
+        </button>
+    </form>
+</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center">Aucune réservation trouvée</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+<!-- Ajouter le modal d'édition -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" id="editForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Modifier la réservation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="id" id="editId">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Terrain</label>
+                            <select name="numero_terrain" class="form-select" id="editTerrain" required>
+                                {% for i in range(1,10) %}
+                                <option value="{{ i }}">Terrain {{ i }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Date</label>
+                            <input type="date" name="date_location" id="editDate" class="form-control" required>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Heure début</label>
+                            <input type="time" name="heure_debut" id="editHeureDebut" class="form-control" min="08:00" max="20:00" required>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Heure fin</label>
+                            <input type="time" name="heure_fin" id="editHeureFin" class="form-control" min="08:00" max="20:00" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Locateur</label>
+                            <input type="text" name="locateur" id="editLocateur" class="form-control" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Montant (TND)</label>
+                            <input type="number" step="0.01" name="montant" id="editMontant" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Ajouter le script JavaScript -->
+<script>
+function fillEditModal(id, terrain, date, heureDebut, heureFin, locateur, montant) {
+    document.getElementById('editId').value = id;
+    document.getElementById('editTerrain').value = terrain;
+    document.getElementById('editDate').value = date;
+    document.getElementById('editHeureDebut').value = heureDebut;
+    document.getElementById('editHeureFin').value = heureFin;
+    document.getElementById('editLocateur').value = locateur;
+    document.getElementById('editMontant').value = montant;
+    document.getElementById('editForm').action = `/editer_location/${id}`;
+}
+</script>
+
+
+
+            <!-- Footer Start -->
+            <div class="container-fluid pt-4 px-4">
+                <div class="bg-light rounded-top p-4">
+                    <div class="row">
+                        <div class="col-12 col-sm-6 text-center text-sm-start">
+                            &copy; <a href="#">TCHS</a>, All Right Reserved. 
+                        </div>
+                        <div class="col-12 col-sm-6 text-center text-sm-end">
+                            <!--/*** This template is free as long as you keep the footer author’s credit link/attribution link/backlink. If you'd like to use the template without the footer author’s credit link/attribution link/backlink, you can purchase the Credit Removal License from "https://htmlcodex.com/credit-removal". Thank you for your support. ***/-->
+                            Designed by <a>AMH</a>
+                        </br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer End -->
+        </div>
+        <!-- Content End -->
+
+
+        <!-- Back to Top -->
+        <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+    </div>
+
+    <!-- JavaScript Libraries -->
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+<!-- Template Javascript -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+</body>
+
+</html>

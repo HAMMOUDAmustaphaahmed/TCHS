@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+    <div class="container-xxl position-relative bg-white d-flex p-0">
+        <!-- Sign In Start -->
+        <div class="container-fluid">
+            <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
+                <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
+                    <div class="">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <a href="{{ url_for('admin') }}">
+                                <h3 class="text-primary text-center">TCHS.</h3>
+                            </a>
+                        </div>
+                        <form method="post" action="{{ url_for('ajouter_adherent') }}">
+                            <!-- Conteneur pour le message d'erreur -->
+                            <div id="error-message" style="color: red; margin-bottom: 15px; display: none;"></div>
+                        
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="floatingInput" name="Nom" placeholder="Nom" required>
+                                        <label for="floatingInput">Nom <span class="text-danger">*</span></label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="floatingInput" name="Prénom" placeholder="Prénom" required>
+                                        <label for="floatingInput">Prénom<span class="text-danger">*</span></label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="date" class="form-control" id="floatingInput" name="date_naissance" placeholder="Date de Naissance" required>
+                                        <label for="floatingInput">Date de Naissance<span class="text-danger">*</span></label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="floatingInput" name="tel1" placeholder="Téléphone 1" required>
+                                        <label for="floatingInput">Téléphone 1<span class="text-danger">*</span></label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="floatingInput" name="tel2" placeholder="Téléphone 2">
+                                        <label for="floatingInput">Téléphone 2</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form mb-3">
+                                        <label for="type_abonnement">Type d'abonnement<span class="text-danger">*</span></label>
+                                        <select id="type_abonnement" name="type_abonnement" class="form-control" required>
+                                            <option value="" disabled selected>Choisissez un type d'abonnement</option>
+                                            <option value="Loisir">Loisir</option>
+                                            <option value="Ecole">Ecole</option>
+                                            <option value="Compétitif">Compétitif</option>
+                                            <option value="Pré-Compétitif">Pré-Compétitif</option>
+                                            <option value="Ecole d'été">Ecole d'été</option>
+                                            <option value="Adulte">Adulte</option>
+                                            <option value="N/D">N/D</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-6">
+                                    <div class="form mb-3">
+                                        <label for="ancien_abonne">Ancien Abonné</label>
+                                        <select id="ancien_abonne" name="ancien_abonne" class="form-control" required>
+                                            <option value="" disabled selected>Choisissez une option</option>
+                                            <option value="Oui">Oui</option>
+                                            <option value="Non">Non</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-6">
+                                    <div class="form mb-3">
+                                        <label for="groupe">Groupe</label>
+                                        <input list="groupes" name="groupe" id="groupe" class="form-control" >
+                                        <datalist id="groupes">
+                                            {% for groupe in groupes %}
+                                                <option value="{{ groupe.nom_groupe }}" data-abonnement="{{ groupe.type_abonnement }}">
+                                                    {{ groupe.nom_groupe }} ({{ groupe.type_abonnement }})
+                                                </option>
+                                            {% endfor %}
+                                        </datalist>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-6">
+                                    <div class="form mb-3">
+                                        <label for="entraineur">Entraîneur</label>
+                                        <select id="entraineur" name="entraineur" class="form-control" >
+                                            
+                                            <option value="" data-abonnement=""></option>
+                                               
+                                            </option>
+                                            {% for e in entraineurs %}
+                                                <option value="{{ e.nom }} {{ e.prenom }}" data-abonnement="{{ e.type_abonnement }}">
+                                                    {{ e.nom }} {{ e.prenom }} ({{ e.type_abonnement }})
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="email" class="form-control" id="floatingInput" name="email" placeholder="Email">
+                                        <label for="floatingInput">Email</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form mb-3">
+                                        <label for="sexe">Sexe<span class="text-danger">*</span></label>
+                                        <select id="sexe" name="sexe" class="form-control" required>
+                                            <option value="" disabled selected>Choisissez une option</option>
+                                            <option value="M">Masculin</option>
+                                            <option value="F">Feminin</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <input type="date" class="form-control" id="floatingInput" name="date_inscription" placeholder="Date d'inscription" required>
+                                        <label for="floatingInput">Date d'inscription<span class="text-danger">*</span></label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary py-3 w-100 mb-4">Ajouter Adherent</button>
+                        </form>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Sign In End -->
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const typeAbonnementSelect = document.getElementById('type_abonnement');
+            const entraineurSelect = document.getElementById('entraineur');
+            const groupeInput = document.getElementById('groupe');
+            const groupesDatalist = document.getElementById('groupes');
+            const errorMessage = document.getElementById('error-message');
+            const form = document.querySelector('form');
+    
+            function validateAbonnement() {
+                const selectedAbonnement = typeAbonnementSelect.value;
+                const selectedEntraineur = entraineurSelect.options[entraineurSelect.selectedIndex];
+                const groupeValue = groupeInput.value;
+    
+                errorMessage.style.display = 'none';
+                errorMessage.innerText = '';
+                let isValid = true;
+    
+                // Vérifier le type d'abonnement de l'entraîneur
+                if (selectedEntraineur) {
+                    const entraineurAbonnement = selectedEntraineur.getAttribute('data-abonnement');
+                    if (entraineurAbonnement !== selectedAbonnement) {
+                        isValid = false;
+                        errorMessage.innerText += "Le type d'abonnement de l'entraîneur ne correspond pas.\n";
+                    }
+                }
+    
+                // Vérifier le type d'abonnement du groupe
+                if (groupesDatalist) {
+                    const groupeOption = Array.from(groupesDatalist.options).find(option => option.value === groupeValue);
+                    if (groupeOption) {
+                        const groupeAbonnement = groupeOption.getAttribute('data-abonnement');
+                        if (groupeAbonnement !== selectedAbonnement) {
+                            isValid = false;
+                            errorMessage.innerText += "Le type d'abonnement du groupe ne correspond pas.\n";
+                        }
+                    }
+                }
+    
+                if (!isValid) {
+                    errorMessage.style.display = 'block';
+                }
+                return isValid;
+            }
+    
+           
+            typeAbonnementSelect.addEventListener('change', validateAbonnement);
+            entraineurSelect.addEventListener('change', validateAbonnement);
+            groupeInput.addEventListener('input', validateAbonnement);
+        });
+    </script>
+    
+    <!-- JavaScript Libraries -->
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}" rel="stylesheet"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}" rel="stylesheet"></script>
+</body>
+
+</html>
