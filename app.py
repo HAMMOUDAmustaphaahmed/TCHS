@@ -6,7 +6,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, date, time, timedelta
 import hashlib
 import pytz
+<<<<<<< HEAD
 import json
+=======
+
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -43,6 +47,7 @@ def admin():
     if 'user_id' not in session or session.get('role') != 'admin':
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
+<<<<<<< HEAD
     # Statistiques de base
     paiements = Paiement.query.all()
     total_collecte=0
@@ -71,6 +76,12 @@ def admin():
         paiements_recent=paiements_recent)
 
 from sqlalchemy import func, or_
+=======
+
+    return render_template('admin.html')
+
+from sqlalchemy import or_
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
 
 @app.route('/entraineur', methods=['GET', 'POST'])
 def entraineur():
@@ -128,6 +139,7 @@ def entraineur():
     )
 
 
+<<<<<<< HEAD
 from sqlalchemy import and_, or_
 
 
@@ -290,6 +302,11 @@ def supprimer_location(id):
 @app.route('/directeur_technique', methods=['GET', 'POST'])
 def directeur_technique():
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
+=======
+@app.route('/directeur_technique', methods=['GET', 'POST'])
+def directeur_technique():
+    if 'user_id' not in session or session.get('role') != 'directeur_technique':
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
 
@@ -360,6 +377,7 @@ def directeur_technique():
             seances_par_groupe[seance.groupe] = 0
         seances_par_groupe[seance.groupe] += 1
 
+<<<<<<< HEAD
     # Récupérer tous les adhérents pour la recherche
     all_adherents = Adherent.query.all()
     adherents_list = [{
@@ -368,6 +386,8 @@ def directeur_technique():
         'prenom': a.prenom
     } for a in all_adherents]
 
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     return render_template(
         'directeur_technique.html',
         current_day=current_day,
@@ -378,6 +398,7 @@ def directeur_technique():
         seances=seances_day,  # Utilise les séances du jour seulement
         seances_week=seances_week,  # Pour les stats hebdomadaires
         creneaux=creneaux,
+<<<<<<< HEAD
         terrains=range(1, 10),
         seances_par_groupe=seances_par_groupe,
         all_adherents=adherents_list,  
@@ -416,6 +437,13 @@ def ajouter_seance():
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
+=======
+        terrains=range(1, 8),
+        seances_par_groupe=seances_par_groupe
+    )
+@app.route('/ajouter_seance', methods=['POST'])
+def ajouter_seance():
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     data = request.get_json()
     
     # Récupérer les données
@@ -481,6 +509,7 @@ def ajouter_seance():
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+<<<<<<< HEAD
 
 
 
@@ -489,6 +518,10 @@ def api_get_session(session_id):
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
+=======
+@app.route('/api/get_session/<int:session_id>', methods=['GET'])
+def api_get_session(session_id):
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     session = Seance.query.get(session_id)
     if not session:
         return jsonify({"error": "Séance non trouvée"}), 404
@@ -505,9 +538,12 @@ def api_get_session(session_id):
 
 @app.route('/edit_session', methods=['POST'])
 def edit_session():
+<<<<<<< HEAD
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     data = request.get_json()
     seance_id = data['session_id']  # ID de la séance
     new_date = data['date']
@@ -567,6 +603,7 @@ def edit_session():
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+<<<<<<< HEAD
 @app.route('/retirer_adherent_groupe/<int:groupe_id>', methods=['POST'])
 def retirer_adherent_groupe(groupe_id):
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
@@ -595,10 +632,29 @@ def ajouter_adherents_groupe(groupe_id):
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
 
+=======
+@app.route('/supprimer_adherent_groupe/<int:adherent_id>', methods=['POST', 'GET'])
+def supprimer_adherent_groupe(adherent_id):
+    if 'user_id' not in session or session.get('role') != 'entraineur':
+        flash("Accès non autorisé.", "danger")
+        return redirect(url_for('login'))
+
+    adherent = Adherent.query.get_or_404(adherent_id)
+    adherent.groupe = None
+    adherent.entraineur = None
+    db.session.commit()
+    flash("L'adhérent a été retiré du groupe.", "success")
+    return redirect(url_for('entraineur'))  # Retour à la page de l'entraîneur
+
+@app.route('/ajouter_adherent_groupe/<int:groupe_id>', methods=['POST'])
+def ajouter_adherent_groupe(groupe_id):
+    matricule = request.json.get('matricule')
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     groupe = Groupe.query.get(groupe_id)
     if not groupe:
         return jsonify({"error": "Groupe non trouvé"}), 404
 
+<<<<<<< HEAD
     data = request.get_json()
     matricules = data.get('matricules', [])
 
@@ -641,6 +697,22 @@ def ajouter_groupe():
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
+=======
+    adherent = Adherent.query.filter_by(matricule=matricule).first()
+    if not adherent:
+        return jsonify({"error": "Adhérent non trouvé"}), 404
+
+    if adherent.groupe:
+        return jsonify({"error": "Cet adhérent est déjà associé à un groupe."}), 400
+
+    adherent.groupe = groupe.nom_groupe
+    adherent.entraineur = groupe.entraineur_nom
+    db.session.commit()
+
+    return jsonify({"message": "Adhérent ajouté avec succès"}), 200
+@app.route('/ajouter_groupe', methods=['POST'])
+def ajouter_groupe():
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     data = request.get_json()
 
     # Récupérer les données avec les bons noms de clés
@@ -678,9 +750,14 @@ def ajouter_groupe():
 
 @app.route('/supprimer_groupe/<int:id>', methods=['DELETE'])
 def supprimer_groupe(id):
+<<<<<<< HEAD
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
+=======
+    if 'user_id' not in session or session.get('role') != 'directeur_technique':
+        return jsonify({"error": "Accès non autorisé"}), 403
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
 
     groupe = Groupe.query.get_or_404(id)
     
@@ -699,9 +776,12 @@ def supprimer_groupe(id):
 
 @app.route('/api/groupes_seances', methods=['GET'])
 def api_groupes_seances():
+<<<<<<< HEAD
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     username = session.get('username')
     nom, prenom = username.split('.')
     entraineur = Entraineur.query.filter_by(nom=nom, prenom=prenom).first()
@@ -729,12 +809,43 @@ def api_groupes_seances():
     else :
         return jsonify(groupes_data), 200
 
+<<<<<<< HEAD
 
 @app.route('/api/get_adherents_groupe/<int:groupe_id>', methods=['GET'])
 def api_get_adherents_groupe(groupe_id):
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
+=======
+@app.route('/api/marquer_presence/<int:seance_id>', methods=['POST'])
+def api_marquer_presence(seance_id):
+    data = request.get_json()
+    presences = data.get('presences', [])
+
+    seance = Seance.query.get(seance_id)
+    if not seance:
+        return "Séance introuvable", 404
+
+    try:
+        for presence in presences:
+            new_presence = Presence(
+                groupe_nom=seance.groupe,
+                adherent_matricule=presence['matricule'],
+                entraineur_nom=seance.entraineur,
+                date_seance=seance.date,
+                heure_debut=seance.heure,
+                est_present=presence['est_present']
+            )
+            db.session.add(new_presence)
+        db.session.commit()
+        return "Présence enregistrée avec succès", 200
+    except Exception as e:
+        db.session.rollback()
+        return f"Erreur lors de l'enregistrement des présences : {str(e)}", 500
+
+@app.route('/api/get_adherents_groupe/<int:groupe_id>', methods=['GET'])
+def api_get_adherents_groupe(groupe_id):
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     groupe = Groupe.query.get(groupe_id)
     if not groupe:
         return jsonify({"error": "Groupe non trouvé"}), 404
@@ -748,9 +859,12 @@ def api_get_adherents_groupe(groupe_id):
 
 @app.route('/api/get_adherents/<int:seance_id>', methods=['GET'])
 def api_get_adherents(seance_id):
+<<<<<<< HEAD
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     seance = Seance.query.get(seance_id)
     if not seance:
         return jsonify({"error": "Séance introuvable"}), 404
@@ -767,9 +881,12 @@ def api_get_adherents(seance_id):
 
 @app.route('/api/search_adherent/<string:matricule>', methods=['GET'])
 def api_search_adherent(matricule):
+<<<<<<< HEAD
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     adherents = Adherent.query.filter(Adherent.matricule.like(f"%{matricule}%")).all()
     adherents_list = [
         {"matricule": adherent.matricule, "nom": adherent.nom, "prenom": adherent.prenom}
@@ -784,6 +901,10 @@ def changer_mot_de_passe():
     if not username:
         return jsonify({"error": "Vous devez être connecté pour changer votre mot de passe."}), 401
 
+<<<<<<< HEAD
+=======
+    # Récupérer les données du front-end
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     data = request.get_json()
     nouveau_mot_de_passe = data.get('nouveau_mot_de_passe')
     confirmation_mot_de_passe = data.get('confirmation_mot_de_passe')
@@ -816,6 +937,7 @@ def changer_mot_de_passe():
 
     return jsonify({"message": "Mot de passe mis à jour avec succès."}), 200
 
+<<<<<<< HEAD
 @app.route('/api/marquer_presence/<int:seance_id>', methods=['POST'])
 def api_marquer_presence(seance_id):
     data = request.get_json()
@@ -844,6 +966,8 @@ def api_marquer_presence(seance_id):
 
 
 
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
 
 from flask import make_response
 from reportlab.lib.pagesizes import landscape, letter
@@ -1205,12 +1329,34 @@ def ajouter_adherent():
         )
 
         
+<<<<<<< HEAD
+=======
+        # Vérifier si le groupe est not None
+        if nom_groupe is not None :
+            # Vérifier si le groupe existe déjà
+            groupe_exist = Groupe.query.filter_by(nom_groupe=nom_groupe).first()
+
+            # Si le groupe n'existe pas, le créer
+            if not groupe_exist:
+                nouvel_groupe = Groupe(
+                    nom_groupe=nom_groupe,
+                    entraineur_nom=entraineur_nom,
+                    type_abonnement=type_abonnement
+                )
+                db.session.add(nouvel_groupe)
+                db.session.commit()
+
+        
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
         
 
         try:
             db.session.add(nouveau_adherent)
             db.session.commit()
+<<<<<<< HEAD
             generate_abonnement(nouveau_adherent)
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
             flash('Adhérent ajouté avec succès.', 'success')
             return redirect(url_for('admin'))
         except Exception as e:
@@ -1234,8 +1380,11 @@ def modifier_adherent(id):
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
     # Récupérer l'adhérent par son ID, sinon retourner une erreur 404 si non trouvé
+<<<<<<< HEAD
     groupes = Groupe.query.all()
     nom_groupes = [groupe.nom_groupe for groupe in groupes]
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     adherent = Adherent.query.get_or_404(id)
 
     if request.method == 'POST':
@@ -1257,7 +1406,11 @@ def modifier_adherent(id):
 
     # Get list of all trainers
     entraineurs = Entraineur.query.all()
+<<<<<<< HEAD
     return render_template('modifier_adherent.html', adherent=adherent, entraineurs=entraineurs,nom_groupes=nom_groupes)
+=======
+    return render_template('modifier_adherent.html', adherent=adherent, entraineurs=entraineurs)
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
 @app.route('/supprimer_adherent/<int:id>', methods=['GET', 'POST'])
 def supprimer_adherent(id):
     if 'user_id' not in session or session.get('role') != 'admin':
@@ -1356,7 +1509,10 @@ def modifier_entraineur(id):
     
     entraineur = Entraineur.query.get_or_404(id)
     
+<<<<<<< HEAD
     
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     if request.method == 'POST':
         entraineur.nom = request.form['nom']
         entraineur.prenom = request.form['prenom']
@@ -1476,6 +1632,7 @@ def paiement():
     reste_a_payer = 0  # Nouvelle variable pour le reste à payer
     numero_carnet = 1  # Initialisation par défaut
     numero_bon = 1  # Initialisation par défaut
+<<<<<<< HEAD
     #generation de code saison
     aujourdhui = datetime.now()
     debut_saison = datetime(aujourdhui.year, 9, 1)  # 1er septembre de l'année en cours
@@ -1486,6 +1643,8 @@ def paiement():
         code_saison= f"S{aujourdhui.year + 1}"  # Génération dynamique du code saison
 
     cotisations = Cotisation.query.all()
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
 
     if request.method == 'POST':
         # Recherche de l'adhérent
@@ -1542,15 +1701,22 @@ def paiement():
                     cotisation=cotisation,
                     remise=remise,  # Stocker le pourcentage de remise
                     numero_bon=numero_bon,
+<<<<<<< HEAD
                     numero_carnet=numero_carnet,
                     code_saison=code_saison
+=======
+                    numero_carnet=numero_carnet
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
                 )
 
                 db.session.add(nouveau_paiement)
                 db.session.commit()
+<<<<<<< HEAD
                 # Exemple d'utilisation
                 generer_bon_paiement(matricule_adherent=matricule, montant_paye=montant_paye, type_paiement=type_reglement, code_saison=code_saison, id_bon=numero_bon, id_carnet=numero_carnet)
 
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
 
                 # Recharger les paiements pour mise à jour
                 paiements = Paiement.query.filter_by(matricule_adherent=matricule).all()
@@ -1571,6 +1737,7 @@ def paiement():
         reste_a_payer=reste_a_payer,
         total_montant_paye=total_montant_paye,
         numero_carnet=numero_carnet,
+<<<<<<< HEAD
         numero_bon=numero_bon,
         code_saison=code_saison,
         cotisations=cotisations
@@ -1625,6 +1792,11 @@ def gestion_cotisations():
     return render_template('gestion_cotisations.html', cotisations=cotisations,nom_groupes=nom_groupes)
 
 
+=======
+        numero_bon=numero_bon
+    )
+
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
 @app.route('/rechercher_adherent', methods=['POST'])
 def rechercher_adherent():
     matricule = request.form.get('matricule')
@@ -1668,6 +1840,7 @@ def logout():
     flash("Vous êtes déconnecté.", "success")
     return redirect(url_for('login'))
 
+<<<<<<< HEAD
 
 @app.route('/stats/payment-types')
 def payment_types_stats():
@@ -1827,6 +2000,8 @@ def top_adherents():
 
 
 
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
 class User(db.Model):
     __tablename__ = 'utilisateurs'  # Remplacez 'users' par le nom réel de votre table
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -1897,6 +2072,23 @@ class Entraineur(db.Model):
     def __repr__(self):
         return f'<Entraineur {self.nom} {self.prenom}>'
 
+<<<<<<< HEAD
+=======
+class Presence(db.Model):
+    __tablename__ = 'presence'
+    
+    id_presence = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    groupe_nom = db.Column(db.String(100), nullable=False)
+    adherent_matricule = db.Column(db.String(50), nullable=False)
+    entraineur_nom = db.Column(db.String(100), nullable=False)
+    date_seance = db.Column(db.Date, nullable=False)
+    heure_debut = db.Column(db.Time, nullable=False)
+    est_present = db.Column(db.Enum('O', 'N'), nullable=False, default='N')
+
+    def __repr__(self):
+        return f'<Presence {self.groupe_nom} - {self.adherent_matricule} - {self.date_seance}>'
+
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
 
 
 class Groupe(db.Model):
@@ -1920,7 +2112,10 @@ class Seance(db.Model):
     groupe = db.Column(db.String(100), nullable=False)
     entraineur = db.Column(db.String(100), nullable=False)
     terrain = db.Column(db.Integer, nullable=False)
+<<<<<<< HEAD
     adherents_matricules = db.Column(db.Text,nullable=True)
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
 
     def __init__(self, date, heure_debut, groupe, entraineur, terrain):
         self.date = date
@@ -1935,6 +2130,7 @@ class Seance(db.Model):
         self.terrain = terrain
 
 
+<<<<<<< HEAD
 class Presence(db.Model):
     __tablename__ = 'presence'
     
@@ -1960,6 +2156,8 @@ class LocationTerrain(db.Model):
     montant_location = db.Column(db.Float, nullable=False)
 
 
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
 class Message(db.Model):
     __tablename__ = 'messages'
     
@@ -1999,11 +2197,15 @@ class Paiement(db.Model):
     remise = db.Column(db.Float, default=0, nullable=False)  # Remise appliquée (s'il y en a)
     numero_bon = db.Column(db.Integer, nullable=False)  # Numéro de bon
     numero_carnet = db.Column(db.Integer, nullable=False)  # Numéro de carnet
+<<<<<<< HEAD
     code_saison = db.Column(db.String(50), nullable=False)  # code de la saison 
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     def __repr__(self):
         return f"<Paiement {self.id_paiement} - Matricule: {self.matricule_adherent}>"
 
 
+<<<<<<< HEAD
 class Cotisation(db.Model):
     __tablename__ = 'cotisations'
     id_cotisation = db.Column(db.Integer, primary_key=True)
@@ -2108,6 +2310,17 @@ from reportlab.pdfgen import canvas
 def generate_abonnement(adherent):
     # Créer le dossier "bon_de_recette" s'il n'existe pas
     directory = 'abonnements'
+=======
+
+
+import os
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+
+def generate_bon_de_recette_pdf(adherent, numero_cheque, banque):
+    # Créer le dossier "bon_de_recette" s'il n'existe pas
+    directory = 'bon_de_recette'
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -2121,6 +2334,12 @@ def generate_abonnement(adherent):
     c.drawString(100, 750, f"Bon de Recette - {adherent.matricule}")
     c.drawString(100, 730, f"Nom : {adherent.nom} {adherent.prenom}")
     c.drawString(100, 710, f"Type d'abonnement : {adherent.type_abonnement}")
+<<<<<<< HEAD
+=======
+    c.drawString(100, 690, f"Type de règlement : {adherent.type_reglement}")
+    c.drawString(100, 670, f"Numéro de Chèque : {numero_cheque}")
+    c.drawString(100, 650, f"Banque : {banque}")
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
     c.drawString(100, 630, f"Date d'échéance : {adherent.date_inscription}")
 
     # Sauvegarder le PDF
@@ -2156,6 +2375,7 @@ def get_totals_simple():
     print(f"Total Montant Payé: {results.total_montant_paye:.2f}")
     print(f"Total Montant Restant: {results.total_montant_reste:.2f}")
 
+<<<<<<< HEAD
 
 
 @app.route('/recherche-paiements')  
@@ -2354,6 +2574,8 @@ def tournois():
 
 
 
+=======
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
 # Running the app
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)

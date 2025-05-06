@@ -249,7 +249,11 @@ document.getElementById('submitMotDePasse').addEventListener('click', function()
                       </thead>
                       <tbody>
                           <tr>
+<<<<<<< HEAD
                               <td rowspan="9" class="align-middle text-center bg-light">
+=======
+                              <td rowspan="7" class="align-middle text-center bg-light">
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
                                   <h6>Terrain</h6>
                               </td>
                               <td>Terrain 1</td>
@@ -260,15 +264,23 @@ document.getElementById('submitMotDePasse').addEventListener('click', function()
                                       and seance.heure_debut.strftime('%H:%M') == creneau.start.strftime('%H:%M') %}
                                   <div class="session-card">
                                       <small>{{ seance.groupe }}</small>
+<<<<<<< HEAD
                                       
                                       <small  style="font-size:1em"><button type="button" class="btn btn-warning">Présence</button></small>
+=======
+                                      <div class="text-muted" style="font-size:1em">{{ seance.entraineur }}</div>
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
                                   </div>
                                   {% endif %}
                                   {% endfor %}
                               </td>
                               {% endfor %}
                           </tr>
+<<<<<<< HEAD
                           {% for terrain in range(2,10) %}
+=======
+                          {% for terrain in range(2,8) %}
+>>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
                           <tr>
                               <td>Terrain {{ terrain }}</td>
                               {% for creneau in creneaux %}
