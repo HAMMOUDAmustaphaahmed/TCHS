@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS Dashboard</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <!-- Favicon -->
+<link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Libraries Stylesheet -->
+<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+<!-- Customized Bootstrap Stylesheet -->
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+<!-- Template Stylesheet -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+</head>
+
+<body>
+    <div class="container-xxl position-relative d-flex p-0" >
+        
+
+        <!-- Sidebar Start -->
+        {% include 'sidebar.html' %}
+        <!-- Sidebar End -->
+
+
+        <!-- Content Start -->
+        <div class="content">
+            <!-- Navbar Start -->
+            <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+                <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                    <h2 class="text-primary mb-0"></h2>
+                </a>
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
+                
+                
+            </nav>
+            <!-- Navbar End -->
+
+            <div class="container-xxl position-relative bg-white d-flex p-0">
+                <!-- Sign In Start -->
+                <div class="container mt-5">
+                    <h1 class="mb-4">Gestion des Paiements</h1>
+                    
+                    <!-- Formulaire de recherche d'adhérent -->
+                    <form method="POST" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" name="matricule" class="form-control" placeholder="Matricule de l'adhérent" required>
+                            <button type="submit" class="btn btn-primary">Rechercher</button>
+                        </div>
+                    </form>
+            
+                    {% if adherent %}
+                    <!-- Informations sur l'adhérent -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ adherent.nom }} {{ adherent.prenom }} (Matricule: {{ adherent.matricule }})</h5>
+                            <p class="card-text">Type d'abonnement : {{ adherent.type_abonnement }}</p>
+                            <p class="card-text">Date d'inscription : {{ adherent.date_inscription.strftime('%d/%m/%Y') }}</p>
+                            <p class="card-text">Cotisation : {{ cotisation }} TND</p>
+                            <p class="card-text">Code Saison : {{ code_saison }} </p>
+                            <p class="card-text">Remise : {{ remise }}%</p>
+                            <p class="card-text">Montant de la remise : {{ remise_montant }} TND</p>
+                            <p class="card-text">Montant apres la remise : {{ cotisation-remise_montant }} TND</p>
+                            <p class="card-text {% if reste_a_payer == 0 %}text-success fw-bold{% endif %}{% if reste_a_payer != 0 %}text-danger fw-bold{% endif %}">
+                                Reste à payer : {{ "%.2f"|format(reste_a_payer) }} TND
+                            </p>
+                        </div>
+                    </div>
+            
+                    <!-- Situation de paiement -->
+                    <h3>Situation de Paiement</h3>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Saison</th>
+                                <th>Numero Carnet</th>
+                                <th>Numero Bon</th>
+                                <th>Montant Payé</th>
+                                <th>Type de Règlement</th>
+                                <th>Numéro de Chèque</th>
+                                <th>Banque</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for paiement in paiements %}
+                            <tr>
+                                <td>{{ paiement.date_paiement.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ paiement.code_saison }}</td>
+                                <td>{{ paiement.numero_carnet }}</td>
+                                <td>{{ paiement.numero_bon }}</td>
+                                <td>{{ paiement.montant_paye }} TND</td>
+                                <td>{{ paiement.type_reglement }}</td>
+                                <td>{{ paiement.numero_cheque or '-' }}</td>
+                                <td>{{ paiement.banque or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4"></td>
+                                    <td><strong>Total : {{ total_montant_paye }} TND</strong></td>
+                                    <td colspan="3"></td>
+                                </tr>
+                            </tfoot>
+                        </tbody>
+                    </table>
+            
+                    <!-- Formulaire d'enregistrement de paiement -->
+                    <h3 class="mt-4">Ajouter un Paiement</h3>
+                    <form method="POST">
+                        <input type="hidden" name="matricule" value="{{ adherent.matricule }}">
+                        {% if not paiements %}
+                        <div class="mb-3">
+                            <label for="cotisation" class="form-label">Cotisation</label>
+                            <select name="cotisation" class="form-select" required>
+                                <option value="">Sélectionner une cotisation</option>
+                                {% for cotisation in cotisations %}
+                                <option value="{{ cotisation.montant_cotisation }}" 
+                                        {% if cotisation.montant_cotisation == current_cotisation %}selected{% endif %}>
+                                    {{ cotisation.nom_cotisation }} - {{ "%.2f"|format(cotisation.montant_cotisation) }} TND
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="remise" class="form-label">Remise (%)</label>
+                            <input type="number" step="0.01" name="remise" class="form-control" value="{{ remise }}" required>
+                        </div>
+                        {% endif %}
+                        <div class="mb-3">
+                            <label for="montant_paye" class="form-label">Montant Payé</label>
+                            <input type="number" step="0.01" name="montant_paye" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="type_reglement" class="form-label">Type de Règlement</label>
+                            <select name="type_reglement" class="form-select" required>
+                                <option value="espèce">Espèce</option>
+                                <option value="chèque">Chèque</option>
+                                <option value="virement">Virement</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="numero_cheque" class="form-label">Numéro de Chèque</label>
+                            <input type="text" name="numero_cheque" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="banque" class="form-label">Banque</label>
+                            <input type="text" name="banque" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="numero_carnet" class="form-label">Numéro de Carnet</label>
+                            <input type="number" name="numero_carnet" class="form-control" value="{{ numero_carnet }}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="numero_bon" class="form-label">Numéro de Bon</label>
+                            <input type="number" name="numero_bon" class="form-control" value="{{ numero_bon }}" readonly>
+                        </div>
+                        <button type="submit" class="btn btn-success">Ajouter Paiement</button>
+                    </form>
+                    {% endif %}
+                </div>
+                <!-- Sign In End -->
+            </div>
+
+
+            <!-- Footer Start -->
+            <div class="container-fluid pt-4 px-4">
+                <div class="bg-light rounded-top p-4">
+                    <div class="row">
+                        <div class="col-12 col-sm-6 text-center text-sm-start">
+                            &copy; <a href="#">TCHS</a>, All Right Reserved. 
+                        </div>
+                        <div class="col-12 col-sm-6 text-center text-sm-end">
+                            <!--/*** This template is free as long as you keep the footer author’s credit link/attribution link/backlink. If you'd like to use the template without the footer author’s credit link/attribution link/backlink, you can purchase the Credit Removal License from "https://htmlcodex.com/credit-removal". Thank you for your support. ***/-->
+                            Designed by <a>AMH</a>
+                        </br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer End -->
+        </div>
+        <!-- Content End -->
+
+
+        <!-- Back to Top -->
+        <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+    </div>
+
+    <!-- JavaScript Libraries -->
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+<!-- Template Javascript -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+</body>
+
+</html>

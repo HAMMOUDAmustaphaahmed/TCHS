@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>TCHS Recherche d'Abonnements</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Liens CSS corrigés -->
+    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="container-xxl position-relative d-flex p-0">
+        <!-- Sidebar -->
+        {% include 'sidebar.html' %}
+        
+        <!-- Content -->
+        <div class="content">
+            <!-- Navbar -->
+            <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
+                <form class="d-none d-md-flex ms-4" id="searchForm">
+                    <div class="input-group">
+                        <input type="text" id="matriculeInput" class="form-control" placeholder="Rechercher par matricule...">
+                        <button class="btn btn-outline-primary" id="searchButton">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </nav>
+
+            <!-- Contenu principal -->
+            <div class="container-fluid pt-4 px-4">
+                <div class="bg-light rounded p-4">
+                    <h4 class="mb-3">Résultats de la recherche</h4>
+                    <div id="results" class="d-none">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Prénom</th>
+                                    <th>Matricule</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsBody">
+                                <!-- Résultats dynamiques -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pied de page -->
+            <div class="container-fluid pt-4 px-4">
+                <div class="bg-light rounded-top p-4 text-center">
+                    &copy; TCHS - Tous droits réservés.
+                </div>
+            </div>
+        </div>
+
+        <!-- Retour en haut -->
+        <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+    </div>
+
+    <!-- Scripts corrigés -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const matricule = document.getElementById('matriculeInput').value.trim();
+            
+            if (!matricule) {
+                alert('Veuillez entrer un matricule valide.');
+                return;
+            }
+            
+            fetch('/api/search-abonnements', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ matricule })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                displayResults(data);
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Une erreur est survenue.');
+            });
+        });
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4">Aucun adhérent trouvé</td></tr>';
+                return;
+            }
+            
+            data.forEach(adherent => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${adherent.nom}</td>
+                    <td>${adherent.prenom}</td>
+                    <td>${adherent.matricule}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning view-btn" 
+                                data-matricule="${adherent.matricule}">
+                            Consulter
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const matricule = this.dataset.matricule;
+                    window.open(`/static/abonnements/${matricule}.pdf`, '_blank');
+                });
+            });
+            
+            resultsDiv.classList.remove('d-none');
+        }
+    </script>
+</body>
+</html>

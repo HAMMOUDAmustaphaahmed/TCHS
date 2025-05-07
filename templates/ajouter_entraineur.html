@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <!-- Favicon -->
+<link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Libraries Stylesheet -->
+<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+<!-- Customized Bootstrap Stylesheet -->
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+<!-- Template Stylesheet -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+    <div class="container-xxl position-relative bg-white d-flex p-0">
+        
+
+
+        <!-- Sign In Start -->
+        <div class="container-fluid">     
+           <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
+                <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
+                    <div class=" rounded p-4 p-sm-5 my-4 mx-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <a href="{{ url_for('admin') }}">
+                                <h3 class="text-primary text-center">TCHS.</h3>
+                            </a>
+                            
+                            
+                        </div>
+                        <form method="post" action="{{ url_for('ajouter_entraineur') }}">    
+                            
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" name="nom" placeholder="Nom" required>
+                                <label for="floatingInput">Nom<span class="text-danger">*</span></label>
+                            </div>
+                            <div class="form-floating mb-4">
+                                <input type="text" class="form-control" name="prenom" placeholder="Prénom" required>
+                                <label for="floatingInput">Prénom<span class="text-danger">*</span></label>
+                            </div>
+                            <div class="form mb-4">
+                            <label for="sexe">Sexe<span class="text-danger">*</span></label>
+                                    <select id="sexe" name="sexe" class="form-control" required>
+                                        <option value="" disabled selected></option>
+                                        <option value="M">Homme</option>
+                                        <option value="F">Femme</option>
+                                    </select>
+                                </div>
+                                <div class="form-floating mb-4">
+                                    <input type="text" class="form-control" name="tel" placeholder="Téléphone" required>
+                                    <label for="floatingInput">Téléphone<span class="text-danger">*</span></label>
+                                </div>
+                                <div class="form-floating mb-4">
+                                    <input type="text" class="form-control" name="addresse" placeholder="Addresse" required>
+                                    <label for="floatingInput">Adresse<span class="text-danger">*</span></label>
+                                </div>
+                                <div class="form-floating mb-4">
+                                    <input type="text" class="form-control" name="compte_bancaire" placeholder="Compte Bancaire" required>
+                                    <label for="floatingInput">Compte Bancaire<span class="text-danger">*</span></label>
+                                </div>
+                            <div class="form mb-4">
+                                <label for="Catégorie">Catégorie<span class="text-danger">*</span></label>
+                                        <select id="type_abonnement" name="type_abonnement" class="form-control">
+                                            <option value="" disabled selected></option>
+                                            <option value="Adjoint">Adjoint</option>
+                                            <option value="Directeur Technique">Directeur Technique</option>
+                                            <option value="Polyvalent">Polyvalent</option>
+                                            <option value="Loisir">Loisir</option>
+                                            <option value="Ecole">Ecole</option>
+                                            <option value="Compétitif">Compétitif</option>
+                                            <option value="Pré-Compétitif">Pré-Compétitif</option>
+                                            <option value="Ecole d'été">Ecole d'été</option>
+                                            <option value="Adulte">Adulte</option>
+                                            <option value="N/D">N/D</option>
+                                        </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary py-3 w-100 mb-4">Ajouter l'Entraineur</button>
+                        </form>
+                    </div>
+                </div>
+                        
+            </div>
+        </div>
+        
+        <!-- Sign In End -->
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}" rel="stylesheet"></script>
+
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}" rel="stylesheet"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}" rel="stylesheet"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS Dashboard</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <!-- Favicon -->
+<link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+<!-- Libraries Stylesheet -->
+<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+<!-- Customized Bootstrap Stylesheet -->
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+<!-- Template Stylesheet -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+</head>
+
+<body>
+    <div class="container-xxl position-relative d-flex p-0" >
+        
+
+        <!-- Sidebar Start -->
+        {% include 'sidebar.html' %}
+        <!-- Sidebar End -->
+
+
+        <!-- Content Start -->
+        <div class="content">
+            <!-- Navbar Start -->
+            <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+                <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                    <h2 class="text-primary mb-0"></h2>
+                </a>
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
+                <form class="d-none d-md-flex ms-4" id="searchForm">
+                    <div class="input-group">
+                        <input class="form-control border-0" 
+                               type="text" 
+                               id="matriculeInput" 
+                               placeholder="Rechercher par matricule">
+                        <button class="btn btn-outline-primary" 
+                                type="button" 
+                                id="searchButton">
+                            Rechercher
+                        </button>
+                    </div>
+                </form>
+                
+            </nav>
+            <!-- Navbar End -->
+
+            <div class="container-xxl position-relative bg-white d-flex p-0">
+                <!-- Sign In Start -->
+                <div class="container-fluid pt-4 px-4">
+                    <div class="bg-light rounded p-4">
+                        
+                        
+                        <div id="results" class="d-none">
+                            <h5 class="mb-3">Résultats pour le matricule: <span id="matriculeSpan"></span></h5>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Numéro Bon</th>
+                                            <th>Montant Total Payé</th>
+                                            <th>Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resultsBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                        const searchBtn = document.getElementById('searchButton');
+                        const matriculeInput = document.getElementById('matriculeInput');
+                        
+                        searchBtn.addEventListener('click', async () => {
+                            const matricule = matriculeInput.value.trim();
+                            if (!matricule) return;
+                            
+                            try {
+                                const response = await fetch('/api/search-paiements', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ matricule })
+                                });
+                                
+                                const data = await response.json();
+                                
+                                if (data.error) {
+                                    alert(data.error);
+                                    return;
+                                }
+                                
+                                displayResults(data);
+                                
+                            } catch (error) {
+                                console.error('Erreur:', error);
+                            }
+                        });
+                    });
+
+                    function displayResults(data) {
+                        const resultsDiv = document.getElementById('results');
+                        const tbody = document.getElementById('resultsBody');
+                        tbody.innerHTML = '';
+                        
+                        document.getElementById('matriculeSpan').textContent = data.matricule;
+                        resultsDiv.classList.remove('d-none');
+                        
+                        if (Object.keys(data.bons).length === 0) {
+                            tbody.innerHTML = `
+                                <tr>
+                                    <td colspan="4" class="text-center">Aucun paiement trouvé</td>
+                                </tr>
+                            `;
+                            return;
+                        }
+                        
+                        for (const [numero_bon, details] of Object.entries(data.bons)) {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${numero_bon}</td>
+                                <td>${details.total_paye.toFixed(2)} €</td>
+                                <td>${details.date}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-success view-btn" 
+                                            data-bon="${numero_bon}">
+                                        Consulter
+                                    </button>
+                                    <button class="btn btn-sm btn-danger delete-btn" 
+                                            data-bon="${numero_bon}">
+                                        Supprimer
+                                    </button>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        }
+                        
+                        // Gestion des événements
+                        document.querySelectorAll('.view-btn').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const bonNum = this.dataset.bon;
+                                window.open(`/static/bons_paiements/paiement_${bonNum}.pdf`, '_blank');
+                            });
+                        });
+                        
+                        document.querySelectorAll('.delete-btn').forEach(btn => {
+                            btn.addEventListener('click', async function() {
+                                const bonNum = this.dataset.bon;
+                                if (confirm('Êtes-vous sûr de vouloir supprimer ce bon ?')) {
+                                    try {
+                                        const response = await fetch('/api/delete-bon', {
+                                            method: 'DELETE',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ numero_bon: bonNum })
+                                        });
+                                        
+                                        const result = await response.json();
+                                        
+                                        if (result.success) {
+                                            this.closest('tr').remove();
+                                        } else {
+                                            alert(result.error || 'Erreur lors de la suppression');
+                                        }
+                                    } catch (error) {
+                                        console.error('Erreur:', error);
+                                    }
+                                }
+                            });
+                        });
+                    }
+                </script>
+                <style>
+                    #results {
+                        transition: opacity 0.3s ease;
+                        }
+
+                        .table-responsive {
+                            max-height: 70vh;
+                            overflow-y: auto;
+                        }
+
+                        .view-btn {
+                            margin-right: 8px;
+                        }
+
+                        .btn-sm {
+                            padding: 0.25rem 0.5rem;
+                            font-size: 0.875rem;
+                        }
+                        #searchForm {
+                            max-width: 500px;
+                            width: 100%;
+                        }
+
+                        .table-hover tbody tr:hover {
+                            background-color: #f8f9fa;
+                            cursor: pointer;
+                        }
+
+                        #matriculeInput::placeholder {
+                            color: #6c757d;
+                            opacity: 0.7;
+                        }
+
+                        .bi-search {
+                            font-size: 0.9rem;
+                        }
+                </style>
+                <!-- Sign In End -->
+            </div>
+
+
+            <!-- Footer Start -->
+            <div class="container-fluid pt-4 px-4">
+                <div class="bg-light rounded-top p-4">
+                    <div class="row">
+                        <div class="col-12 col-sm-6 text-center text-sm-start">
+                            &copy; <a href="#">TCHS</a>, All Right Reserved. 
+                        </div>
+                        <div class="col-12 col-sm-6 text-center text-sm-end">
+                            <!--/*** This template is free as long as you keep the footer author’s credit link/attribution link/backlink. If you'd like to use the template without the footer author’s credit link/attribution link/backlink, you can purchase the Credit Removal License from "https://htmlcodex.com/credit-removal". Thank you for your support. ***/-->
+                            Designed by <a>AMH</a>
+                        </br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer End -->
+        </div>
+        <!-- Content End -->
+
+
+        <!-- Back to Top -->
+        <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+    </div>
+
+    <!-- JavaScript Libraries -->
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+<!-- Template Javascript -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+</body>
+
+</html>
