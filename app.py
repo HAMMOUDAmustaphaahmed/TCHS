@@ -2268,6 +2268,39 @@ class Tournois(db.Model):
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
     date_debut = db.Column(db.DateTime, nullable=False)
     date_fin = db.Column(db.DateTime, nullable=False)
+    matches = db.Column(db.JSON, nullable=False)
+    statut = db.Column(db.String(20), default='en_attente')  # en_attente, en_cours, termine
+
+    def update_match_score(self, phase, groupe, match_id, score1, score2):
+        matches = self.matches
+        if phase == 'groupes':
+            if str(match_id) not in matches['phase_groupes'][groupe]['matches']:
+                matches['phase_groupes'][groupe]['matches'][str(match_id)] = {
+                    'joueur1': None,
+                    'joueur2': None,
+                    'score1': None,
+                    'score2': None,
+                    'joue': False
+                }
+            matches['phase_groupes'][groupe]['matches'][str(match_id)].update({
+                'score1': score1,
+                'score2': score2,
+                'joue': True
+            })
+        else:
+            # Mise à jour des scores pour les phases finales
+            phase_matches = matches['phase_finale'][phase]
+            for match in phase_matches:
+                if match['id'] == match_id:
+                    match.update({
+                        'score1': score1,
+                        'score2': score2,
+                        'joue': True
+                    })
+                    break
+        
+        self.matches = matches
+        db.session.commit()
 
     def __repr__(self):
         return f"<Tournois {self.nom_tournoi}>"
@@ -2360,7 +2393,35 @@ def generer_structure_tournoi(nb_groupes, joueurs_par_groupe, qualifies):
     
     return structure
 
+@app.route('/api/tournois/<int:id>/update-match', methods=['POST'])
+def update_match_score(id):
+    data = request.get_json()
+    tournoi = Tournois.query.get_or_404(id)
+    
+    try:
+        tournoi.update_match_score(
+            phase=data['phase'],
+            groupe=data.get('groupe'),  # None pour les phases finales
+            match_id=data['match_id'],
+            score1=data['score1'],
+            score2=data['score2']
+        )
+        return jsonify({'message': 'Score mis à jour avec succès'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
+@app.route('/api/tournois/<int:id>/status', methods=['PUT'])
+def update_tournament_status(id):
+    tournoi = Tournois.query.get_or_404(id)
+    data = request.get_json()
+    
+    if data['status'] in ['en_attente', 'en_cours', 'termine']:
+        tournoi.statut = data['status']
+        db.session.commit()
+        return jsonify({'message': 'Statut mis à jour'})
+    
+    return jsonify({'error': 'Statut invalide'}), 400
+    
 @app.route('/tournois')  
 def tournois():
     return render_template('tournois.html')
