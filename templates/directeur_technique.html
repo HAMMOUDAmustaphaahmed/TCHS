@@ -717,10 +717,6 @@ function confirmAddAdherents() {
         <input type="date" 
                id="sessionDate" 
                class="form-control"
-               placeholder="JJ/MM/AAAA"
-               pattern="\d{2}/\d{2}/\d{4}"
-               onfocus="(this.type='date')"
-               onblur="(this.type='text')"
                required>
     </div>
     <div class="mb-3">
@@ -747,15 +743,54 @@ function confirmAddAdherents() {
     </div>
 </div>
 <script>
-    // Initialisation du datepicker français
+    // Configuration du datepicker avec conversion de format
     const frenchDatepicker = flatpickr("#sessionDate", {
         locale: "fr",
-        dateFormat: "d/m/Y",
+        dateFormat: "Y-m-d", // Format ISO pour le backend
         altInput: true,
-        altFormat: "j F Y",
+        altFormat: "d/m/Y", // Format d'affichage pour l'utilisateur
         minDate: "today",
         disableMobile: true
     });
+    
+    // Fonction modifiée pour ajouter une séance
+    function addSession() {
+        const date = document.getElementById('sessionDate').value;
+        const heure_debut = document.getElementById('sessionTime').value;
+        const terrain = document.getElementById('sessionTerrain').value;
+        const currentGroupId = getCurrentGroupId(); // Assurez-vous que cette fonction existe
+    
+        const data = {
+            date: date, // Maintenant au format YYYY-MM-DD
+            heure_debut: heure_debut,
+            terrain: parseInt(terrain),
+            groupe_id: currentGroupId
+        };
+    
+        fetch('/ajouter_seance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                // Afficher l'erreur
+                alert(data.error);
+            } else {
+                // Succès
+                closeSessionModal();
+                // Rafraîchir le calendrier ou afficher un message de succès
+                window.location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Une erreur est survenue lors de l\'ajout de la séance');
+        });
+    }
     </script>
     
     <style>

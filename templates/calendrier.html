@@ -1,92 +1,122 @@
+
+
 {% block content %}
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <h2>Planning des Séances</h2>
-        </div>
-        <div class="col-md-6 text-end">
-            <div class="btn-group" role="group">
-                <a href="{{ url_for('calendrier', view='date', date=current_date) }}" 
-                   class="btn {% if view_type == 'date' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                    Vue par Créneaux
-                </a>
-                <a href="{{ url_for('calendrier', view='terrain', date=current_date) }}" 
-                   class="btn {% if view_type == 'terrain' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                    Vue par Terrains
-                </a>
-            </div>
-        </div>
-    </div>
+<!-- Dictionnaires pour la traduction des dates -->
+{% set jours = {
+    'Monday': 'Lundi', 'Tuesday': 'Mardi', 'Wednesday': 'Mercredi',
+    'Thursday': 'Jeudi', 'Friday': 'Vendredi', 'Saturday': 'Samedi', 'Sunday': 'Dimanche'
+} %}
 
-    <!-- Remplacer la section de navigation par celle-ci -->
-<div class="row mb-3">
-    <div class="col-md-12">
-        <div class="d-flex justify-content-between align-items-center">
-            <a href="{{ url_for('calendrier', view=view_type, date=prev_date) }}" 
-               class="btn btn-outline-secondary">
-                <i class="fas fa-chevron-left"></i> Jour précédent
-            </a>
-            <h4>{{ current_date.strftime('%A %d %B %Y') }}</h4>
-            <a href="{{ url_for('calendrier', view=view_type, date=next_date) }}" 
-               class="btn btn-outline-secondary">
-                Jour suivant <i class="fas fa-chevron-right"></i>
-            </a>
-        </div>
-    </div>
-</div>
+{% set mois = {
+    '01': 'Janvier', '02': 'Février', '03': 'Mars', '04': 'Avril',
+    '05': 'Mai', '06': 'Juin', '07': 'Juillet', '08': 'Août',
+    '09': 'Septembre', '10': 'Octobre', '11': 'Novembre', '12': 'Décembre'
+} %}
 
-    {% if view_type == 'date' %}
-    <!-- Vue par créneaux -->
-    <div class="calendar-view-date">
-        <div class="calendar-grid">
-            {% for creneau in creneaux %}
-            <div class="time-column">
-                <div class="time-header">
-                    {{ creneau.start.strftime('%H:%M') }} - {{ creneau.end.strftime('%H:%M') }}
-                </div>
-                <div class="time-content">
-                    {% for seance in seances %}
-                    {% if seance.heure_debut >= creneau.start and seance.heure_debut < creneau.end %}
-                    <div class="seance-card" 
-                         data-seance-id="{{ seance.seance_id }}"
-                         onclick="showSeanceDetails({{ seance.seance_id }})">
-                        <div class="seance-time">{{ seance.heure_debut.strftime('%H:%M') }}</div>
-                        <div class="seance-info">
-                            <strong>{{ seance.groupe }}</strong>
-                            <div>Terrain {{ seance.terrain }}</div>
-                        </div>
+<!-- Container principal -->
+<div class="calendar-container">
+    <!-- En-tête -->
+    <header class="calendar-header">
+        <div class="header-glass"></div>
+        <div class="header-content">
+            <div class="header-left">
+                <h1 class="calendar-title">
+                    <i class="fas fa-calendar-alt pulse"></i>
+                    Planning des Terrains
+                </h1>
+                <div class="date-display">
+                    <div class="date-chip">
+                        <i class="fas fa-tennis-ball"></i>
+                        <span class="current-date">
+                            {{ jours[current_date.strftime('%A')] }} 
+                            {{ current_date.strftime('%d') }} 
+                            {{ mois[current_date.strftime('%m')] }} 
+                            {{ current_date.strftime('%Y') }}
+                        </span>
                     </div>
-                    {% endif %}
-                    {% endfor %}
                 </div>
             </div>
+            <div class="header-right">
+                <div class="calendar-actions">
+                    <button class="neo-button today" onclick="window.location.href='{{ url_for('calendrier') }}'">
+                        <i class="fas fa-calendar-day"></i>
+                        <span>Aujourd'hui</span>
+                    </button>
+                    <div class="navigation-group">
+                        <a href="{{ url_for('calendrier', date=prev_date) }}" class="nav-button">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        <div class="nav-separator"></div>
+                        <a href="{{ url_for('calendrier', date=next_date) }}" class="nav-button">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Grille du calendrier -->
+    <div class="calendar-grid-wrapper">
+        <!-- En-tête des heures -->
+        <div class="calendar-timeline">
+            <div class="timeline-header">Terrains</div>
+            {% for heure in range(6, 23) %}
+            <div class="timeline-slot">{{ '%02d:00'|format(heure) }}</div>
             {% endfor %}
         </div>
-    </div>
-    {% else %}
-    <!-- Vue par terrains -->
-    <div class="calendar-view-terrain">
+
+        <!-- Grille principale -->
         <div class="calendar-grid">
-            <div class="terrain-header">
-                <div class="terrain-cell"></div>
-                {% for hour in range(24) %}
-                <div class="hour-cell">{{ '%02d:00'|format(hour) }}</div>
+            <!-- Colonnes des heures -->
+            <div class="hour-columns">
+                <div class="hour-column-header"></div>
+                {% for heure in range(6, 23) %}
+                <div class="hour-column" data-hour="{{ '%02d'|format(heure) }}"></div>
                 {% endfor %}
             </div>
+
+            <!-- Lignes des terrains -->
             {% for terrain in range(1, 10) %}
-            <div class="terrain-row">
-                <div class="terrain-cell">Terrain {{ terrain }}</div>
-                {% for hour in range(24) %}
-                <div class="hour-cell">
+            <div class="terrain-row" data-terrain="{{ terrain }}">
+                <div class="terrain-label">
+                    <div class="terrain-number">{{ terrain }}</div>
+                    <div class="terrain-text">Terrain</div>
+                </div>
+                
+                <!-- Cellules de temps -->
+                {% for heure in range(6, 23) %}
+                <div class="time-slot" 
+                     data-hour="{{ '%02d'|format(heure) }}"
+                     data-terrain="{{ terrain }}">
                     {% for seance in seances %}
-                    {% if seance.terrain == terrain and seance.heure_debut.hour == hour %}
-                    <div class="seance-block" 
-                         style="width: {{ (90/60)*100 }}%"
+                    {% if seance.terrain == terrain and seance.heure_debut.hour == heure %}
+                    <div class="seance-card"
                          data-seance-id="{{ seance.seance_id }}"
-                         onclick="showSeanceDetails({{ seance.seance_id }})">
+                         onclick="showSeanceDetails({{ seance.seance_id }})"
+                         style="--duration: 1.5;">
+                        <div class="seance-glow"></div>
                         <div class="seance-content">
-                            <strong>{{ seance.groupe }}</strong>
-                            <div>{{ seance.heure_debut.strftime('%H:%M') }}</div>
+                            <div class="seance-header">
+                                <div class="seance-time">
+                                    {{ seance.heure_debut.strftime('%H:%M') }} - 
+                                    {% set fin = datetime.combine(current_date, seance.heure_debut) + timedelta(minutes=90) %}
+                                    {{ fin.strftime('%H:%M') }}
+                                </div>
+                                <div class="seance-duration">1h30</div>
+                            </div>
+                            <div class="seance-body">
+                                <div class="seance-title">{{ seance.groupe }}</div>
+                                <div class="seance-trainer">
+                                    <i class="fas fa-user-tie"></i>
+                                    <span>{{ seance.entraineur }}</span>
+                                </div>
+                            </div>
+                            <div class="seance-footer">
+                                <button class="btn-info" title="Plus d'informations">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     {% endif %}
@@ -97,28 +127,70 @@
             {% endfor %}
         </div>
     </div>
-    {% endif %}
 </div>
 
-<!-- Modal pour les détails de la séance -->
+<!-- Modal des détails -->
 <div class="modal fade" id="seanceModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Détails de la Séance</h5>
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle"></i>
+                    Détails de la Séance
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="seance-details">
-                    <p><strong>Groupe:</strong> <span id="groupe"></span></p>
-                    <p><strong>Entraîneur:</strong> <span id="entraineur"></span></p>
-                    <p><strong>Terrain:</strong> <span id="terrain"></span></p>
-                    <p><strong>Horaire:</strong> <span id="horaire"></span></p>
-                    <p><strong>Nombre d'adhérents:</strong> <span id="nombre_adherents"></span></p>
-                    <div class="adherents-list">
-                        <h6>Liste des adhérents:</h6>
-                        <ul id="adherents"></ul>
+                <div class="modal-grid">
+                    <div class="detail-card groupe">
+                        <div class="detail-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="detail-content">
+                            <label>Groupe</label>
+                            <span id="groupe"></span>
+                        </div>
                     </div>
+
+                    <div class="detail-card entraineur">
+                        <div class="detail-icon">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="detail-content">
+                            <label>Entraîneur</label>
+                            <span id="entraineur"></span>
+                        </div>
+                    </div>
+
+                    <div class="detail-card terrain">
+                        <div class="detail-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="detail-content">
+                            <label>Terrain</label>
+                            <span id="terrain"></span>
+                        </div>
+                    </div>
+
+                    <div class="detail-card horaire">
+                        <div class="detail-icon">
+                            <i class="far fa-clock"></i>
+                        </div>
+                        <div class="detail-content">
+                            <label>Horaire</label>
+                            <span id="horaire"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="participants-section">
+                    <div class="participants-header">
+                        <h6>
+                            <i class="fas fa-user-friends"></i>
+                            Participants (<span id="nombre_adherents">0</span>)
+                        </h6>
+                    </div>
+                    <div class="participants-list" id="adherents"></div>
                 </div>
             </div>
         </div>
@@ -126,192 +198,614 @@
 </div>
 
 <style>
-/* Styles communs */
+/* Variables CSS */
+:root {
+    /* Couleurs principales */
+    --primary: #2196F3;
+    --primary-light: #BBDEFB;
+    --primary-dark: #1976D2;
+    --primary-glass: rgba(33, 150, 243, 0.1);
+    
+    /* Couleurs d'accent */
+    --accent: #FF4081;
+    --accent-light: #FF80AB;
+    --accent-glass: rgba(255, 64, 129, 0.1);
+    
+    /* Couleurs de fond */
+    --background: #0A1929;
+    --surface: #132F4C;
+    --overlay: rgba(19, 47, 76, 0.9);
+    
+    /* Couleurs de texte */
+    --text-primary: #FFFFFF;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-disabled: rgba(255, 255, 255, 0.5);
+    
+    /* Bordures et séparateurs */
+    --border-light: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.24);
+    
+    /* Effets visuels */
+    --glass-gradient: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.1),
+        rgba(255, 255, 255, 0.05)
+    );
+    --glass-border: 1px solid rgba(255, 255, 255, 0.18);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    
+    /* Dimensions */
+    --header-height: 80px;
+    --timeline-width: 80px;
+    --cell-width: 120px;
+    --cell-height: 100px;
+    --card-radius: 12px;
+    
+    /* Animations */
+    --transition-fast: 200ms ease;
+    --transition-normal: 300ms ease;
+    --transition-slow: 500ms ease;
+}
+
+/* Reset et styles de base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--background);
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+/* Container principal */
+.calendar-container {
+    min-height: 100vh;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* En-tête */
+.calendar-header {
+    position: relative;
+    background: var(--surface);
+    border-radius: var(--card-radius);
+    overflow: hidden;
+}
+
+.header-glass {
+    position: absolute;
+    inset: 0;
+    background: var(--glass-gradient);
+    backdrop-filter: blur(10px);
+}
+
+.header-content {
+    position: relative;
+    z-index: 1;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.calendar-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.calendar-title i {
+    color: var(--primary);
+}
+
+.date-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--primary-glass);
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.calendar-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Boutons de navigation */
+.neo-button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: var(--card-radius);
+    background: var(--primary);
+    color: white;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.neo-button:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+.navigation-group {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.25rem;
+    background: var(--surface);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+}
+
+.nav-button {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.nav-button:hover {
+    background: var(--primary-glass);
+    color: var(--primary);
+}
+
+/* Grille du calendrier */
+.calendar-grid-wrapper {
+    background: var(--surface);
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    position: relative;
+}
+
+.calendar-timeline {
+    display: grid;
+    grid-template-columns: var(--timeline-width) repeat(17, var(--cell-width));
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.timeline-header,
+.timeline-slot {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-right: 1px solid var(--border-light);
+}
+
 .calendar-grid {
-    border: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+}
+
+.terrain-row {
+    display: grid;
+    grid-template-columns: var(--timeline-width) repeat(17, var(--cell-width));
+    border-bottom: 1px solid var(--border-light);
+    min-height: var(--cell-height);
+}
+
+.terrain-label {
+    position: sticky;
+    left: 0;
+    background: var(--surface);
+    z-index: 5;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid var(--border-light);
+}
+
+.terrain-number {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.terrain-text {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.time-slot {
+    border-right: 1px solid var(--border-light);
+    position: relative;
+    min-height: var(--cell-height);
+}
+
+/* Cartes des séances */
+.seance-card {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc((var(--cell-width) * var(--duration)) - 8px);
+    background: var(--primary-dark);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    z-index: 1;
+}
+
+.seance-glow {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+.seance-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    z-index: 2;
+}
+
+.seance-content {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.seance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.seance-time {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.seance-duration {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.seance-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 0.25rem;
+}
+
+.seance-trainer {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.seance-footer {
+    margin-top: auto;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Modal styles */
+.modal-content {
+    background: var(--surface);
+    border: none;
+    border-radius: var(--card-radius);
+}
+
+.modal-header {
+    background: var(--primary-dark);
+    color: white;
+    padding: 1.5rem;
+    border: none;
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+}
+
+.modal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem;
+}
+
+.detail-card {
+    background: var(--primary-glass);
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.detail-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.detail-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-content label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.detail-content span {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.participants-section {
+    margin-top: 1.5rem;
+    background: var(--primary-glass);
     border-radius: 8px;
     overflow: hidden;
 }
 
-/* Styles pour la vue par créneaux */
-.calendar-view-date {
+.participants-header {
+    background: var(--primary-dark);
+    padding: 1rem;
+}
+
+.participants-header h6 {
+    margin: 0;
     display: flex;
-    overflow-x: auto;
+    align-items: center;
+    gap: 0.5rem;
+    color: white;
 }
 
-.time-column {
-    min-width: 200px;
-    border-right: 1px solid #ddd;
+.participants-list {
+    padding: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
-.time-header {
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #ddd;
-    text-align: center;
-    font-weight: bold;
+/* Responsive Design */
+@media (max-width: 1400px) {
+    :root {
+        --cell-width: 100px;
+        --cell-height: 90px;
+    }
 }
 
-.time-content {
-    min-height: 600px;
-    padding: 10px;
+@media (max-width: 1200px) {
+    :root {
+        --cell-width: 90px;
+        --cell-height: 80px;
+    }
+    
+    .calendar-container {
+        padding: 1rem;
+    }
 }
 
-.seance-card {
-    background-color: #e3f2fd;
-    border-radius: 4px;
-    padding: 10px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+@media (max-width: 992px) {
+    :root {
+        --cell-width: 80px;
+        --cell-height: 70px;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .seance-trainer {
+        display: none;
+    }
 }
 
-.seance-card:hover {
-    background-color: #bbdefb;
-    transform: scale(1.02);
+@media (max-width: 768px) {
+    :root {
+        --cell-width: 70px;
+        --timeline-width: 60px;
+    }
+    
+    .calendar-container {
+        padding: 0.5rem;
+    }
+    
+    .calendar-title {
+        font-size: 1.25rem;
+    }
 }
 
-/* Styles pour la vue par terrains */
-.calendar-view-terrain {
-    overflow-x: auto;
-}
-
-.terrain-header {
-    display: flex;
-    border-bottom: 1px solid #ddd;
-}
-
-.terrain-cell {
-    min-width: 100px;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-right: 1px solid #ddd;
-    font-weight: bold;
-}
-
-.hour-cell {
-    min-width: 100px;
-    padding: 10px;
-    border-right: 1px solid #ddd;
-    position: relative;
-}
-
-.terrain-row {
-    display: flex;
-    border-bottom: 1px solid #ddd;
-}
-
-.seance-block {
-    position: absolute;
-    height: 80%;
-    top: 10%;
-    background-color: #e3f2fd;
-    border-radius: 4px;
-    padding: 5px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.seance-block:hover {
-    background-color: #bbdefb;
-    transform: scale(1.02);
-}
-
-/* Modal styles */
-.seance-details {
-    padding: 15px;
-}
-
-.adherents-list {
-    margin-top: 15px;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
+@media (max-width: 576px) {
+    :root {
+        --cell-width: 60px;
+        --cell-height: 60px;
+    }
+    
+    .navigation-group {
+        display: none;
+    }
+    
+    .seance-duration {
+        display: none;
+    }
 }
 </style>
 
 <script>
+// Fonctions utilitaires
+function formatTime(date) {
+    return date.toLocaleTimeString('fr-FR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+}
+
+// Gestion des séances
 function showSeanceDetails(seanceId) {
     fetch(`/api/seance/${seanceId}`)
         .then(response => response.json())
         .then(data => {
+            // Mise à jour des informations dans le modal
             document.getElementById('groupe').textContent = data.groupe;
             document.getElementById('entraineur').textContent = data.entraineur;
-            document.getElementById('terrain').textContent = data.terrain;
+            document.getElementById('terrain').textContent = `Terrain ${data.terrain}`;
             document.getElementById('horaire').textContent = `${data.heure_debut} - ${data.heure_fin}`;
             document.getElementById('nombre_adherents').textContent = data.nombre_adherents;
             
+            // Mise à jour de la liste des participants
             const adherentsList = document.getElementById('adherents');
             adherentsList.innerHTML = '';
+            
             data.adherents.forEach(adherent => {
-                const li = document.createElement('li');
-                li.textContent = `${adherent.nom} ${adherent.prenom}`;
-                adherentsList.appendChild(li);
+                const adherentEl = document.createElement('div');
+                adherentEl.className = 'participant-item';
+                const initials = `${adherent.nom.charAt(0)}${adherent.prenom.charAt(0)}`;
+                
+                adherentEl.innerHTML = `
+                    
+                    <div class="participant-info">
+                        <div class="participant-name">${adherent.nom} ${adherent.prenom}</div>
+                    </div>
+                `;
+                
+                adherentsList.appendChild(adherentEl);
             });
             
+            // Afficher le modal
             new bootstrap.Modal(document.getElementById('seanceModal')).show();
+        })
+        .catch(error => {
+            console.error('Erreur lors de la récupération des détails de la séance:', error);
+            // Afficher une notification d'erreur
         });
 }
 
-// Tooltips pour les séances
+// Gestion du défilement horizontal
 document.addEventListener('DOMContentLoaded', function() {
-    const seances = document.querySelectorAll('.seance-card, .seance-block');
-    seances.forEach(seance => {
-        const seanceId = seance.dataset.seanceId;
+    const gridContainer = document.querySelector('.calendar-grid-wrapper');
+    
+    gridContainer.addEventListener('wheel', function(e) {
+        if (e.deltaY !== 0) {
+            e.preventDefault();
+            this.scrollLeft += e.deltaY;
+        }
+    });
+    
+    // Indicateur d'heure actuelle
+    function addCurrentTimeIndicator() {
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
         
-        seance.addEventListener('mouseenter', function(e) {
-            fetch(`/api/seance/${seanceId}`)
-                .then(response => response.json())
-                .then(data => {
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'seance-tooltip';
-                    tooltip.innerHTML = `
-                        <div class="tooltip-content">
-                            <p><strong>${data.groupe}</strong></p>
-                            <p>Entraîneur: ${data.entraineur}</p>
-                            <p>Terrain: ${data.terrain}</p>
-                            <p>Horaire: ${data.heure_debut} - ${data.heure_fin}</p>
-                            <p>Adhérents: ${data.nombre_adherents}</p>
-                        </div>
-                    `;
-                    
-                    document.body.appendChild(tooltip);
-                    
-                    const rect = seance.getBoundingClientRect();
-                    tooltip.style.position = 'fixed';
-                    tooltip.style.top = rect.top + 'px';
-                    tooltip.style.left = (rect.right + 10) + 'px';
-                });
-        });
-        
-        seance.addEventListener('mouseleave', function() {
-            const tooltip = document.querySelector('.seance-tooltip');
-            if (tooltip) {
-                tooltip.remove();
+        if (hours >= 6 && hours < 23) {
+            const timeSlots = document.querySelectorAll('.time-slot');
+            const slotWidth = timeSlots[0].offsetWidth;
+            const startHour = 6;
+            
+            const totalMinutes = (hours - startHour) * 60 + minutes;
+            const position = (totalMinutes / (17 * 60)) * (slotWidth * 17);
+            
+            const indicator = document.createElement('div');
+            indicator.className = 'current-time-indicator';
+            indicator.style.left = `${position}px`;
+            
+            const marker = document.createElement('div');
+            marker.className = 'current-time-marker';
+            indicator.appendChild(marker);
+            
+            const existingIndicator = document.querySelector('.current-time-indicator');
+            if (existingIndicator) {
+                existingIndicator.remove();
             }
-        });
+            
+            document.querySelector('.calendar-grid').appendChild(indicator);
+        }
+    }
+    
+    // Mise à jour de l'indicateur toutes les minutes
+    addCurrentTimeIndicator();
+    setInterval(addCurrentTimeIndicator, 60000);
+    
+    // Animation des séances au chargement
+    const seances = document.querySelectorAll('.seance-card');
+    seances.forEach((seance, index) => {
+        seance.style.opacity = '0';
+        seance.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            seance.style.opacity = '1';
+            seance.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+
+// Gestion du survol des séances
+document.addEventListener('mousemove', function(e) {
+    const cards = document.querySelectorAll('.seance-card');
+    cards.forEach(card => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+            const gradientX = (x / rect.width) * 100;
+            const gradientY = (y / rect.height) * 100;
+            
+            card.querySelector('.seance-glow').style.background = `
+                radial-gradient(
+                    circle at ${gradientX}% ${gradientY}%,
+                    rgba(255,255,255,0.2) 0%,
+                    rgba(255,255,255,0) 50%
+                )
+            `;
+        }
     });
 });
 </script>
-
-<style>
-.seance-tooltip {
-    position: absolute;
-    z-index: 1000;
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    max-width: 300px;
-}
-
-.tooltip-content {
-    font-size: 0.9em;
-}
-
-.tooltip-content p {
-    margin: 5px 0;
-}
-</style>
 {% endblock %}

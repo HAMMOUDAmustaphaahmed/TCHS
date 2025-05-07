@@ -416,6 +416,7 @@ def ajouter_seance():
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
+    
     data = request.get_json()
     
     # Récupérer les données
@@ -424,9 +425,25 @@ def ajouter_seance():
         return jsonify({"error": "Groupe introuvable"}), 404
 
     try:
-        # Conversion des dates/heures
-        date_obj = datetime.strptime(data['date'], '%Y-%m-%d').date()
-        heure_debut = datetime.strptime(data['heure_debut'], '%H:%M').time()
+        # Gestion plus robuste des formats de date
+        date_str = data['date']
+        try:
+            # Essayer d'abord le format ISO
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            try:
+                # Essayer le format français si le format ISO échoue
+                date_obj = datetime.strptime(date_str, '%d/%m/%Y').date()
+            except ValueError:
+                return jsonify({"error": "Format de date invalide. Utilisez YYYY-MM-DD ou DD/MM/YYYY"}), 400
+
+        # Conversion de l'heure
+        try:
+            heure_debut = datetime.strptime(data['heure_debut'], '%H:%M').time()
+        except ValueError:
+            return jsonify({"error": "Format d'heure invalide. Utilisez HH:MM"}), 400
+
+        # Vérification des créneaux valides
         creneaux_valides = [
             time(8, 0), time(9, 30), time(11, 0), time(12, 30),
             time(14, 0), time(15, 30), time(17, 0), time(18, 30)
@@ -434,16 +451,14 @@ def ajouter_seance():
         
         if heure_debut not in creneaux_valides:
             return jsonify({"error": "Créneau horaire non valide"}), 400
+
         heure_fin = (datetime.combine(date_obj, heure_debut) + timedelta(minutes=90)).time()
 
         # Vérification des conflits
         conflits = Seance.query.filter(
             (
-                # Conflit de terrain
                 (Seance.terrain == data['terrain']) |
-                # Conflit d'entraîneur ▼
                 (Seance.entraineur == groupe.entraineur_nom) |
-                # Conflit de groupe ▼
                 (Seance.groupe == groupe.nom_groupe)
             ),
             Seance.date == date_obj,
@@ -479,9 +494,7 @@ def ajouter_seance():
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
-
-
+        return jsonify({"error": f"Erreur lors de l'ajout de la séance: {str(e)}"}), 500
 
 
 @app.route('/api/get_session/<int:session_id>', methods=['GET'])
@@ -2351,10 +2364,8 @@ def generer_structure_tournoi(nb_groupes, joueurs_par_groupe, qualifies):
 @app.route('/tournois')  
 def tournois():
     return render_template('tournois.html')
-
 from flask import render_template, jsonify, request, flash, redirect, url_for
 from datetime import datetime, timedelta, time
-import pytz
 
 @app.route('/calendrier')
 def calendrier():
@@ -2362,7 +2373,6 @@ def calendrier():
         flash('Veuillez vous connecter pour accéder au calendrier.', 'danger')
         return redirect(url_for('login'))
 
-    view_type = request.args.get('view', 'date')  # 'date' ou 'terrain'
     current_date = request.args.get('date')
     
     if current_date:
@@ -2370,50 +2380,50 @@ def calendrier():
     else:
         current_date = datetime.now().date()
 
-    # Pour la vue par terrain, on récupère toute la journée
-    if view_type == 'terrain':
-        seances = Seance.query.filter(
-            Seance.date == current_date
-        ).order_by(Seance.heure_debut).all()
+    # Créer les créneaux horaires de 6h à 22h
+    heures = []
+    current_time = time(6, 0)
+    end_time = time(22, 0)
+    
+    while current_time <= end_time:
+        heures.append(current_time)
+        current_time = (datetime.combine(datetime.min, current_time) + 
+                       timedelta(hours=1)).time()
+
+    # Récupérer les séances
+    seances = Seance.query.filter(
+        Seance.date == current_date
+    ).order_by(Seance.heure_debut).all()
+
+    # Calculer la largeur des séances en fonction de leur durée
+    seances_info = {}
+    for seance in seances:
+        debut = seance.heure_debut
+        fin = (datetime.combine(current_date, debut) + timedelta(minutes=90)).time()
         
-        # Créer des créneaux de 24h
-        creneaux = []
-        for hour in range(24):
-            creneaux.append({
-                'start': time(hour, 0),
-                'end': time(hour, 59) if hour < 23 else time(23, 59)
-            })
+        # Calculer combien de colonnes la séance doit occuper
+        colonnes = 1.5  # Pour 1h30
+        
+        seances_info[seance.seance_id] = {
+            'seance': seance,
+            'debut': debut,
+            'fin': fin,
+            'colonnes': colonnes
+        }
 
-    else:  # vue par date
-        # Créer des créneaux d'1h30 de 8h à 20h
-        creneaux = []
-        current_time = time(8, 0)
-        while current_time <= time(20, 0):
-            end_time = (datetime.combine(datetime.today(), current_time) + 
-                       timedelta(minutes=90)).time()
-            creneaux.append({
-                'start': current_time,
-                'end': end_time
-            })
-            current_time = end_time
-
-        seances = Seance.query.filter(
-            Seance.date == current_date,
-            Seance.heure_debut >= time(8, 0),
-            Seance.heure_debut <= time(20, 0)
-        ).order_by(Seance.heure_debut).all()
-
-    # Calculer les dates précédentes et suivantes
+    # Navigation des dates
     prev_date = (current_date - timedelta(days=1)).strftime('%Y-%m-%d')
     next_date = (current_date + timedelta(days=1)).strftime('%Y-%m-%d')
 
     return render_template('calendrier.html',
-                         view_type=view_type,
+                         datetime=datetime,
+                         timedelta=timedelta,
                          current_date=current_date,
                          prev_date=prev_date,
                          next_date=next_date,
-                         creneaux=creneaux,
-                         seances=seances)
+                         heures=heures,
+                         seances=seances,
+                         seances_info=seances_info)
 
 @app.route('/api/seance/<int:seance_id>')
 def get_seance_details(seance_id):
