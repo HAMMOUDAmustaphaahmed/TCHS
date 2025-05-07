@@ -1,264 +1,904 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Tournois</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" rel="stylesheet">
-</head>
-<body class="bg-dark text-light">
-    <div class="container py-5">
-        <h1 class="mb-4 text-center text-warning">Création de Tournois</h1>
-        
-        <!-- Formulaire de création -->
-        <div class="card bg-secondary mb-4">
-            <div class="card-body">
-                <form id="tournoiForm">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Nom du tournoi</label>
-                            <input type="text" class="form-control" id="nomTournoi" required>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Groupes</label>
-                            <input type="number" class="form-control" id="nbGroupes" min="2" value="4" required>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Joueurs/groupe</label>
-                            <input type="number" class="form-control" id="joueursGroupe" min="2" value="8" required>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Qualifiés/groupe</label>
-                            <input type="number" class="form-control" id="qualifiesGroupe" min="1" value="2" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Date de début</label>
-                            <input type="datetime-local" class="form-control" id="dateDebut" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Date de fin</label>
-                            <input type="datetime-local" class="form-control" id="dateFin" required>
-                        </div>
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-warning w-100">Créer le tournoi</button>
-                        </div>
-                    </div>
-                </form>
+{% block content %}
+<div class="tournaments-container">
+    <!-- Header Section -->
+    <div class="section-header">
+        <div class="header-content">
+            <div class="header-title">
+                <i class="fas fa-trophy pulse"></i>
+                <h1>Gestion des Tournois</h1>
             </div>
-        </div>
-
-        <!-- Liste des tournois -->
-        <div class="card bg-secondary">
-            <div class="card-body">
-                <h3 class="text-center mb-4">Tournois enregistrés</h3>
-                <div id="tournoisList" class="row g-3"></div>
+            <div class="header-actions">
+                <button class="neo-button create-tournament" onclick="showCreateForm()">
+                    <i class="fas fa-plus"></i>
+                    <span>Nouveau Tournoi</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Modal pour les matches -->
-    <div class="modal fade" id="matchesModal">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content bg-dark">
-                <div class="modal-header">
-                    <h5 class="modal-title text-warning"></h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="matchesTimeline"></div>
-                </div>
+    <!-- Create Tournament Form Section -->
+    <div class="create-tournament-section" id="createTournamentForm">
+        <div class="form-container">
+            <div class="form-header">
+                <h2>Création d'un nouveau tournoi</h2>
+                <button class="close-button" onclick="hideCreateForm()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-        </div>
-    </div>
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('tournoiForm');
-    
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const tournoiData = {
-            nom_tournoi: document.getElementById('nomTournoi').value,
-            nombre_groupes: document.getElementById('nbGroupes').value,
-            joueurs_par_groupe: document.getElementById('joueursGroupe').value,
-            qualifies_par_groupe: document.getElementById('qualifiesGroupe').value,
-            date_debut: document.getElementById('dateDebut').value,
-            date_fin: document.getElementById('dateFin').value,
-            dates_matches: {}
-        };
-
-        try {
-            const response = await fetch('/creer-tournoi', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(tournoiData)
-            });
             
-            const result = await response.json();
-            if (response.ok) {
-                alert('Tournoi créé avec succès !');
-                loadTournois();
-                form.reset();
-            } else {
-                alert(result.error);
-            }
-        } catch (error) {
-            console.error('Erreur:', error);
-        }
-    });
-
-    loadTournois();
-});
-
-async function loadTournois() {
-    try {
-        const response = await fetch('/api/tournois');
-        const tournois = await response.json();
-        const container = document.getElementById('tournoisList');
-        
-        container.innerHTML = tournois.map(t => `
-            <div class="col-md-6 col-xl-4">
-                <div class="card bg-dark border-warning">
-                    <div class="card-body">
-                        <h5 class="card-title text-warning">${t.nom}</h5>
-                        <p class="mb-1">Groupes: ${t.groupes}</p>
-                        <p class="mb-1">Début: ${new Date(t.date_debut).toLocaleDateString()}</p>
-                        <div class="d-flex gap-2 mt-3">
-                            <button class="btn btn-sm btn-outline-warning" 
-                                    onclick="viewMatches(${t.id}, '${t.nom}')">
-                                Voir matches
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" 
-                                    onclick="deleteTournoi(${t.id})">
-                                Supprimer
-                            </button>
-                        </div>
+            <form id="tournoiForm" class="tournament-form">
+                <div class="form-grid">
+                    <div class="form-group span-2">
+                        <label for="nomTournoi">
+                            <i class="fas fa-font"></i>
+                            Nom du tournoi
+                        </label>
+                        <input type="text" id="nomTournoi" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="nbGroupes">
+                            <i class="fas fa-users"></i>
+                            Groupes
+                        </label>
+                        <input type="number" id="nbGroupes" min="2" value="4" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="joueursGroupe">
+                            <i class="fas fa-user-friends"></i>
+                            Joueurs/groupe
+                        </label>
+                        <input type="number" id="joueursGroupe" min="2" value="8" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="qualifiesGroupe">
+                            <i class="fas fa-star"></i>
+                            Qualifiés/groupe
+                        </label>
+                        <input type="number" id="qualifiesGroupe" min="1" value="2" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dateDebut">
+                            <i class="fas fa-calendar-alt"></i>
+                            Date de début
+                        </label>
+                        <input type="datetime-local" id="dateDebut" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dateFin">
+                            <i class="fas fa-calendar-check"></i>
+                            Date de fin
+                        </label>
+                        <input type="datetime-local" id="dateFin" required>
                     </div>
                 </div>
-            </div>
-        `).join('');
-    } catch (error) {
-        console.error('Erreur:', error);
-    }
-}
-
-async function viewMatches(id, nom) {
-    try {
-        const response = await fetch(`/api/tournois/${id}/matches`);
-        const matches = await response.json();
-        
-        const modal = new bootstrap.Modal('#matchesModal');
-        const modalBody = document.querySelector('#matchesTimeline');
-        
-        document.querySelector('#matchesModal .modal-title').textContent = `Calendrier - ${nom}`;
-        modalBody.innerHTML = `
-            <div class="timeline">
-                ${Object.entries(matches.phase_groupes).map(([groupe, data]) => `
-                    <div class="timeline-group">
-                        <h5 class="text-warning">${groupe.replace('_', ' ').toUpperCase()}</h5>
-                        ${data.participants.map(joueur => `
-                            <div class="timeline-item ${data.qualifies.includes(joueur) ? 'qualified' : ''}">
-                                ${joueur}
-                            </div>
-                        `).join('')}
-                    </div>
-                `).join('')}
                 
-                <div class="timeline-final">
-                    ${matches.phase_finale.quart.map(match => `
-                        <div class="final-match">
-                            <div class="match-box">${match.match}</div>
-                        </div>
-                    `).join('')}
+                <div class="form-actions">
+                    <button type="submit" class="submit-button">
+                        <i class="fas fa-check"></i>
+                        Créer le tournoi
+                    </button>
                 </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tournaments List Section -->
+    <div class="tournaments-grid" id="tournoisList">
+        <!-- Les tournois seront injectés ici via JavaScript -->
+    </div>
+
+    <!-- Tournament Matches Modal -->
+    <div class="modal-overlay" id="matchesModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title"></h3>
+                <button class="modal-close" onclick="closeMatchesModal()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-        `;
-        
-        modal.show();
-    } catch (error) {
-        console.error('Erreur:', error);
-    }
-}
+            <div class="modal-body">
+                <div id="matchesTimeline"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-async function deleteTournoi(id) {
-    if (confirm('Supprimer ce tournoi ?')) {
-        try {
-            await fetch(`/api/tournois/${id}`, { method: 'DELETE' });
-            loadTournois();
-        } catch (error) {
-            console.error('Erreur:', error);
-        }
-    }
+<style>
+/* Variables CSS */
+:root {
+    /* Couleurs */
+    --primary: #6c63ff;
+    --primary-light: #8f89ff;
+    --primary-dark: #4f47ff;
+    --accent: #ff6b6b;
+    --success: #2ecc71;
+    --warning: #f1c40f;
+    --danger: #e74c3c;
+    
+    /* Arrière-plans */
+    --bg-dark: #0f172a;
+    --bg-darker: #0a0f1d;
+    --bg-light: #1e293b;
+    
+    /* Texte */
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-muted: rgba(255, 255, 255, 0.5);
+    
+    /* Bordures */
+    --border-color: rgba(255, 255, 255, 0.1);
+    --border-radius: 12px;
+    
+    /* Effets */
+    --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --neon-shadow: 0 0 15px var(--primary-light);
+    --glass-bg: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.1),
+        rgba(255, 255, 255, 0.05)
+    );
 }
-    </script>
-    <style>
-        body {
-    background: linear-gradient(45deg, #1a1a1a, #2d2d2d);
-    min-height: 100vh;
-}
-
-.card {
-    border-radius: 15px;
-    box-shadow: 0 0 20px rgba(255, 193, 7, 0.1);
-}
-
-.timeline {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
+/* Ajoutez ceci dans la section des styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
     padding: 1rem;
+    border-radius: 8px;
+    z-index: 9999;
+    min-width: 300px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.timeline-group {
-    background: #333;
-    padding: 1rem;
-    border-radius: 10px;
-    border: 1px solid #ffc107;
-}
-
-.timeline-item {
-    padding: 0.5rem;
-    margin: 0.3rem 0;
-    background: #444;
-    border-radius: 5px;
-    transition: transform 0.3s;
-}
-
-.timeline-item:hover {
-    transform: translateX(5px);
-}
-
-.timeline-item.qualified {
-    border-left: 4px solid #28a745;
-}
-
-.final-match {
+.notification-content {
     display: flex;
-    justify-content: center;
     align-items: center;
-    height: 100px;
+    gap: 0.75rem;
+}
+
+.notification.success {
+    background: var(--success);
+    color: white;
+}
+
+.notification.error {
+    background: var(--danger);
+    color: white;
+}
+/* Styles de base */
+.tournaments-container {
+    min-height: 100vh;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    padding: 2rem;
+}
+
+/* Header Styles */
+.section-header {
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--card-shadow);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-title i {
+    font-size: 2rem;
+    color: var(--primary);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Boutons */
+.neo-button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.neo-button:hover {
+    background: var(--primary-light);
+    transform: translateY(-2px);
+    box-shadow: var(--neon-shadow);
+}
+
+/* Formulaire de création */
+.create-tournament-section {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+.form-container {
+    position: relative;
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    max-width: 800px;
+    margin: 2rem auto;
+    box-shadow: var(--card-shadow);
+    animation: slideUp 0.3s ease;
+}
+
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.close-button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.5rem;
+    transition: color 0.3s ease;
+}
+
+.close-button:hover {
+    color: var(--accent);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group.span-2 {
+    grid-column: span 2;
+}
+
+.form-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+}
+
+.form-group input {
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0.8rem;
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-light);
+    outline: none;
+}
+
+.form-actions {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Grid des tournois */
+.tournaments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.tournament-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.tournament-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--neon-shadow);
+}
+
+.tournament-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.tournament-title {
+    color: var(--primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.tournament-status {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    background: var(--primary-dark);
+    color: white;
+}
+
+.tournament-info {
     margin: 1rem 0;
 }
 
-.match-box {
-    background: #ffc107;
-    color: #000;
-    padding: 1rem 2rem;
-    border-radius: 8px;
-    font-weight: bold;
-    text-align: center;
-    width: 150px;
+.tournament-info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
 }
 
+.tournament-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.action-button {
+    flex: 1;
+    padding: 0.8rem;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.action-button.view {
+    background: var(--primary-dark);
+    color: white;
+}
+
+.action-button.delete {
+    background: var(--danger);
+    color: white;
+}
+
+.action-button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.2);
+}
+
+/* Modal des matches */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+}
+
+.modal-container {
+    position: relative;
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 2rem auto;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+}
+
+/* Timeline des matches */
+.matches-timeline {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.group-section {
+    background: var(--bg-dark);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.group-header {
+    color: var(--primary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary);
+}
+
+.match-item {
+    background: var(--glass-bg);
+    backdrop-filter: blur(5px);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.match-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 0 10px rgba(108, 99, 255, 0.2);
+}
+
+.match-item.qualified {
+    border-left: 4px solid var(--success);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
-    .timeline {
+    .tournaments-container {
+        padding: 1rem;
+    }
+
+    .header-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .form-grid {
         grid-template-columns: 1fr;
     }
+
+    .form-group.span-2 {
+        grid-column: auto;
+    }
+
+    .modal-container {
+        margin: 1rem;
+        padding: 1rem;
+    }
 }
-    </style>
-</body>
-</html>
+</style>
+
+<script>
+    // Fonctions utilitaires
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+}
+
+// Fonction pour afficher/masquer le formulaire de création
+function showCreateForm() {
+    document.getElementById('createTournamentForm').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function hideCreateForm() {
+    document.getElementById('createTournamentForm').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// Validation des dates
+function validateDates(dateDebut, dateFin) {
+    const now = new Date();
+    const debut = new Date(dateDebut);
+    const fin = new Date(dateFin);
+    
+    if (debut < now) {
+        showNotification('La date de début doit être future', 'error');
+        return false;
+    }
+    
+    if (fin <= debut) {
+        showNotification('La date de fin doit être postérieure à la date de début', 'error');
+        return false;
+    }
+    
+    return true;
+}
+
+// Gestion du formulaire
+document.getElementById('tournoiForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const nomTournoi = document.getElementById('nomTournoi').value.trim();
+    const nbGroupes = parseInt(document.getElementById('nbGroupes').value);
+    const joueursGroupe = parseInt(document.getElementById('joueursGroupe').value);
+    const qualifiesGroupe = parseInt(document.getElementById('qualifiesGroupe').value);
+    const dateDebut = document.getElementById('dateDebut').value;
+    const dateFin = document.getElementById('dateFin').value;
+
+    // Validations
+    if (!nomTournoi) {
+        showNotification('Le nom du tournoi est requis', 'error');
+        return;
+    }
+
+    if (qualifiesGroupe > joueursGroupe) {
+        showNotification('Le nombre de qualifiés ne peut pas dépasser le nombre de joueurs par groupe', 'error');
+        return;
+    }
+
+    if (!validateDates(dateDebut, dateFin)) {
+        return;
+    }
+
+    const tournoiData = {
+        nom_tournoi: nomTournoi,
+        nombre_groupes: nbGroupes,
+        joueurs_par_groupe: joueursGroupe,
+        qualifies_par_groupe: qualifiesGroupe,
+        date_debut: dateDebut,
+        date_fin: dateFin,
+        dates_matches: {} // Champ requis par le backend
+    };
+
+    try {
+        const response = await fetch('/creer-tournoi', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(tournoiData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showNotification('Tournoi créé avec succès !', 'success');
+            hideCreateForm();
+            loadTournois();
+            e.target.reset();
+        } else {
+            showNotification(result.error || 'Erreur lors de la création du tournoi', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la création du tournoi', 'error');
+    }
+});
+
+// Fonction de chargement des tournois
+async function loadTournois() {
+    try {
+        const response = await fetch('/api/tournois');
+        if (!response.ok) {
+            throw new Error('Erreur lors du chargement des tournois');
+        }
+        
+        const tournois = await response.json();
+        const container = document.getElementById('tournoisList');
+        
+        if (tournois.length === 0) {
+            container.innerHTML = `
+                <div class="no-tournaments">
+                    <i class="fas fa-trophy"></i>
+                    <p>Aucun tournoi n'a été créé</p>
+                    <button class="neo-button" onclick="showCreateForm()">
+                        Créer un tournoi
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = tournois.map(t => `
+            <div class="tournament-card" data-id="${t.id}">
+                <div class="tournament-header">
+                    <h3 class="tournament-title">${t.nom}</h3>
+                    <span class="tournament-status ${getTournamentStatus(t.date_debut, t.date_fin)}">
+                        ${getTournamentStatusText(t.date_debut, t.date_fin)}
+                    </span>
+                </div>
+                <div class="tournament-info">
+                    <div class="tournament-info-item">
+                        <i class="fas fa-users"></i>
+                        <span>${t.groupes} groupes</span>
+                    </div>
+                    <div class="tournament-info-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Début: ${formatDate(t.date_debut)}</span>
+                    </div>
+                    <div class="tournament-info-item">
+                        <i class="fas fa-flag-checkered"></i>
+                        <span>Fin: ${formatDate(t.date_fin)}</span>
+                    </div>
+                </div>
+                <div class="tournament-actions">
+                    <button class="action-button view" onclick="viewMatches(${t.id}, '${t.nom}')">
+                        <i class="fas fa-eye"></i>
+                        <span>Voir matches</span>
+                    </button>
+                    <button class="action-button delete" onclick="deleteTournoi(${t.id})">
+                        <i class="fas fa-trash"></i>
+                        <span>Supprimer</span>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        // Animation des cartes
+        animateCards();
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors du chargement des tournois', 'error');
+    }
+}
+
+// Fonction pour déterminer le statut du tournoi
+function getTournamentStatus(dateDebut, dateFin) {
+    const now = new Date();
+    const debut = new Date(dateDebut);
+    const fin = new Date(dateFin);
+    
+    if (now < debut) return 'upcoming';
+    if (now > fin) return 'finished';
+    return 'ongoing';
+}
+
+function getTournamentStatusText(dateDebut, dateFin) {
+    const status = getTournamentStatus(dateDebut, dateFin);
+    switch (status) {
+        case 'upcoming': return 'À venir';
+        case 'ongoing': return 'En cours';
+        case 'finished': return 'Terminé';
+        default: return '';
+    }
+}
+
+// Animation des cartes
+function animateCards() {
+    const cards = document.querySelectorAll('.tournament-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+}
+
+// Fonction d'affichage des matches
+async function viewMatches(id, nom) {
+    try {
+        const response = await fetch(`/api/tournois/${id}/matches`);
+        if (!response.ok) {
+            throw new Error('Erreur lors du chargement des matches');
+        }
+        
+        const matches = await response.json();
+        const modal = document.getElementById('matchesModal');
+        const timeline = document.getElementById('matchesTimeline');
+        
+        document.querySelector('#matchesModal .modal-title').textContent = `${nom} - Matches`;
+        
+        timeline.innerHTML = generateMatchesHTML(matches);
+        
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // Animation des matches
+        animateMatches();
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors du chargement des matches', 'error');
+    }
+}
+
+function generateMatchesHTML(matches) {
+    return `
+        <div class="matches-timeline">
+            ${Object.entries(matches.phase_groupes).map(([groupe, data]) => `
+                <div class="group-section">
+                    <h4 class="group-header">${groupe.replace('_', ' ').toUpperCase()}</h4>
+                    ${data.participants.map(joueur => `
+                        <div class="match-item ${data.qualifies.includes(joueur) ? 'qualified' : ''}">
+                            <div class="player-name">
+                                <i class="fas fa-user"></i>
+                                ${joueur}
+                            </div>
+                            ${data.qualifies.includes(joueur) ? `
+                                <div class="qualification-badge">
+                                    <i class="fas fa-star"></i>
+                                    Qualifié
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('')}
+            
+            ${generatePhaseFinaleHTML(matches.phase_finale)}
+        </div>
+    `;
+}
+
+function generatePhaseFinaleHTML(phaseFinale) {
+    if (phaseFinale.quart.length === 0) return '';
+    
+    return `
+        <div class="group-section phase-finale">
+            <h4 class="group-header">PHASE FINALE</h4>
+            ${phaseFinale.quart.map(match => `
+                <div class="match-item finale">
+                    <div class="match-details">
+                        <i class="fas fa-trophy"></i>
+                        ${match.match}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function animateMatches() {
+    const matchItems = document.querySelectorAll('.match-item');
+    matchItems.forEach((item, index) => {
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(-20px)';
+        setTimeout(() => {
+            item.style.opacity = '1';
+            item.style.transform = 'translateX(0)';
+        }, index * 50);
+    });
+}
+
+// Fonction de fermeture du modal
+function closeMatchesModal() {
+    const modal = document.getElementById('matchesModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+// Fonction de suppression d'un tournoi
+async function deleteTournoi(id) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce tournoi ?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/tournois/${id}`, { 
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Erreur lors de la suppression');
+        }
+        
+        showNotification('Tournoi supprimé avec succès !', 'success');
+        loadTournois();
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la suppression du tournoi', 'error');
+    }
+}
+
+// Système de notification amélioré
+function showNotification(message, type) {
+    // Supprime les notifications existantes
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(n => n.remove());
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Styles dynamiques
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.transform = 'translateX(120%)';
+    notification.style.transition = 'transform 0.3s ease-in-out';
+    
+    // Animation d'entrée
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Disparition automatique
+    setTimeout(() => {
+        notification.style.transform = 'translateX(120%)';
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
+}
+
+// Initialisation et gestionnaires d'événements
+document.addEventListener('DOMContentLoaded', () => {
+    loadTournois();
+    
+    // Validation des champs numériques
+    ['nbGroupes', 'joueursGroupe', 'qualifiesGroupe'].forEach(id => {
+        const input = document.getElementById(id);
+        input.addEventListener('input', () => {
+            const value = parseInt(input.value);
+            if (value < parseInt(input.min)) {
+                input.value = input.min;
+            }
+        });
+    });
+    
+    // Validation des dates
+    document.getElementById('dateDebut').addEventListener('change', function() {
+        const dateFin = document.getElementById('dateFin');
+        dateFin.min = this.value;
+    });
+});
+
+// Gestionnaire de clics en dehors du modal
+window.onclick = function(event) {
+    const modal = document.getElementById('matchesModal');
+    if (event.target === modal) {
+        closeMatchesModal();
+    }
+};
+
+// Gestion des erreurs globales
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Erreur non gérée:', event.reason);
+    showNotification('Une erreur inattendue est survenue', 'error');
+});
+</script>>
+{% endblock %}
