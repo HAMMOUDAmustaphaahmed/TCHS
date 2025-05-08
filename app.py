@@ -2421,7 +2421,7 @@ def update_tournament_status(id):
         return jsonify({'message': 'Statut mis à jour'})
     
     return jsonify({'error': 'Statut invalide'}), 400
-    
+
 @app.route('/tournois')  
 def tournois():
     return render_template('tournois.html')
@@ -2504,7 +2504,220 @@ def get_seance_details(seance_id):
     })
 
 
+class AutresPaiements(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(20), nullable=False)  # 'revenue' ou 'expense'
+    amount = db.Column(db.Float, nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'type': self.type,
+            'amount': self.amount,
+            'category': self.category,
+            'date': self.date.isoformat(),
+            'description': self.description,
+            'timestamp': self.timestamp.isoformat()
+        }
 
+    @staticmethod
+    def from_dict(data):
+        return AutresPaiements(
+            type=data['type'],
+            amount=data['amount'],
+            category=data['category'],
+            date=datetime.strptime(data['date'], '%Y-%m-%d').date(),
+            description=data['description']
+        )
+
+@app.route('/autres-paiements')
+def show_autres_paiements():
+    return render_template('autres_paiements.html')
+
+# Route pour obtenir toutes les transactions
+@app.route('/api/autres-paiements', methods=['GET'])
+def get_autres_paiements():
+    cur = mysql.connection.cursor()
+    
+    # Préparation des filtres
+    filters = []
+    values = []
+    
+    category = request.args.get('category', 'all')
+    if category != 'all':
+        filters.append("category = %s")
+        values.append(category)
+    
+    type_filter = request.args.get('type', 'all')
+    if type_filter != 'all':
+        filters.append("type = %s")
+        values.append(type_filter)
+    
+    date_filter = request.args.get('date')
+    if date_filter:
+        filters.append("date = %s")
+        values.append(date_filter)
+    
+    # Construction de la requête
+    query = "SELECT * FROM autres_paiements"
+    if filters:
+        query += " WHERE " + " AND ".join(filters)
+    query += " ORDER BY date DESC"
+    
+    cur.execute(query, tuple(values))
+    rows = cur.fetchall()
+    
+    # Conversion des résultats en format JSON
+    transactions = []
+    for row in rows:
+        transactions.append({
+            'id': row[0],
+            'type': row[1],
+            'amount': float(row[2]),
+            'category': row[3],
+            'date': row[4].isoformat(),
+            'description': row[5],
+            'timestamp': row[6].isoformat() if row[6] else None
+        })
+    
+    cur.close()
+    return jsonify(transactions)
+
+# Route pour ajouter une transaction
+@app.route('/api/autres-paiements', methods=['POST'])
+def add_autre_paiement():
+    try:
+        data = request.json
+        cur = mysql.connection.cursor()
+        
+        cur.execute("""
+            INSERT INTO autres_paiements (type, amount, category, date, description)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            data['type'],
+            data['amount'],
+            data['category'],
+            data['date'],
+            data['description']
+        ))
+        
+        mysql.connection.commit()
+        
+        # Récupérer l'ID de la dernière insertion
+        new_id = cur.lastrowid
+        
+        # Récupérer la transaction complète
+        cur.execute("SELECT * FROM autres_paiements WHERE id = %s", (new_id,))
+        row = cur.fetchone()
+        
+        cur.close()
+        
+        transaction = {
+            'id': row[0],
+            'type': row[1],
+            'amount': float(row[2]),
+            'category': row[3],
+            'date': row[4].isoformat(),
+            'description': row[5],
+            'timestamp': row[6].isoformat() if row[6] else None
+        }
+        
+        return jsonify(transaction), 201
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+# Route pour obtenir le résumé des transactions
+@app.route('/api/autres-paiements/summary', methods=['GET'])
+def get_summary():
+    cur = mysql.connection.cursor()
+    
+    # Calculer le total des revenus
+    cur.execute("""
+        SELECT COALESCE(SUM(amount), 0) 
+        FROM autres_paiements 
+        WHERE type = 'revenue'
+    """)
+    revenue = float(cur.fetchone()[0])
+    
+    # Calculer le total des dépenses
+    cur.execute("""
+        SELECT COALESCE(SUM(amount), 0) 
+        FROM autres_paiements 
+        WHERE type = 'expense'
+    """)
+    expenses = float(cur.fetchone()[0])
+    
+    cur.close()
+    
+    return jsonify({
+        'revenue': revenue,
+        'expenses': expenses,
+        'balance': revenue - expenses
+    })
+
+# Route pour supprimer une transaction
+@app.route('/api/autres-paiements/<int:transaction_id>', methods=['DELETE'])
+def delete_transaction(transaction_id):
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute("DELETE FROM autres_paiements WHERE id = %s", (transaction_id,))
+        mysql.connection.commit()
+        cur.close()
+        return '', 204
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+# Route pour mettre à jour une transaction
+@app.route('/api/autres-paiements/<int:transaction_id>', methods=['PUT'])
+def update_transaction(transaction_id):
+    try:
+        data = request.json
+        cur = mysql.connection.cursor()
+        
+        cur.execute("""
+            UPDATE autres_paiements 
+            SET type = %s, amount = %s, category = %s, date = %s, description = %s
+            WHERE id = %s
+        """, (
+            data['type'],
+            data['amount'],
+            data['category'],
+            data['date'],
+            data['description'],
+            transaction_id
+        ))
+        
+        mysql.connection.commit()
+        
+        # Récupérer la transaction mise à jour
+        cur.execute("SELECT * FROM autres_paiements WHERE id = %s", (transaction_id,))
+        row = cur.fetchone()
+        
+        if not row:
+            cur.close()
+            return jsonify({'error': 'Transaction not found'}), 404
+        
+        transaction = {
+            'id': row[0],
+            'type': row[1],
+            'amount': float(row[2]),
+            'category': row[3],
+            'date': row[4].isoformat(),
+            'description': row[5],
+            'timestamp': row[6].isoformat() if row[6] else None
+        }
+        
+        cur.close()
+        return jsonify(transaction)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+        
 # Running the app
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)

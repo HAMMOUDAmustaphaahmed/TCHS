@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCHS - Autres Paiements</title>
+    <link rel="stylesheet" href="static/css/autres_paiements.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="page-title">Autres Paiements</h1>
+            </div>
+        </div>
+
+        <div class="dashboard-cards">
+            <div class="stats-card revenue">
+                <i class="fas fa-money-bill-trend-up"></i>
+                <h3>Total Revenus</h3>
+                <p id="total-revenue">0 €</p>
+            </div>
+            <div class="stats-card expenses">
+                <i class="fas fa-money-bill-transfer"></i>
+                <h3>Total Dépenses</h3>
+                <p id="total-expenses">0 €</p>
+            </div>
+            <div class="stats-card balance">
+                <i class="fas fa-scale-balanced"></i>
+                <h3>Balance</h3>
+                <p id="total-balance">0 €</p>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-add" onclick="showTransactionModal('revenue')">
+                <i class="fas fa-plus"></i> Ajouter Revenu
+            </button>
+            <button class="btn-add expense" onclick="showTransactionModal('expense')">
+                <i class="fas fa-minus"></i> Ajouter Dépense
+            </button>
+        </div>
+
+        <div class="transactions-container">
+            <div class="filters">
+                <select id="category-filter">
+                    <option value="all">Toutes les catégories</option>
+                    <option value="utilities">Utilités (Eau, Électricité, Gaz)</option>
+                    <option value="rent">Loyer</option>
+                    <option value="office">Fournitures de bureau</option>
+                    <option value="repairs">Réparations</option>
+                    <option value="other">Autres</option>
+                </select>
+                <select id="type-filter">
+                    <option value="all">Tous les types</option>
+                    <option value="revenue">Revenus</option>
+                    <option value="expense">Dépenses</option>
+                </select>
+                <input type="date" id="date-filter">
+            </div>
+
+            <div class="transactions-list">
+                <!-- Transactions will be added here dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for adding transactions -->
+    <div class="modal" id="transaction-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-title">Ajouter une transaction</h2>
+            <form id="transaction-form">
+                <div class="form-group">
+                    <label for="transaction-amount">Montant (€)</label>
+                    <input type="number" id="transaction-amount" required step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="transaction-category">Catégorie</label>
+                    <select id="transaction-category" required>
+                        <option value="utilities">Utilités (Eau, Électricité, Gaz)</option>
+                        <option value="rent">Loyer</option>
+                        <option value="office">Fournitures de bureau</option>
+                        <option value="repairs">Réparations</option>
+                        <option value="other">Autres</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="transaction-date">Date</label>
+                    <input type="date" id="transaction-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="transaction-description">Description</label>
+                    <textarea id="transaction-description" required></textarea>
+                </div>
+                <button type="submit" class="btn-submit">Enregistrer</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="static/js/autres_paiements.js"></script>
+</body>
+</html>
