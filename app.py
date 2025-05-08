@@ -2829,15 +2829,166 @@ def get_situation_adherent(matricule):
 
 
 
+from flask import jsonify, render_template, request
+from sqlalchemy import func
+from datetime import datetime, timedelta
+import pytz
 
+@app.route('/situation-paiement')
+def show_situation_paiement():
+    if 'user_id' not in session:
+        flash("Accès non autorisé.", "danger")
+        return redirect(url_for('login'))
+    return render_template('situation-paiement.html')
 
+from flask import jsonify, render_template, request
+from sqlalchemy import func, distinct, case
+from datetime import datetime, timedelta
+import pytz
 
+@app.route('/api/situation-paiement/summary')
+def get_paiement_summary():
+    try:
+        date_start = request.args.get('start_date', datetime.now().replace(day=1).strftime('%Y-%m-%d'))
+        date_end = request.args.get('end_date', datetime.now().strftime('%Y-%m-%d'))
 
+        start_date = datetime.strptime(date_start, '%Y-%m-%d')
+        end_date = datetime.strptime(date_end, '%Y-%m-%d')
 
+        # Obtenir les remises uniques par adhérent
+        adherents_remises = db.session.query(
+            Paiement.matricule_adherent,
+            func.max(Paiement.cotisation).label('cotisation'),  # Une seule cotisation par adhérent
+            func.max(Paiement.remise).label('remise')  # Un seul pourcentage de remise par adhérent
+        ).filter(
+            Paiement.date_paiement.between(start_date, end_date + timedelta(days=1))
+        ).group_by(Paiement.matricule_adherent).all()
 
+        # Calculer le total des remises
+        total_remise = sum(
+            (adherent.cotisation * adherent.remise / 100.0)
+            for adherent in adherents_remises
+        )
 
+        # Obtenir les totaux généraux
+        totals = db.session.query(
+            func.sum(Paiement.montant).label('total_a_payer'),
+            func.sum(Paiement.montant_paye).label('total_paye'),
+            func.count(distinct(Paiement.matricule_adherent)).label('nombre_adherents'),
+            func.count(Paiement.id_paiement).label('nombre_transactions')
+        ).filter(
+            Paiement.date_paiement.between(start_date, end_date + timedelta(days=1))
+        ).first()
 
+        # Get payment methods distribution
+        payment_methods = db.session.query(
+            Paiement.type_reglement,
+            func.count(Paiement.id_paiement).label('count'),
+            func.sum(Paiement.montant_paye).label('total')
+        ).filter(
+            Paiement.date_paiement.between(start_date, end_date + timedelta(days=1))
+        ).group_by(Paiement.type_reglement).all()
 
+        # Get daily payments
+        daily_payments = db.session.query(
+            func.date(Paiement.date_paiement).label('date'),
+            func.sum(Paiement.montant_paye).label('total')
+        ).filter(
+            Paiement.date_paiement.between(start_date, end_date + timedelta(days=1))
+        ).group_by(func.date(Paiement.date_paiement)).all()
+
+        return jsonify({
+            'summary': {
+                'total_a_payer': float(totals.total_a_payer or 0),
+                'total_paye': float(totals.total_paye or 0),
+                'total_remise': float(total_remise),
+                'reste_a_payer': float((totals.total_a_payer or 0) - (totals.total_paye or 0) - total_remise),
+                'nombre_adherents': totals.nombre_adherents or 0,
+                'nombre_transactions': totals.nombre_transactions or 0
+            },
+            'payment_methods': [{
+                'method': method.type_reglement or 'Non spécifié',
+                'count': method.count,
+                'total': float(method.total or 0)
+            } for method in payment_methods],
+            'daily_payments': [{
+                'date': payment.date.strftime('%Y-%m-%d'),
+                'total': float(payment.total or 0)
+            } for payment in daily_payments]
+        })
+    except Exception as e:
+        print(f"Error in get_paiement_summary: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/situation-paiement/transactions')
+def get_paiement_transactions():
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+        date_start = request.args.get('start_date')
+        date_end = request.args.get('end_date')
+        search_term = request.args.get('search', '')
+
+        # Obtenir les informations de base des transactions
+        query = db.session.query(
+            Paiement,
+            # Sous-requête pour obtenir la remise une seule fois par adhérent
+            db.session.query(
+                (Paiement.cotisation * Paiement.remise / 100.0).label('montant_remise')
+            ).filter(
+                Paiement.matricule_adherent == Paiement.matricule_adherent
+            ).order_by(
+                Paiement.date_paiement
+            ).limit(1).as_scalar().label('montant_remise_adherent')
+        )
+
+        if date_start and date_end:
+            start_date = datetime.strptime(date_start, '%Y-%m-%d')
+            end_date = datetime.strptime(date_end, '%Y-%m-%d')
+            query = query.filter(Paiement.date_paiement.between(start_date, end_date + timedelta(days=1)))
+
+        if search_term:
+            query = query.filter(
+                db.or_(
+                    Paiement.matricule_adherent.ilike(f'%{search_term}%'),
+                    Paiement.type_reglement.ilike(f'%{search_term}%'),
+                    Paiement.banque.ilike(f'%{search_term}%')
+                )
+            )
+
+        # Get total count for pagination
+        total_count = query.count()
+
+        # Apply pagination
+        transactions = query.order_by(Paiement.date_paiement.desc())\
+            .offset((page - 1) * per_page)\
+            .limit(per_page)\
+            .all()
+
+        return jsonify({
+            'total': total_count,
+            'pages': (total_count + per_page - 1) // per_page,
+            'current_page': page,
+            'transactions': [{
+                'id': t.Paiement.id_paiement,
+                'matricule': t.Paiement.matricule_adherent,
+                'date': t.Paiement.date_paiement.strftime('%Y-%m-%d %H:%M:%S'),
+                'montant': float(t.Paiement.montant),
+                'montant_paye': float(t.Paiement.montant_paye),
+                'montant_reste': float(t.Paiement.montant_reste),
+                'type_reglement': t.Paiement.type_reglement,
+                'numero_cheque': t.Paiement.numero_cheque,
+                'banque': t.Paiement.banque,
+                'remise': float(t.Paiement.remise),
+                'montant_remise': float(t.montant_remise_adherent if t.montant_remise_adherent else 0),
+                'cotisation': float(t.Paiement.cotisation),
+                'numero_bon': t.Paiement.numero_bon,
+                'numero_carnet': t.Paiement.numero_carnet
+            } for t in transactions]
+        })
+    except Exception as e:
+        print(f"Error in get_paiement_transactions: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 
 
