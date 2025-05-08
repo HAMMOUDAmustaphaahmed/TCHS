@@ -49,63 +49,119 @@
         </div>
     </div>
 
-    <!-- Modal for adding transactions -->
-    <div class="modal" id="transaction-modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
+    <!-- Enhanced Modal for adding transactions -->
+<div class="modal" id="transaction-modal">
+    <div class="modal-content">
+        <div class="modal-header">
             <h2 id="modal-title">Ajouter une dépense</h2>
-            <form id="transaction-form">
-                <div class="form-group">
-                    <label for="company-name">Nom de la société</label>
-                    <input type="text" id="company-name" required>
-                </div>
-                <div class="form-group">
-                    <label for="bank-name">Banque</label>
-                    <input type="text" id="bank-name" required>
-                </div>
-                <div class="form-group">
-                    <label for="rib">RIB</label>
-                    <input type="text" id="rib">
-                </div>
-                <div class="form-group">
-                    <label for="location">Localisation</label>
-                    <input type="text" id="location">
-                </div>
-                <div class="form-group">
-                    <label for="transaction-amount">Montant (€)</label>
-                    <input type="number" id="transaction-amount" required step="0.01">
-                </div>
-                <div class="form-group">
-                    <label for="transaction-category">Catégorie</label>
-                    <select id="transaction-category" required>
-                        <option value="utilities">Utilités (Eau, Électricité, Gaz)</option>
-                        <option value="rent">Loyer</option>
-                        <option value="office">Fournitures de bureau</option>
-                        <option value="repairs">Réparations</option>
-                        <option value="other">Autres</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="transaction-date">Date</label>
-                    <input type="date" id="transaction-date" required>
-                </div>
-                <div class="form-group">
-                    <label for="transaction-description">Description</label>
-                    <textarea id="transaction-description" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="documents">Documents</label>
-                    <div class="file-drop-area">
-                        <span class="fake-btn">Choisir des fichiers</span>
-                        <span class="file-msg">ou déposer les fichiers ici</span>
-                        <input type="file" id="documents" multiple>
-                    </div>
-                    <div id="file-list"></div>
-                </div>
-                <button type="submit" class="btn-submit">Enregistrer</button>
-            </form>
+            <span class="close-modal">&times;</span>
         </div>
+        <form id="transaction-form">
+            <div class="form-sections">
+                <!-- Company Section -->
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-building"></i> Informations de l'entreprise</h3>
+                    <div class="form-group">
+                        <label for="company-name">Nom de la société</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-company"></i>
+                            <input type="text" id="company-name" required placeholder="Nom de l'entreprise">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Localisation</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-location-dot"></i>
+                            <input type="text" id="location" placeholder="Adresse de l'entreprise">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Banking Section -->
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-bank"></i> Informations bancaires</h3>
+                    <div class="form-group">
+                        <label for="bank-name">Banque</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-landmark"></i>
+                            <input type="text" id="bank-name" required placeholder="Nom de la banque">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="rib">RIB</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-credit-card"></i>
+                            <input type="text" id="rib" placeholder="Numéro RIB">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction Section -->
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-money-bill-transfer"></i> Détails de la transaction</h3>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="transaction-amount">Montant (€)</label>
+                            <div class="input-with-icon">
+                                <i class="fas fa-euro-sign"></i>
+                                <input type="number" id="transaction-amount" required step="0.01" placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="transaction-date">Date</label>
+                            <div class="input-with-icon">
+                                <i class="fas fa-calendar"></i>
+                                <input type="date" id="transaction-date" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="transaction-category">Catégorie</label>
+                        <div class="select-with-icon">
+                            <i class="fas fa-tags"></i>
+                            <select id="transaction-category" required>
+                                <option value="" disabled selected>Sélectionner une catégorie</option>
+                                <option value="utilities">Utilités (Eau, Électricité, Gaz)</option>
+                                <option value="rent">Loyer</option>
+                                <option value="office">Fournitures de bureau</option>
+                                <option value="repairs">Réparations</option>
+                                <option value="other">Autres</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="transaction-description">Description</label>
+                        <div class="input-with-icon textarea">
+                            <i class="fas fa-comment"></i>
+                            <textarea id="transaction-description" required placeholder="Description de la transaction"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents Section -->
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-file-upload"></i> Documents justificatifs</h3>
+                    <div class="form-group">
+                        <div class="file-drop-area">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <span class="file-msg">Glissez et déposez vos fichiers ici ou</span>
+                            <span class="fake-btn">Parcourir</span>
+                            <input type="file" id="documents" multiple>
+                        </div>
+                        <div id="file-list" class="file-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal()">Annuler</button>
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save"></i> Enregistrer
+                </button>
+            </div>
+        </form>
     </div>
+</div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="static/js/autres_paiements.js"></script>

@@ -82,6 +82,23 @@
         </a>
     </div>
 </div>
+
+<div class="nav-item dropdown">
+    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="fa fa-search"></i>Situations    
+    </a>
+<div class="dropdown-menu bg-transparent border-0">
+    <a href="{{ url_for('show_situation_adherent') }}" class="dropdown-item">
+        <i class="fa fa-search"></i>Situation Adherent
+    </a>
+    <a href="{{ url_for('show_situation_adherent') }}" class="dropdown-item">
+        <i class="fa fa-search"></i>Situation Paiements
+    </a>
+    <a href="{{ url_for('show_situation_adherent') }}" class="dropdown-item">
+        <i class="fa fa-search"></i>Situation Terrains
+    </a>
+</div>
+</div>
         
             <!-- Abonnement, Locations, Equipement -->
             
@@ -117,8 +134,8 @@
             </div>
 
             <div class="nav-item">
-                <a href="{{ url_for('presentation') }}" class="nav-link">
-                    <i class="fa fa-project-diagram me-2"></i>Presentation
+                <a href="{{ url_for('show_autres_paiements') }}" class="nav-link">
+                    <i class="fa fa-money-bill"></i>Dépenses
                 </a>
             </div>
             <div class="nav-item">

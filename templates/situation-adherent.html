@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Situation Adhérent</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/situation-adherent.css') }}">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="search-container">
+            <h1 class="page-title">Situation Adhérent</h1>
+            <div class="search-box">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="search-adherent" placeholder="Rechercher par matricule, nom ou prénom...">
+            </div>
+        </div>
+
+        <div id="situation-content" style="display: none;">
+            <div class="dashboard-cards">
+                <div class="info-card personal-info">
+                    <div class="card-header">
+                        <i class="fas fa-user"></i>
+                        <h3>Informations Personnelles</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="info-row">
+                            <span class="label">Matricule:</span>
+                            <span id="matricule" class="value"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Nom:</span>
+                            <span id="nom" class="value"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Prénom:</span>
+                            <span id="prenom" class="value"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Date de naissance:</span>
+                            <span id="date-naissance" class="value"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Téléphone:</span>
+                            <span id="telephone" class="value"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Email:</span>
+                            <span id="email" class="value"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card subscription-info">
+                    <div class="card-header">
+                        <i class="fas fa-id-card"></i>
+                        <h3>Abonnement</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="info-row">
+                            <span class="label">Type:</span>
+                            <span id="type-abonnement" class="value"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Groupe:</span>
+                            <span id="groupe" class="value"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Entraineur:</span>
+                            <span id="entraineur" class="value"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Statut:</span>
+                            <span id="status" class="value"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card payment-info">
+                    <div class="card-header">
+                        <i class="fas fa-money-bill-wave"></i>
+                        <h3>Situation Financière</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="info-row">
+                            <span class="label">Total à payer:</span>
+                            <span id="total-a-payer" class="value"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Total payé:</span>
+                            <span id="total-paye" class="value"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Remise:</span>
+                            <span id="total-remise" class="value"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Reste à payer:</span>
+                            <span id="reste-a-payer" class="value"></span>
+                        </div>
+                        <button class="btn-details" onclick="showPaymentHistory()">
+                            <i class="fas fa-history"></i> Historique des paiements
+                        </button>
+                    </div>
+                </div>
+
+                <div class="info-card presence-info">
+                    <div class="card-header">
+                        <i class="fas fa-calendar-check"></i>
+                        <h3>Présences</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="presence-stats">
+                            <div class="presence-stat">
+                                <span class="stat-value" id="total-presences">0</span>
+                                <span class="stat-label">Total séances</span>
+                            </div>
+                            <div class="presence-stat">
+                                <span class="stat-value" id="presences">0</span>
+                                <span class="stat-label">Présent</span>
+                            </div>
+                            <div class="presence-stat">
+                                <span class="stat-value" id="absences">0</span>
+                                <span class="stat-label">Absent</span>
+                            </div>
+                        </div>
+                        <div class="next-session">
+                            <h4>Prochaine séance</h4>
+                            <div id="prochaine-seance-info">
+                                <div class="info-row">
+                                    <span class="label">Date:</span>
+                                    <span id="prochaine-date" class="value">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Heure:</span>
+                                    <span id="prochaine-heure" class="value">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="label">Groupe:</span>
+                                    <span id="prochaine-groupe" class="value">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for payment history -->
+    <div class="modal" id="payment-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Historique des Paiements</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="payment-history-list">
+                    <!-- Payment history will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/situation-adherent.js') }}"></script>
+</body>
+</html>

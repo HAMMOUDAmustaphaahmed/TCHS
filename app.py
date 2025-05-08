@@ -2732,7 +2732,117 @@ def get_document(transaction_id, filename):
     except Exception as e:
         print(f"Error serving document: {str(e)}")
         return jsonify({'error': 'Error serving document'}), 500
-        
+
+
+
+
+
+
+
+from flask import jsonify, render_template, request
+from sqlalchemy import or_
+from datetime import datetime, timedelta
+import pytz
+
+@app.route('/situation-adherent')
+def show_situation_adherent():
+    return render_template('situation-adherent.html')
+
+@app.route('/api/search-adherent')
+def search_adherent():
+    search_term = request.args.get('term', '')
+    if not search_term:
+        return jsonify([])
+
+    adherents = Adherent.query.filter(
+        or_(
+            Adherent.matricule.cast(db.String).like(f'%{search_term}%'),
+            Adherent.nom.ilike(f'%{search_term}%'),
+            Adherent.prenom.ilike(f'%{search_term}%')
+        )
+    ).limit(10).all()
+
+    return jsonify([{
+        'id': a.adherent_id,
+        'matricule': a.matricule,
+        'nom': a.nom,
+        'prenom': a.prenom,
+        'label': f"{a.matricule} - {a.nom} {a.prenom}"
+    } for a in adherents])
+
+@app.route('/api/situation-adherent/<int:matricule>')
+def get_situation_adherent(matricule):
+    # Get adherent basic info
+    adherent = Adherent.query.filter_by(matricule=matricule).first_or_404()
+    
+    # Get payment information
+    paiements = Paiement.query.filter_by(matricule_adherent=str(matricule)).all()
+    total_paye = sum(p.montant_paye for p in paiements)
+    total_a_payer = sum(p.montant for p in paiements)
+    total_remise = sum(p.remise for p in paiements)
+    
+    # Get presence information
+    presences = Presence.query.filter_by(adherent_matricule=str(matricule)).all()
+    nombre_presences = sum(1 for p in presences if p.est_present == 'O')
+    
+    # Get next session
+    now = datetime.now(pytz.timezone('Europe/Paris'))
+    prochaine_seance = Presence.query.filter(
+        Presence.adherent_matricule == str(matricule),
+        Presence.date_seance >= now.date()
+    ).order_by(Presence.date_seance, Presence.heure_debut).first()
+    
+    # Prepare payment history
+    historique_paiements = [{
+        'date': p.date_paiement.strftime('%Y-%m-%d'),
+        'montant': p.montant,
+        'montant_paye': p.montant_paye,
+        'type_reglement': p.type_reglement,
+        'numero_cheque': p.numero_cheque,
+        'banque': p.banque,
+        'numero_bon': p.numero_bon,
+        'numero_carnet': p.numero_carnet,
+        'remise': p.remise
+    } for p in paiements]
+
+    return jsonify({
+        'adherent': adherent.to_dict(),
+        'paiements': {
+            'total_paye': total_paye,
+            'total_a_payer': total_a_payer,
+            'total_remise': total_remise,
+            'reste_a_payer': total_a_payer - total_paye - total_remise,
+            'historique': historique_paiements
+        },
+        'presences': {
+            'total': len(presences),
+            'present': nombre_presences,
+            'absent': len(presences) - nombre_presences
+        },
+        'prochaine_seance': {
+            'date': prochaine_seance.date_seance.strftime('%Y-%m-%d') if prochaine_seance else None,
+            'heure': prochaine_seance.heure_debut.strftime('%H:%M') if prochaine_seance else None,
+            'groupe': prochaine_seance.groupe_nom if prochaine_seance else None
+        } if prochaine_seance else None
+    })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Running the app
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)
