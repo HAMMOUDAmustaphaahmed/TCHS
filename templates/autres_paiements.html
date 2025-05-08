@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TCHS - Autres Paiements</title>
+    <title>TCHS - Dépenses</title>
     <link rel="stylesheet" href="static/css/autres_paiements.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,34 +12,21 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-12">
-                <h1 class="page-title">Autres Paiements</h1>
+                <h1 class="page-title">Gestion des Dépenses</h1>
             </div>
         </div>
 
         <div class="dashboard-cards">
-            <div class="stats-card revenue">
-                <i class="fas fa-money-bill-trend-up"></i>
-                <h3>Total Revenus</h3>
-                <p id="total-revenue">0 €</p>
-            </div>
             <div class="stats-card expenses">
                 <i class="fas fa-money-bill-transfer"></i>
                 <h3>Total Dépenses</h3>
                 <p id="total-expenses">0 €</p>
             </div>
-            <div class="stats-card balance">
-                <i class="fas fa-scale-balanced"></i>
-                <h3>Balance</h3>
-                <p id="total-balance">0 €</p>
-            </div>
         </div>
 
         <div class="action-buttons">
-            <button class="btn-add" onclick="showTransactionModal('revenue')">
-                <i class="fas fa-plus"></i> Ajouter Revenu
-            </button>
-            <button class="btn-add expense" onclick="showTransactionModal('expense')">
-                <i class="fas fa-minus"></i> Ajouter Dépense
+            <button class="btn-add expense" onclick="showTransactionModal()">
+                <i class="fas fa-plus"></i> Ajouter Dépense
             </button>
         </div>
 
@@ -52,11 +39,6 @@
                     <option value="office">Fournitures de bureau</option>
                     <option value="repairs">Réparations</option>
                     <option value="other">Autres</option>
-                </select>
-                <select id="type-filter">
-                    <option value="all">Tous les types</option>
-                    <option value="revenue">Revenus</option>
-                    <option value="expense">Dépenses</option>
                 </select>
                 <input type="date" id="date-filter">
             </div>
@@ -71,8 +53,24 @@
     <div class="modal" id="transaction-modal">
         <div class="modal-content">
             <span class="close-modal">&times;</span>
-            <h2 id="modal-title">Ajouter une transaction</h2>
+            <h2 id="modal-title">Ajouter une dépense</h2>
             <form id="transaction-form">
+                <div class="form-group">
+                    <label for="company-name">Nom de la société</label>
+                    <input type="text" id="company-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="bank-name">Banque</label>
+                    <input type="text" id="bank-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="rib">RIB</label>
+                    <input type="text" id="rib">
+                </div>
+                <div class="form-group">
+                    <label for="location">Localisation</label>
+                    <input type="text" id="location">
+                </div>
                 <div class="form-group">
                     <label for="transaction-amount">Montant (€)</label>
                     <input type="number" id="transaction-amount" required step="0.01">
@@ -94,6 +92,15 @@
                 <div class="form-group">
                     <label for="transaction-description">Description</label>
                     <textarea id="transaction-description" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="documents">Documents</label>
+                    <div class="file-drop-area">
+                        <span class="fake-btn">Choisir des fichiers</span>
+                        <span class="file-msg">ou déposer les fichiers ici</span>
+                        <input type="file" id="documents" multiple>
+                    </div>
+                    <div id="file-list"></div>
                 </div>
                 <button type="submit" class="btn-submit">Enregistrer</button>
             </form>

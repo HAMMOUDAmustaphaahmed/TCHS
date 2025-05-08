@@ -2506,217 +2506,232 @@ def get_seance_details(seance_id):
 
 class AutresPaiements(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    type = db.Column(db.String(20), nullable=False)  # 'revenue' ou 'expense'
     amount = db.Column(db.Float, nullable=False)
     category = db.Column(db.String(50), nullable=False)
     date = db.Column(db.Date, nullable=False)
     description = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    company_name = db.Column(db.String(100), nullable=False)
+    bank_name = db.Column(db.String(100), nullable=False)
+    rib = db.Column(db.String(100), nullable=True)
+    location = db.Column(db.String(200), nullable=True)
+    documents = db.Column(db.JSON, nullable=True)
     
     def to_dict(self):
         return {
             'id': self.id,
-            'type': self.type,
             'amount': self.amount,
             'category': self.category,
             'date': self.date.isoformat(),
             'description': self.description,
-            'timestamp': self.timestamp.isoformat()
+            'timestamp': self.timestamp.isoformat(),
+            'company_name': self.company_name,
+            'bank_name': self.bank_name,
+            'rib': self.rib,
+            'location': self.location,
+            'documents': self.documents or []
         }
 
     @staticmethod
     def from_dict(data):
         return AutresPaiements(
-            type=data['type'],
-            amount=data['amount'],
+            amount=float(data['amount']),
             category=data['category'],
             date=datetime.strptime(data['date'], '%Y-%m-%d').date(),
-            description=data['description']
+            description=data['description'],
+            company_name=data['company_name'],
+            bank_name=data['bank_name'],
+            rib=data.get('rib'),
+            location=data.get('location'),
+            documents=[]
         )
+
+import os
+from werkzeug.utils import secure_filename
+# In your app configuration
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'autres-paiements')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Create the upload folder if it doesn't exist
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+# Helper function to ensure folder exists
+def ensure_folder_exists(folder_path):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def ensure_folder_exists(folder_path):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
 
 @app.route('/autres-paiements')
 def show_autres_paiements():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        flash("Accès non autorisé.", "danger")
+        return redirect(url_for('login'))
     return render_template('autres_paiements.html')
 
-# Route pour obtenir toutes les transactions
 @app.route('/api/autres-paiements', methods=['GET'])
 def get_autres_paiements():
-    cur = mysql.connection.cursor()
-    
-    # Préparation des filtres
-    filters = []
-    values = []
-    
+    query = AutresPaiements.query
+
     category = request.args.get('category', 'all')
     if category != 'all':
-        filters.append("category = %s")
-        values.append(category)
-    
-    type_filter = request.args.get('type', 'all')
-    if type_filter != 'all':
-        filters.append("type = %s")
-        values.append(type_filter)
+        query = query.filter(AutresPaiements.category == category)
     
     date_filter = request.args.get('date')
     if date_filter:
-        filters.append("date = %s")
-        values.append(date_filter)
-    
-    # Construction de la requête
-    query = "SELECT * FROM autres_paiements"
-    if filters:
-        query += " WHERE " + " AND ".join(filters)
-    query += " ORDER BY date DESC"
-    
-    cur.execute(query, tuple(values))
-    rows = cur.fetchall()
-    
-    # Conversion des résultats en format JSON
-    transactions = []
-    for row in rows:
-        transactions.append({
-            'id': row[0],
-            'type': row[1],
-            'amount': float(row[2]),
-            'category': row[3],
-            'date': row[4].isoformat(),
-            'description': row[5],
-            'timestamp': row[6].isoformat() if row[6] else None
-        })
-    
-    cur.close()
-    return jsonify(transactions)
+        try:
+            filter_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
+            query = query.filter(AutresPaiements.date == filter_date)
+        except ValueError:
+            return jsonify({'error': 'Invalid date format'}), 400
 
-# Route pour ajouter une transaction
+    transactions = query.order_by(AutresPaiements.date.desc()).all()
+    return jsonify([transaction.to_dict() for transaction in transactions])
+
 @app.route('/api/autres-paiements', methods=['POST'])
 def add_autre_paiement():
     try:
-        data = request.json
-        cur = mysql.connection.cursor()
-        
-        cur.execute("""
-            INSERT INTO autres_paiements (type, amount, category, date, description)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (
-            data['type'],
-            data['amount'],
-            data['category'],
-            data['date'],
-            data['description']
-        ))
-        
-        mysql.connection.commit()
-        
-        # Récupérer l'ID de la dernière insertion
-        new_id = cur.lastrowid
-        
-        # Récupérer la transaction complète
-        cur.execute("SELECT * FROM autres_paiements WHERE id = %s", (new_id,))
-        row = cur.fetchone()
-        
-        cur.close()
-        
-        transaction = {
-            'id': row[0],
-            'type': row[1],
-            'amount': float(row[2]),
-            'category': row[3],
-            'date': row[4].isoformat(),
-            'description': row[5],
-            'timestamp': row[6].isoformat() if row[6] else None
+        print("Received form data:", request.form)
+        print("Received files:", request.files)
+
+        # Create data dictionary from form data
+        data = {
+            'amount': float(request.form['amount']),
+            'category': request.form['category'],
+            'date': request.form['date'],
+            'description': request.form['description'],
+            'company_name': request.form['company_name'],
+            'bank_name': request.form['bank_name'],
+            'rib': request.form.get('rib'),
+            'location': request.form.get('location')
         }
+
+        new_transaction = AutresPaiements.from_dict(data)
+        db.session.add(new_transaction)
+        db.session.flush()
+
+        # Handle file uploads
+        if 'documents' in request.files:
+            files = request.files.getlist('documents')
+            saved_files = []
+
+            folder_path = os.path.join(app.config['UPLOAD_FOLDER'], f'folder-{new_transaction.id}')
+            ensure_folder_exists(folder_path)
+
+            for file in files:
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(folder_path, filename)
+                    file.save(file_path)
+                    saved_files.append(filename)
+
+            new_transaction.documents = saved_files
+
+        db.session.commit()
+        return jsonify(new_transaction.to_dict()), 201
+
+    except Exception as e:
+        print("Error adding transaction:", str(e))
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+@app.route('/api/autres-paiements/summary', methods=['GET'])
+def get_summary():
+    try:
+        total_expenses = db.session.query(
+            db.func.coalesce(db.func.sum(AutresPaiements.amount), 0.0)
+        ).scalar()
         
-        return jsonify(transaction), 201
-    
+        return jsonify({
+            'expenses': float(total_expenses)
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
-# Route pour obtenir le résumé des transactions
-@app.route('/api/autres-paiements/summary', methods=['GET'])
-def get_summary():
-    cur = mysql.connection.cursor()
-    
-    # Calculer le total des revenus
-    cur.execute("""
-        SELECT COALESCE(SUM(amount), 0) 
-        FROM autres_paiements 
-        WHERE type = 'revenue'
-    """)
-    revenue = float(cur.fetchone()[0])
-    
-    # Calculer le total des dépenses
-    cur.execute("""
-        SELECT COALESCE(SUM(amount), 0) 
-        FROM autres_paiements 
-        WHERE type = 'expense'
-    """)
-    expenses = float(cur.fetchone()[0])
-    
-    cur.close()
-    
-    return jsonify({
-        'revenue': revenue,
-        'expenses': expenses,
-        'balance': revenue - expenses
-    })
-
-# Route pour supprimer une transaction
 @app.route('/api/autres-paiements/<int:transaction_id>', methods=['DELETE'])
 def delete_transaction(transaction_id):
     try:
-        cur = mysql.connection.cursor()
-        cur.execute("DELETE FROM autres_paiements WHERE id = %s", (transaction_id,))
-        mysql.connection.commit()
-        cur.close()
+        transaction = AutresPaiements.query.get_or_404(transaction_id)
+        
+        # Delete associated documents
+        folder_path = os.path.join(UPLOAD_FOLDER, f'folder-{transaction_id}')
+        if os.path.exists(folder_path):
+            for filename in transaction.documents or []:
+                file_path = os.path.join(folder_path, filename)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            os.rmdir(folder_path)
+        
+        db.session.delete(transaction)
+        db.session.commit()
         return '', 204
     except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 400
 
-# Route pour mettre à jour une transaction
 @app.route('/api/autres-paiements/<int:transaction_id>', methods=['PUT'])
 def update_transaction(transaction_id):
     try:
-        data = request.json
-        cur = mysql.connection.cursor()
+        transaction = AutresPaiements.query.get_or_404(transaction_id)
+        data = request.form.to_dict()
+        files = request.files.getlist('documents')
         
-        cur.execute("""
-            UPDATE autres_paiements 
-            SET type = %s, amount = %s, category = %s, date = %s, description = %s
-            WHERE id = %s
-        """, (
-            data['type'],
-            data['amount'],
-            data['category'],
-            data['date'],
-            data['description'],
-            transaction_id
-        ))
+        # Update basic fields
+        transaction.amount = float(data['amount'])
+        transaction.category = data['category']
+        transaction.date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        transaction.description = data['description']
+        transaction.company_name = data['company_name']
+        transaction.bank_name = data['bank_name']
+        transaction.rib = data.get('rib')
+        transaction.location = data.get('location')
         
-        mysql.connection.commit()
+        # Handle new documents
+        if files:
+            folder_path = os.path.join(UPLOAD_FOLDER, f'folder-{transaction_id}')
+            ensure_folder_exists(folder_path)
+            
+            for file in files:
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(folder_path, filename)
+                    file.save(file_path)
+                    if transaction.documents is None:
+                        transaction.documents = []
+                    transaction.documents.append(filename)
         
-        # Récupérer la transaction mise à jour
-        cur.execute("SELECT * FROM autres_paiements WHERE id = %s", (transaction_id,))
-        row = cur.fetchone()
-        
-        if not row:
-            cur.close()
-            return jsonify({'error': 'Transaction not found'}), 404
-        
-        transaction = {
-            'id': row[0],
-            'type': row[1],
-            'amount': float(row[2]),
-            'category': row[3],
-            'date': row[4].isoformat(),
-            'description': row[5],
-            'timestamp': row[6].isoformat() if row[6] else None
-        }
-        
-        cur.close()
-        return jsonify(transaction)
+        db.session.commit()
+        return jsonify(transaction.to_dict())
         
     except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 400
+
+@app.route('/api/autres-paiements/<int:transaction_id>/documents/<path:filename>')
+def get_document(transaction_id, filename):
+    try:
+        folder_path = os.path.join(app.config['UPLOAD_FOLDER'], f'folder-{transaction_id}')
+        if not os.path.exists(folder_path):
+            return jsonify({'error': 'Document folder not found'}), 404
+            
+        # Use safe_join to prevent directory traversal attacks
+        from werkzeug.utils import safe_join
+        safe_path = safe_join(folder_path, filename)
+        
+        if not os.path.exists(safe_path):
+            return jsonify({'error': 'Document not found'}), 404
+            
+        return send_from_directory(folder_path, filename, as_attachment=True)
+    except Exception as e:
+        print(f"Error serving document: {str(e)}")
+        return jsonify({'error': 'Error serving document'}), 500
         
 # Running the app
 if __name__ == '__main__':
