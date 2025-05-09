@@ -3270,7 +3270,144 @@ def save_presences():
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)})
 
-        
+
+
+
+@app.route('/situation_presence')
+def situation_presence():
+    # Récupérer les données pour les listes déroulantes
+    groupes = db.session.query(Groupe.categorie).distinct().all()
+    entraineurs = db.session.query(Entraineur.nom, Entraineur.prenom).distinct().all()
+    terrains = list(range(1, 10))  # Terrains de 1 à 9
+
+    return render_template('situation_presence.html',
+                         groupes=[g[0] for g in groupes],
+                         entraineurs=entraineurs,
+                         terrains=terrains)
+
+@app.route('/api/search_adherent_presence')
+def search_adherent_presence():
+    search_type = request.args.get('type')  # 'matricule' ou 'nom'
+    query = request.args.get('query', '').strip()
+    
+    if not query:
+        return jsonify([])
+
+    if search_type == 'matricule':
+        adherents = Adherent.query.filter(
+            Adherent.matricule.ilike(f'%{query}%')
+        ).limit(10).all()
+    else:
+        adherents = Adherent.query.filter(
+            or_(
+                Adherent.nom.ilike(f'%{query}%'),
+                Adherent.prenom.ilike(f'%{query}%')
+            )
+        ).limit(10).all()
+
+    return jsonify([{
+        'matricule': a.matricule,
+        'nom': a.nom,
+        'prenom': a.prenom
+    } for a in adherents])
+
+@app.route('/api/presences/search')
+def search_presences():
+    # Récupérer les paramètres
+    date = request.args.get('date')
+    groupe = request.args.get('groupe')
+    entraineur = request.args.get('entraineur')
+    adherent = request.args.get('adherent')
+    heure_debut = request.args.get('heure_debut')
+    heure_fin = request.args.get('heure_fin')
+    terrain = request.args.get('terrain')
+
+    # Construire la requête de base
+    query = db.session.query(
+        Presence,
+        Adherent.nom.label('adherent_nom'),
+        Adherent.prenom.label('adherent_prenom')
+    ).join(Adherent, Presence.adherent_matricule == Adherent.matricule)
+
+    # Appliquer les filtres
+    if date:
+        query = query.filter(Presence.date_seance == datetime.strptime(date, '%Y-%m-%d').date())
+    
+    if groupe:
+        query = query.filter(Presence.groupe_nom == groupe)
+    
+    if entraineur:
+        query = query.filter(Presence.entraineur_nom == entraineur)
+    
+    if adherent:
+        query = query.filter(Presence.adherent_matricule == adherent)
+    
+    if heure_debut:
+        query = query.filter(Presence.heure_debut >= datetime.strptime(heure_debut, '%H:%M').time())
+    
+    if heure_fin:
+        query = query.filter(Presence.heure_debut <= datetime.strptime(heure_fin, '%H:%M').time())
+
+    # Exécuter la requête
+    presences = query.all()
+
+    # Formater les résultats
+    results = []
+    for p, nom, prenom in presences:
+        results.append({
+            'date': p.date_seance.strftime('%Y-%m-%d'),
+            'heure': p.heure_debut.strftime('%H:%M'),
+            'groupe': p.groupe_nom,
+            'adherent': f"{nom} {prenom}",
+            'matricule': p.adherent_matricule,
+            'entraineur': p.entraineur_nom,
+            'statut': 'Présent(e)' if p.est_present == 'O' else 'Absent(e)',
+            'classe_statut': 'present' if p.est_present == 'O' else 'absent'
+        })
+
+    return jsonify(results)
+
+@app.route('/export_presences')
+def export_presences():
+    # Logique d'exportation similaire à la recherche mais au format Excel
+    # Utilisez pandas pour créer le fichier Excel
+    results = search_presences().get_json()
+    
+    df = pd.DataFrame(results)
+    
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer, index=False, sheet_name='Présences')
+    
+    # Formatage du fichier Excel
+    workbook = writer.book
+    worksheet = writer.sheets['Présences']
+    
+    # Formats
+    header_format = workbook.add_format({
+        'bold': True,
+        'text_wrap': True,
+        'valign': 'top',
+        'bg_color': '#D9EAD3',
+        'border': 1
+    })
+    
+    # Appliquer les formats
+    for col_num, value in enumerate(df.columns.values):
+        worksheet.write(0, col_num, value, header_format)
+        worksheet.set_column(col_num, col_num, 15)
+    
+    writer.save()
+    output.seek(0)
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f'presences_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+    )
+
+
 # Running the app
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)

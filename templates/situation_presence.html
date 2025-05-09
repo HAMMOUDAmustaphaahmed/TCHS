@@ -1,0 +1,161 @@
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/situation_presence.css') }}">
+<script src="{{ url_for('static', filename='js/situation_presence.js') }}"></script>
+
+<div class="presence-dashboard">
+    <!-- En-tête -->
+    <header class="dashboard-header">
+        <div class="header-content">
+            <h1 class="dashboard-title">
+                <i class="fas fa-clipboard-check"></i>
+                Situation des Présences
+            </h1>
+            <div class="actions-group">
+                <button id="exportExcel" class="btn-action">
+                    <i class="fas fa-file-excel"></i>
+                    Exporter Excel
+                </button>
+                <button id="printReport" class="btn-action">
+                    <i class="fas fa-print"></i>
+                    Imprimer
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Filtres -->
+    <section class="filters-section">
+        <div class="filters-container">
+            <!-- Sélection du type de recherche -->
+            <div class="search-type-container">
+                <div class="radio-group">
+                    <label class="radio-button">
+                        <input type="radio" name="searchType" value="groupe" checked>
+                        <span class="radio-label">Par Groupe</span>
+                    </label>
+                    <label class="radio-button">
+                        <input type="radio" name="searchType" value="entraineur">
+                        <span class="radio-label">Par Entraîneur</span>
+                    </label>
+                    <label class="radio-button">
+                        <input type="radio" name="searchType" value="adherent">
+                        <span class="radio-label">Par Adhérent</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Conteneurs de recherche dynamiques -->
+            <div id="groupeSearch" class="search-container active">
+                <label class="form-label">Groupe</label>
+                <select id="groupeSelect" class="form-select">
+                    <option value="">Tous les groupes</option>
+                    {% for groupe in groupes %}
+                    <option value="{{ groupe }}">{{ groupe }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="entraineurSearch" class="search-container">
+                <label class="form-label">Entraîneur</label>
+                <select id="entraineurSelect" class="form-select">
+                    <option value="">Tous les entraîneurs</option>
+                    {% for e in entraineurs %}
+                    <option value="{{ e.nom }}">{{ e.nom }} {{ e.prenom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="adherentSearch" class="search-container">
+                <div class="adherent-search-type">
+                    <label class="radio-button">
+                        <input type="radio" name="adherentSearchType" value="matricule" checked>
+                        <span class="radio-label">Par Matricule</span>
+                    </label>
+                    <label class="radio-button">
+                        <input type="radio" name="adherentSearchType" value="nom">
+                        <span class="radio-label">Par Nom</span>
+                    </label>
+                </div>
+                <div class="search-input-container">
+                    <input type="text" id="adherentSearchInput" class="form-control" 
+                           placeholder="Commencez à taper...">
+                    <div id="adherentSearchResults" class="search-results"></div>
+                </div>
+            </div>
+
+            <!-- Filtres de date et heure -->
+            <div class="datetime-filters">
+                <div class="date-filter">
+                    <label class="form-label">Date</label>
+                    <input type="date" id="dateFilter" class="form-control">
+                </div>
+                <div class="time-filter">
+                    <label class="form-label">Heure début</label>
+                    <input type="time" id="timeStartFilter" class="form-control">
+                </div>
+                <div class="time-filter">
+                    <label class="form-label">Heure fin</label>
+                    <input type="time" id="timeEndFilter" class="form-control">
+                </div>
+                <div class="terrain-filter">
+                    <label class="form-label">Terrain</label>
+                    <select id="terrainFilter" class="form-select">
+                        <option value="">Tous les terrains</option>
+                        {% for terrain in terrains %}
+                        <option value="{{ terrain }}">Terrain {{ terrain }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Bouton de recherche -->
+            <div class="search-actions">
+                <button id="searchButton" class="btn-search">
+                    <i class="fas fa-search"></i>
+                    Rechercher
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Résultats -->
+    <section class="results-section">
+        <div class="results-container">
+            <!-- En-tête des résultats -->
+            <div class="results-header">
+                <h2>Résultats de la recherche</h2>
+                <div class="results-count">
+                    <span id="totalResults">0</span> résultats trouvés
+                </div>
+            </div>
+
+            <!-- Tableau des résultats -->
+            <div class="table-responsive">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Heure</th>
+                            <th>Groupe</th>
+                            <th>Matricule</th>
+                            <th>Adhérent</th>
+                            <th>Entraîneur</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                        <!-- Les résultats seront insérés ici dynamiquement -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Loader -->
+<div id="loader" class="loader-container">
+    <div class="loader"></div>
+</div>
+
+{% endblock %}
