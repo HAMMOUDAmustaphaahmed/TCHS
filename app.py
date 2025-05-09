@@ -3239,6 +3239,38 @@ def get_terrain_history():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+
+
+@app.route('/api/adherents/<groupe>')
+def get_adherents_groupe(groupe):
+    adherents = Adherent.query.filter_by(groupe=groupe).all()
+    return jsonify([{
+        'matricule': a.matricule,
+        'nom': a.nom,
+        'prenom': a.prenom
+    } for a in adherents])
+
+@app.route('/api/presences', methods=['POST'])
+def save_presences():
+    presences = request.json
+    try:
+        for p in presences:
+            presence = Presence(
+                groupe_nom=p['groupe_nom'],
+                adherent_matricule=p['adherent_matricule'],
+                entraineur_nom=p['entraineur_nom'],
+                date_seance=datetime.strptime(p['date_seance'], '%Y-%m-%d').date(),
+                heure_debut=datetime.strptime(p['heure_debut'], '%H:%M').time(),
+                est_present=p['est_present']
+            )
+            db.session.add(presence)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
+
+        
 # Running the app
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)

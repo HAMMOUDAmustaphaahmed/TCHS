@@ -233,111 +233,294 @@ document.getElementById('submitMotDePasse').addEventListener('click', function()
           
               <!-- Tableau de l'emploi du temps -->
               <div class="table-responsive">
-                  <table class="table table-bordered">
-                      <colgroup>
-                          <col style="width: 12%">
-                          <col style="width: 8%">
-                          {% for _ in creneaux %}<col style="width: 10%">{% endfor %}
-                      </colgroup>
-                      <thead class="table-dark">
-                          <tr>
-                              <th colspan="2">{{ current_day.strftime('%A %d/%m/%Y') }}</th>
-                              {% for creneau in creneaux %}
-                              <th>{{ creneau.start.strftime('%H:%M') }} - {{ creneau.end.strftime('%H:%M') }}</th>
-                              {% endfor %}
-                          </tr>
-                      </thead>
-                      <tbody>
-                          <tr>
-<<<<<<< HEAD
-                              <td rowspan="9" class="align-middle text-center bg-light">
-=======
-<<<<<<< HEAD
-                              <td rowspan="9" class="align-middle text-center bg-light">
-=======
-                              <td rowspan="7" class="align-middle text-center bg-light">
->>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
->>>>>>> 0a5f33c8faa6e2ed3416ee78e4a00341c49605e8
-                                  <h6>Terrain</h6>
-                              </td>
-                              <td>Terrain 1</td>
-                              {% for creneau in creneaux %}
-                              <td class="time-slot">
-                                  {% for seance in seances %}
-                                  {% if seance.date == current_day.date() and seance.terrain == 1 
-                                      and seance.heure_debut.strftime('%H:%M') == creneau.start.strftime('%H:%M') %}
-                                  <div class="session-card">
-                                      <small>{{ seance.groupe }}</small>
-<<<<<<< HEAD
-                                      
-                                      <small  style="font-size:1em"><button type="button" class="btn btn-warning">Présence</button></small>
-=======
-<<<<<<< HEAD
-                                      
-                                      <small  style="font-size:1em"><button type="button" class="btn btn-warning">Présence</button></small>
-=======
-                                      <div class="text-muted" style="font-size:1em">{{ seance.entraineur }}</div>
->>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
->>>>>>> 0a5f33c8faa6e2ed3416ee78e4a00341c49605e8
-                                  </div>
-                                  {% endif %}
-                                  {% endfor %}
-                              </td>
-                              {% endfor %}
-                          </tr>
-<<<<<<< HEAD
-                          {% for terrain in range(2,10) %}
-=======
-<<<<<<< HEAD
-                          {% for terrain in range(2,10) %}
-=======
-                          {% for terrain in range(2,8) %}
->>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
->>>>>>> 0a5f33c8faa6e2ed3416ee78e4a00341c49605e8
-                          <tr>
-                              <td>Terrain {{ terrain }}</td>
-                              {% for creneau in creneaux %}
-                              <td class="time-slot">
-                                  {% for seance in seances %}
-                                  {% if seance.date == current_day.date() and seance.terrain == terrain 
-                                      and seance.heure_debut.strftime('%H:%M') == creneau.start.strftime('%H:%M') %}
-                                  <div class="session-card">
-                                      <small>{{ seance.groupe }}</small>
-                                      <div class="text-muted" style="font-size:1em">{{ seance.entraineur }}</div>
-                                  </div>
-                                  {% endif %}
-                                  {% endfor %}
-                              </td>
-                              {% endfor %}
-                          </tr>
-                          {% endfor %}
-                      </tbody>
-                  </table>
-              </div>
+                <table class="table table-bordered">
+                    <colgroup>
+                        <col style="width: 12%">
+                        <col style="width: 8%">
+                        {% for _ in creneaux %}
+                            <col style="width: 10%">
+                        {% endfor %}
+                    </colgroup>
+                    <thead class="table-dark">
+                        <tr>
+                            <th colspan="2">{{ current_day.strftime('%A %d/%m/%Y') }}</th>
+                            {% for creneau in creneaux %}
+                                <th>{{ creneau.start.strftime('%H:%M') }} - {{ creneau.end.strftime('%H:%M') }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td rowspan="9" class="align-middle text-center bg-light">
+                                <h6>Terrain</h6>
+                            </td>
+                            <td>Terrain 1</td>
+                            {% for creneau in creneaux %}
+                                <td class="time-slot">
+                                    {% for seance in seances %}
+                                        {% if seance.date == current_day.date() and seance.terrain == 1 
+                                            and seance.heure_debut.strftime('%H:%M') == creneau.start.strftime('%H:%M') %}
+                                            <div class="session-card">
+                                              <small>{{ seance.groupe }}</small>
+                                              <small style="font-size:1em">
+                                                  <button type="button" 
+                                                          class="btn btn-warning presence-btn" 
+                                                          data-groupe="{{ seance.groupe }}"
+                                                          data-date="{{ seance.date }}"
+                                                          data-heure="{{ seance.heure_debut.strftime('%H:%M') }}"
+                                                          data-entraineur="{{ seance.entraineur }}"
+                                                          onclick="openPresenceModal(this)">
+                                                      Présence
+                                                  </button>
+                                              </small>
+                                          </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        {% for terrain in range(2,10) %}
+                            <tr>
+                                <td>Terrain {{ terrain }}</td>
+                                {% for creneau in creneaux %}
+                                    <td class="time-slot">
+                                        {% for seance in seances %}
+                                            {% if seance.date == current_day.date() and seance.terrain == terrain 
+                                                and seance.heure_debut.strftime('%H:%M') == creneau.start.strftime('%H:%M') %}
+                                                <div class="session-card">
+                                                    <small>{{ seance.groupe }}</small>
+                                                    <div class="text-muted" style="font-size:1em">{{ seance.entraineur }}</div>
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
           </div>
           
           <script>
-              let currentExportType = null;
-          
-              function prepareExport(type) {
-                  currentExportType = type;
-                  document.getElementById('exportScope').style.display = 'block';
-              }
-          
-              function triggerExport(scope) {
-                  const url = new URL(window.location.href);
-                  const params = {
-                      week_offset: {{ week_offset }},
-                      day_offset: {{ day_offset }},
-                      export_type: currentExportType,
-                      scope: scope
-                  };
-          
-                  window.location.href = `/export-schedule?${new URLSearchParams(params)}`;
-                  document.getElementById('exportScope').style.display = 'none';
-              }
-          </script>
-          
+            let currentExportType = null;
+        
+            function prepareExport(type) {
+                currentExportType = type;
+                document.getElementById('exportScope').style.display = 'block';
+            }
+        
+            function triggerExport(scope) {
+                const url = new URL(window.location.href);
+                const params = {
+                    week_offset: {{ week_offset }},
+                    day_offset: {{ day_offset }},
+                    export_type: currentExportType,
+                    scope: scope
+                };
+        
+                window.location.href = `/export-schedule?${new URLSearchParams(params)}`;
+                document.getElementById('exportScope').style.display = 'none';
+            }
+        </script>
+          <!-- Modal Présence -->
+<div class="modal fade" id="presenceModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+          <div class="modal-header bg-warning">
+              <h5 class="modal-title">
+                  <i class="fas fa-clipboard-check"></i>
+                  Gestion des Présences
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+              <div class="session-info mb-3">
+                  <p><strong>Groupe:</strong> <span id="modalGroupe"></span></p>
+                  <p><strong>Date:</strong> <span id="modalDate"></span></p>
+                  <p><strong>Heure:</strong> <span id="modalHeure"></span></p>
+              </div>
+              <div class="alert alert-info">
+                  <i class="fas fa-info-circle"></i>
+                  Veuillez marquer la présence pour chaque adhérent.
+              </div>
+              <form id="presenceForm">
+                  <div class="table-responsive">
+                      <table class="table table-hover">
+                          <thead>
+                              <tr>
+                                  <th>Matricule</th>
+                                  <th>Nom</th>
+                                  <th>Prénom</th>
+                                  <th class="text-center">Présence</th>
+                              </tr>
+                          </thead>
+                          <tbody id="adherentsList">
+                              <!-- Les adhérents seront ajoutés ici dynamiquement -->
+                          </tbody>
+                      </table>
+                  </div>
+              </form>
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+              <button type="button" class="btn btn-warning" onclick="savePresences()">
+                  <i class="fas fa-save"></i> Enregistrer
+              </button>
+          </div>
+      </div>
+  </div>
+</div>
+<script>
+  // Fonction pour ouvrir le modal de présence
+function openPresenceModal(button) {
+    const groupe = button.dataset.groupe;
+    const date = button.dataset.date;
+    const heure = button.dataset.heure;
+    const entraineur = button.dataset.entraineur;
+
+    // Mettre à jour les informations dans le modal
+    document.getElementById('modalGroupe').textContent = groupe;
+    document.getElementById('modalDate').textContent = date;
+    document.getElementById('modalHeure').textContent = heure;
+
+    // Charger les adhérents du groupe
+    fetch(`/api/adherents/${groupe}`)
+        .then(response => response.json())
+        .then(adherents => {
+            const adherentsList = document.getElementById('adherentsList');
+            adherentsList.innerHTML = '';
+
+            adherents.forEach(adherent => {
+                const row = `
+                    <tr>
+                        <td>${adherent.matricule}</td>
+                        <td>${adherent.nom}</td>
+                        <td>${adherent.prenom}</td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+                                <input type="radio" 
+                                       class="btn-check" 
+                                       name="presence_${adherent.matricule}" 
+                                       id="present_${adherent.matricule}" 
+                                       value="O" 
+                                       required>
+                                <label class="btn btn-outline-success" 
+                                       for="present_${adherent.matricule}">
+                                    <i class="fas fa-check"></i> Présent(e)
+                                </label>
+
+                                <input type="radio" 
+                                       class="btn-check" 
+                                       name="presence_${adherent.matricule}" 
+                                       id="absent_${adherent.matricule}" 
+                                       value="N" 
+                                       required>
+                                <label class="btn btn-outline-danger" 
+                                       for="absent_${adherent.matricule}">
+                                    <i class="fas fa-times"></i> Absent(e)
+                                </label>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                adherentsList.insertAdjacentHTML('beforeend', row);
+            });
+        });
+
+    // Afficher le modal
+    const presenceModal = new bootstrap.Modal(document.getElementById('presenceModal'));
+    presenceModal.show();
+}
+
+// Fonction pour sauvegarder les présences
+function savePresences() {
+    const groupe = document.getElementById('modalGroupe').textContent;
+    const date = document.getElementById('modalDate').textContent;
+    const heure = document.getElementById('modalHeure').textContent;
+    const presences = [];
+    let hasMarkedPresence = false;
+
+    // Récupérer toutes les présences
+    document.querySelectorAll('#adherentsList tr').forEach(row => {
+        const matricule = row.cells[0].textContent;
+        const radioButtons = row.querySelector('.btn-group').querySelectorAll('input[type="radio"]');
+        let presence = null;
+        
+        radioButtons.forEach(radio => {
+            if (radio.checked) {
+                presence = radio.value;
+                hasMarkedPresence = true;
+            }
+        });
+
+        if (presence) {
+            presences.push({
+                groupe_nom: groupe,
+                adherent_matricule: matricule,
+                entraineur_nom: document.querySelector('[data-entraineur]').dataset.entraineur,
+                date_seance: date,
+                heure_debut: heure,
+                est_present: presence
+            });
+        }
+    });
+
+    if (!hasMarkedPresence) {
+        alert("Veuillez marquer au moins une présence ou absence.");
+        return;
+    }
+
+    // Envoyer les données au serveur
+    fetch('/api/presences', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(presences)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Présences enregistrées avec succès!");
+            bootstrap.Modal.getInstance(document.getElementById('presenceModal')).hide();
+        } else {
+            alert("Erreur lors de l'enregistrement des présences.");
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert("Une erreur est survenue lors de l'enregistrement des présences.");
+    });
+}
+</script>
+<style>
+  /* Styles pour le modal de présence */
+.session-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.btn-check:checked + .btn-outline-success {
+    background-color: #198754;
+    color: white;
+}
+
+.btn-check:checked + .btn-outline-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.btn-group label {
+    min-width: 100px;
+}
+</style>
             <!-- Footer Start -->
             <div class="container-fluid pt-4 px-4">
                 <div class="bg-light rounded-top p-4">
