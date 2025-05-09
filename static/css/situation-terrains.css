@@ -417,3 +417,74 @@ header {
 .occupation-slide.active {
     display: block;
 }
+.stats-filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+}
+
+.stats-filters .date-picker {
+    position: relative;
+}
+
+.stats-filters .date-picker i {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+}
+
+.stats-filters .date-picker input {
+    padding: 8px 8px 8px 30px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 0.9rem;
+}
+
+.stats-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 100;
+}
+
+.loading-spinner {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.stats-timestamp {
+    text-align: right;
+    color: #666;
+    margin-top: 10px;
+    font-style: italic;
+}
+
+#update-stats {
+    padding: 8px 15px;
+    background: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s;
+}
+
+#update-stats:hover {
+    background: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+    .stats-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

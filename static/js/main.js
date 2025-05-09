@@ -31,14 +31,6 @@
         $('.sidebar, .content').toggleClass("open");
         return false;
     });
-<<<<<<< HEAD
-    
-=======
-<<<<<<< HEAD
-    
-=======
->>>>>>> 51c573f6f91f43dcb656f90e0e0f6544820fbd4f
->>>>>>> 0a5f33c8faa6e2ed3416ee78e4a00341c49605e8
 
 
     // Progress Bar

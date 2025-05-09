@@ -7,6 +7,8 @@ class SituationTerrains {
         this.initializeDatePickers();
         this.setupEventListeners();
         this.initializeCharts();
+        this.initializeStatsPickers();
+        this.loadStatistics(); // Chargement initial des statistiques
         this.initializeTerrainSelect();  
         this.addExportButtons();  // Déplacé à l'intérieur du constructeur
 
@@ -144,18 +146,17 @@ class SituationTerrains {
 
     setupEventListeners() {
         // Vérification de disponibilité
-        document.getElementById('check-availability').addEventListener('click', () => this.checkAvailability());
-
-        // Export et impression
-        document.getElementById('export-excel').addEventListener('click', () => this.exportToExcel());
-        document.getElementById('print-page').addEventListener('click', () => this.printPage());
-
+        document.getElementById('check-availability')?.addEventListener('click', () => this.checkAvailability());
+    
         // Historique
-        document.getElementById('terrain-select').addEventListener('change', () => this.loadHistory());
-        document.getElementById('history-date-start').addEventListener('change', () => this.loadHistory());
-        document.getElementById('history-date-end').addEventListener('change', () => this.loadHistory());
+        document.getElementById('terrain-select')?.addEventListener('change', () => this.loadHistory());
+        document.getElementById('history-date-start')?.addEventListener('change', () => this.loadHistory());
+        document.getElementById('history-date-end')?.addEventListener('change', () => this.loadHistory());
+    
+        // Export des données actuelles
+        document.getElementById('export-excel')?.addEventListener('click', () => this.exportCurrentToExcel());
+        document.getElementById('print-page')?.addEventListener('click', () => this.printPage());
     }
-
     initializeCharts() {
         // Graphique d'utilisation
         const usageCtx = document.getElementById('usage-chart').getContext('2d');
@@ -345,21 +346,90 @@ class SituationTerrains {
         `;
     }
 
+    
+    initializeStatsPickers() {
+        const defaultConfig = {
+            locale: 'fr',
+            dateFormat: 'Y-m-d',
+            altFormat: 'd-m-Y',
+            altInput: true,
+            disableMobile: true,
+            allowInput: true
+        };
+
+        // Date de début par défaut : 1er janvier 2025
+        this.statsDateStart = flatpickr("#stats-date-start", {
+            ...defaultConfig,
+            defaultDate: "2025-01-01"
+        });
+
+        // Date de fin par défaut : aujourd'hui
+        this.statsDateEnd = flatpickr("#stats-date-end", {
+            ...defaultConfig,
+            defaultDate: 'today'
+        });
+
+        // Ajouter l'événement pour le bouton d'actualisation
+        document.getElementById('update-stats')?.addEventListener('click', () => this.loadStatistics());
+    }
+
     async loadStatistics() {
         try {
-            const dateStart = this.historyDateStart.selectedDates[0].toISOString().split('T')[0];
-            const dateEnd = this.historyDateEnd.selectedDates[0].toISOString().split('T')[0];
+            const dateStart = this.statsDateStart.selectedDates[0];
+            const dateEnd = this.statsDateEnd.selectedDates[0];
 
-            const response = await fetch(`/api/terrains/stats?start_date=${dateStart}&end_date=${dateEnd}`);
+            if (!dateStart || !dateEnd) {
+                this.showError("Veuillez sélectionner une période pour les statistiques");
+                return;
+            }
+
+            // Afficher un indicateur de chargement
+            this.showLoadingStats();
+
+            const params = new URLSearchParams({
+                start_date: dateStart.toISOString().split('T')[0],
+                end_date: dateEnd.toISOString().split('T')[0]
+            });
+
+            const response = await fetch(`/api/terrains/stats?${params}`);
             if (!response.ok) throw new Error('Erreur lors du chargement des statistiques');
 
             const data = await response.json();
             this.updateCharts(data);
 
+            // Masquer l'indicateur de chargement
+            this.hideLoadingStats();
+
         } catch (error) {
+            this.hideLoadingStats();
             this.showError("Erreur lors du chargement des statistiques");
             console.error(error);
         }
+    }
+
+    showLoadingStats() {
+        const chartsContainer = document.querySelector('.stats-charts');
+        if (!chartsContainer) return;
+
+        const loading = document.createElement('div');
+        loading.className = 'stats-loading';
+        loading.innerHTML = `
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <p>Chargement des statistiques...</p>
+        `;
+
+        chartsContainer.style.opacity = '0.5';
+        chartsContainer.parentElement.appendChild(loading);
+    }
+
+    hideLoadingStats() {
+        const loading = document.querySelector('.stats-loading');
+        if (loading) loading.remove();
+
+        const chartsContainer = document.querySelector('.stats-charts');
+        if (chartsContainer) chartsContainer.style.opacity = '1';
     }
 
     updateCharts(data) {
@@ -378,7 +448,28 @@ class SituationTerrains {
         this.charts.revenue.data.labels = terrainNumbers.map(num => `Terrain ${num}`);
         this.charts.revenue.data.datasets[0].data = revenus;
         this.charts.revenue.update();
+
+        // Ajouter un timestamp de mise à jour
+        this.updateStatsTimestamp();
     }
+
+    updateStatsTimestamp() {
+        const timestampDiv = document.createElement('div');
+        timestampDiv.className = 'stats-timestamp';
+        timestampDiv.innerHTML = `
+            <small>
+                Dernière mise à jour : ${new Date().toLocaleString('fr-FR')}
+            </small>
+        `;
+
+        const existingTimestamp = document.querySelector('.stats-timestamp');
+        if (existingTimestamp) {
+            existingTimestamp.remove();
+        }
+
+        document.querySelector('.stats-container')?.appendChild(timestampDiv);
+    }
+
 
     async loadHistory() {
         try {
@@ -493,7 +584,7 @@ class SituationTerrains {
         this.loadHistory();
     }
 
-    exportToExcel() {
+    exportCurrentToExcel() {
         const wb = XLSX.utils.book_new();
         
         // Données des terrains
@@ -506,29 +597,251 @@ class SituationTerrains {
         
         const wsTerrains = XLSX.utils.json_to_sheet(courtsData);
         XLSX.utils.book_append_sheet(wb, wsTerrains, "Situation Terrains");
-
-        // Historique
-        const historyData = Array.from(document.querySelectorAll('#history-body tr')).map(row => {
-            const cells = row.querySelectorAll('td');
-            return {
-                'Date': cells[0].textContent,
-                'Heures': cells[1].textContent,
-                'Type': cells[2].textContent,
-                'Utilisateur': cells[3].textContent,
-                'Montant': cells[4].textContent
-            };
-        });
-
-        const wsHistory = XLSX.utils.json_to_sheet(historyData);
-        XLSX.utils.book_append_sheet(wb, wsHistory, "Historique");
-
+    
         // Générer le fichier
         const date = new Date().toISOString().split('T')[0];
         XLSX.writeFile(wb, `situation_terrains_${date}.xlsx`);
     }
+    exportHistoryToExcel() {
+        try {
+            const content = document.querySelector('.history-table');
+            if (!content) {
+                this.showError("Aucun contenu à exporter");
+                return;
+            }
+    
+            const terrain = document.querySelector('#terrain-select').value;
+            const dateStart = this.historyDateStart.selectedDates[0];
+            const dateEnd = this.historyDateEnd.selectedDates[0];
+    
+            // Créer un nouveau classeur
+            const wb = XLSX.utils.book_new();
+    
+            // Récupérer les données de l'historique
+            const historyData = Array.from(document.querySelectorAll('#history-body tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                return {
+                    'Date': cells[0].textContent,
+                    'Heures': cells[1].textContent,
+                    'Type': cells[2].textContent,
+                    'Utilisateur': cells[3].textContent,
+                    'Montant': cells[4].textContent
+                };
+            });
+    
+            // Créer une feuille avec les données
+            const ws = XLSX.utils.json_to_sheet(historyData);
+    
+            // Ajouter un en-tête
+            const headerData = [
+                [`Historique du Terrain ${terrain}`],
+                [`Période : du ${dateStart.toLocaleDateString()} au ${dateEnd.toLocaleDateString()}`],
+                [],
+            ];
+            XLSX.utils.sheet_add_aoa(ws, headerData, { origin: 'A1' });
+    
+            // Ajouter la feuille au classeur
+            XLSX.utils.book_append_sheet(wb, ws, "Historique");
+    
+            // Générer le fichier
+            const fileName = `historique_terrain_${terrain}_${dateStart.toLocaleDateString()}_${dateEnd.toLocaleDateString()}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+    
+            this.showMessage("Export Excel réussi!", "success");
+        } catch (error) {
+            console.error('Erreur lors de l\'export Excel:', error);
+            this.showError("Erreur lors de l'export Excel");
+        }
+    }
 
     printPage() {
-        window.print();
+        // Imprimer uniquement la situation actuelle des terrains
+        const courtsContent = document.querySelector('.courts-grid');
+        if (!courtsContent) {
+            this.showError("Aucun contenu à imprimer");
+            return;
+        }
+    
+        const printWindow = window.open('', '_blank');
+        const date = new Date().toLocaleString('fr-FR');
+        
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>Situation des Terrains - ${date}</title>
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            padding: 20px;
+                            color: #333;
+                        }
+                        .print-header {
+                            text-align: center;
+                            margin-bottom: 30px;
+                            padding-bottom: 10px;
+                            border-bottom: 2px solid #333;
+                        }
+                        .courts-grid {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                            gap: 20px;
+                        }
+                        .court-card {
+                            border: 1px solid #ddd;
+                            padding: 15px;
+                            border-radius: 8px;
+                            break-inside: avoid;
+                        }
+                        .court-header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 15px;
+                            padding-bottom: 10px;
+                            border-bottom: 1px solid #eee;
+                        }
+                        .status-badge {
+                            padding: 5px 10px;
+                            border-radius: 15px;
+                            font-size: 0.9em;
+                        }
+                        .status-badge.available {
+                            background-color: #e8f5e9;
+                            color: #2e7d32;
+                        }
+                        .status-badge.occupied {
+                            background-color: #ffebee;
+                            color: #c62828;
+                        }
+                        .occupation-info, .next-occupation {
+                            margin-top: 10px;
+                        }
+                        .print-footer {
+                            margin-top: 30px;
+                            text-align: center;
+                            font-size: 0.8em;
+                            color: #666;
+                        }
+                        @media print {
+                            body { margin: 0; padding: 15px; }
+                            .court-card { break-inside: avoid; page-break-inside: avoid; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-header">
+                        <h2>Situation des Terrains</h2>
+                        <p>Date d'impression : ${date}</p>
+                    </div>
+                    ${courtsContent.outerHTML}
+                    <div class="print-footer">
+                        <p>Document généré le ${date}</p>
+                    </div>
+                </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        setTimeout(() => printWindow.close(), 1000);
+    }
+    
+    printHistory() {
+        // Imprimer uniquement l'historique
+        const historyTable = document.querySelector('.history-table');
+        if (!historyTable) {
+            this.showError("Aucun historique à imprimer");
+            return;
+        }
+    
+        const terrain = document.querySelector('#terrain-select').value;
+        const dateStart = this.historyDateStart.selectedDates[0]?.toLocaleDateString('fr-FR');
+        const dateEnd = this.historyDateEnd.selectedDates[0]?.toLocaleDateString('fr-FR');
+        const currentDate = new Date().toLocaleString('fr-FR');
+    
+        const printWindow = window.open('', '_blank');
+        
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>Historique des Terrains - ${currentDate}</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            padding: 20px;
+                            color: #333;
+                        }
+                        .print-header {
+                            text-align: center;
+                            margin-bottom: 30px;
+                        }
+                        .print-subheader {
+                            text-align: center;
+                            margin-bottom: 20px;
+                            color: #666;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 20px;
+                        }
+                        th, td {
+                            padding: 12px;
+                            text-align: left;
+                            border: 1px solid #ddd;
+                        }
+                        th {
+                            background-color: #f5f5f5;
+                            font-weight: bold;
+                        }
+                        tr:nth-child(even) {
+                            background-color: #fafafa;
+                        }
+                        .print-footer {
+                            margin-top: 30px;
+                            text-align: center;
+                            font-size: 0.8em;
+                            color: #666;
+                            padding-top: 10px;
+                            border-top: 1px solid #ddd;
+                        }
+                        @media print {
+                            thead {
+                                display: table-header-group;
+                            }
+                            tr {
+                                page-break-inside: avoid;
+                            }
+                            @page {
+                                margin: 1cm;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-header">
+                        <h2>Historique des Réservations</h2>
+                    </div>
+                    <div class="print-subheader">
+                        <p>Terrain ${terrain}</p>
+                        <p>Période : du ${dateStart} au ${dateEnd}</p>
+                    </div>
+                    ${historyTable.outerHTML}
+                    <div class="print-footer">
+                        <p>Document généré le ${currentDate}</p>
+                    </div>
+                </body>
+            </html>
+        `);
+    
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        setTimeout(() => printWindow.close(), 1000);
     }
 
     addExportButtons() {
@@ -537,21 +850,20 @@ class SituationTerrains {
         
         const exportButtons = `
             <div class="export-buttons">
-                <button class="btn btn-primary" id="export-pdf">
-                    <i class="fas fa-file-pdf"></i> Exporter PDF
+                <button class="btn btn-success" id="export-history-excel">
+                    <i class="fas fa-file-excel"></i> Exporter Excel
                 </button>
-                <button class="btn btn-success" id="print-history">
+                <button class="btn btn-primary" id="print-history">
                     <i class="fas fa-print"></i> Imprimer
                 </button>
             </div>
         `;
         historyContainer.insertAdjacentHTML('beforeend', exportButtons);
-
+    
         // Ajouter les événements aux boutons
-        document.getElementById('export-pdf')?.addEventListener('click', () => this.exportToPDF());
+        document.getElementById('export-history-excel')?.addEventListener('click', () => this.exportHistoryToExcel());
         document.getElementById('print-history')?.addEventListener('click', () => this.printHistory());
     }
-
     async exportToPDF() {
         try {
             const content = document.querySelector('.history-table');
@@ -688,45 +1000,7 @@ class SituationTerrains {
         }, 3000);
     }
 
-    printHistory() {
-        const content = document.querySelector('.history-table');
-        if (!content) return;
-
-        const printWindow = window.open('', '_blank');
-        const terrain = document.querySelector('#terrain-select').value;
-        const dateStart = this.historyDateStart.selectedDates[0]?.toLocaleDateString();
-        const dateEnd = this.historyDateEnd.selectedDates[0]?.toLocaleDateString();
-
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-                <head>
-                    <title>Historique des terrains</title>
-                    <link rel="stylesheet" href="/static/css/styles.css">
-                    <style>
-                        @media print {
-                            table { width: 100%; border-collapse: collapse; }
-                            th, td { padding: 8px; border: 1px solid #ddd; }
-                            th { background-color: #f4f4f4; }
-                        }
-                        .print-header {
-                            text-align: center;
-                            margin-bottom: 20px;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="print-header">
-                        <h2>Historique du Terrain ${terrain}</h2>
-                        <p>Période : du ${dateStart} au ${dateEnd}</p>
-                    </div>
-                    ${content.outerHTML}
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
-        printWindow.print();
-    }
+    
 
     showError(message) {
         let notification = document.getElementById('error-notification');

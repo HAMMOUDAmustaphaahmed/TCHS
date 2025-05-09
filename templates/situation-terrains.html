@@ -56,14 +56,16 @@
                     </button>
                 </div>
 
-                <div class="action-buttons">
-                    <button id="export-excel" class="btn-export">
-                        <i class="fas fa-file-excel"></i> Exporter
-                    </button>
-                    <button id="print-page" class="btn-print">
-                        <i class="fas fa-print"></i> Imprimer
-                    </button>
-                </div>
+                <!-- Dans la section des filtres -->
+<div class="action-buttons">
+    <button id="export-excel" class="btn-export">
+        <i class="fas fa-file-excel"></i> Exporter Situation
+    </button>
+    <button id="print-page" class="btn-print">
+        <i class="fas fa-print"></i> Imprimer
+    </button>
+</div>
+
             </div>
 
             <!-- Grille des terrains -->
@@ -74,6 +76,19 @@
             <!-- Statistiques -->
             <div class="stats-container">
                 <h2>Statistiques d'utilisation</h2>
+                <div class="stats-filters">
+                    <div class="date-picker">
+                        <i class="fas fa-calendar"></i>
+                        <input type="text" id="stats-date-start" placeholder="Date début">
+                    </div>
+                    <div class="date-picker">
+                        <i class="fas fa-calendar"></i>
+                        <input type="text" id="stats-date-end" placeholder="Date fin">
+                    </div>
+                    <button id="update-stats" class="btn-primary">
+                        <i class="fas fa-sync"></i> Actualiser
+                    </button>
+                </div>
                 <div class="stats-charts">
                     <div class="chart-container">
                         <canvas id="usage-chart"></canvas>
@@ -83,7 +98,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Historique -->
             <div class="history-container">
                 <h2>Historique des terrains</h2>
