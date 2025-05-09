@@ -2991,8 +2991,253 @@ def get_paiement_transactions():
         return jsonify({'error': str(e)}), 500
 
 
+from sqlalchemy import text, literal
+
+@app.route('/situation-terrains')
+def show_situation_terrains():
+    if 'user_id' not in session:
+        flash("Accès non autorisé.", "danger")
+        return redirect(url_for('login'))
+    return render_template('situation-terrains.html')
 
 
+@app.route('/api/terrains/disponibilite')
+def check_terrain_availability():
+    try:
+        date_str = request.args.get('date')  # Format attendu: YYYY-MM-DD
+        heure_debut_str = request.args.get('heure_debut')
+        heure_fin_str = request.args.get('heure_fin')
+        
+        print("Données reçues de l'utilisateur:")
+        print(f"date_str: {date_str}")
+        print(f"heure_debut_str: {heure_debut_str}")
+        print(f"heure_fin_str: {heure_fin_str}")
+
+        if not date_str or not heure_debut_str:
+            return jsonify({'error': 'Date et heure de début requises'}), 400
+
+        # Conversion simple des chaînes en date et heures
+        date_check = datetime.strptime(date_str, '%Y-%m-%d').date()
+        heure_debut = datetime.strptime(heure_debut_str, '%H:%M').time()
+        heure_fin = datetime.strptime(heure_fin_str, '%H:%M').time() if heure_fin_str else None
+
+        terrains_status = []
+        for terrain_num in range(1, 10):
+            # Vérification des locations
+            locations = LocationTerrain.query.filter(
+                LocationTerrain.numero_terrain == terrain_num,
+                LocationTerrain.date_location == date_check
+            ).all()
+
+            print(f"\nTerrain {terrain_num} - Date vérifiée: {date_check}")
+            print(f"Locations trouvées: {len(locations)}")
+            for loc in locations:
+                print(f"Location: date={loc.date_location}, {loc.heure_debut}-{loc.heure_fin}, {loc.locateur}")
+
+            # Vérifier si une location chevauche l'horaire demandé
+            location_conflict = any(
+                (loc.heure_debut <= heure_debut < loc.heure_fin) or
+                (loc.heure_debut < heure_fin <= loc.heure_fin) or
+                (heure_debut <= loc.heure_debut and heure_fin >= loc.heure_fin)
+                for loc in locations
+            )
+
+            # Vérification des séances
+            seances = Seance.query.filter(
+                Seance.terrain == terrain_num,
+                Seance.date == date_check
+            ).all()
+
+            seance_conflict = any(
+                (seance.heure_debut <= heure_debut < seance.heure_fin) or
+                (seance.heure_debut < heure_fin <= seance.heure_fin) or
+                (heure_debut <= seance.heure_debut and heure_fin >= seance.heure_fin)
+                for seance in seances
+            )
+
+            # Création du statut du terrain
+            terrain_status = {
+                'numero': terrain_num,
+                'disponible': not (location_conflict or seance_conflict),
+                'occupation': None
+            }
+
+            # Ajout des informations d'occupation si le terrain est occupé
+            if location_conflict:
+                location = next(loc for loc in locations if 
+                    (loc.heure_debut <= heure_debut < loc.heure_fin) or
+                    (loc.heure_debut < heure_fin <= loc.heure_fin) or
+                    (heure_debut <= loc.heure_debut and heure_fin >= loc.heure_fin)
+                )
+                terrain_status['occupation'] = {
+                    'type': 'location',
+                    'heure_debut': location.heure_debut.strftime('%H:%M'),
+                    'heure_fin': location.heure_fin.strftime('%H:%M'),
+                    'locateur': location.locateur
+                }
+            elif seance_conflict:
+                seance = next(seance for seance in seances if 
+                    (seance.heure_debut <= heure_debut < seance.heure_fin) or
+                    (seance.heure_debut < heure_fin <= seance.heure_fin) or
+                    (heure_debut <= seance.heure_debut and heure_fin >= seance.heure_fin)
+                )
+                terrain_status['occupation'] = {
+                    'type': 'seance',
+                    'heure_debut': seance.heure_debut.strftime('%H:%M'),
+                    'heure_fin': seance.heure_fin.strftime('%H:%M'),
+                    'groupe': seance.groupe,
+                    'entraineur': seance.entraineur
+                }
+
+            terrains_status.append(terrain_status)
+
+        return jsonify(terrains_status)
+    except Exception as e:
+        print(f"Erreur dans check_terrain_availability: {str(e)}")
+        return jsonify({'error': str(e)}), 500 
+
+@app.route('/api/terrains/stats')
+def get_terrain_stats():
+    try:
+        date_start = request.args.get('start_date', 
+            (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
+        date_end = request.args.get('end_date', 
+            datetime.now().strftime('%Y-%m-%d'))
+
+        # Statistiques des locations
+        locations_stats = db.session.query(
+            LocationTerrain.numero_terrain,
+            func.count(LocationTerrain.id_location).label('total_locations'),
+            func.sum(LocationTerrain.montant_location).label('total_montant')
+        ).filter(
+            LocationTerrain.date_location.between(date_start, date_end)
+        ).group_by(LocationTerrain.numero_terrain).all()
+
+        # Statistiques des séances
+        seances_stats = db.session.query(
+            Seance.terrain,
+            func.count(Seance.seance_id).label('total_seances')
+        ).filter(
+            Seance.date.between(date_start, date_end)
+        ).group_by(Seance.terrain).all()
+
+        statistics = {}
+        for terrain_num in range(1, 10):
+            statistics[terrain_num] = {
+                'locations': 0,
+                'montant_total': 0,
+                'seances': 0
+            }
+
+        for stat in locations_stats:
+            statistics[stat.numero_terrain]['locations'] = stat.total_locations
+            statistics[stat.numero_terrain]['montant_total'] = float(stat.total_montant or 0)
+
+        for stat in seances_stats:
+            statistics[stat.terrain]['seances'] = stat.total_seances
+
+        return jsonify({
+            'statistics': statistics,
+            'period': {
+                'start': date_start,
+                'end': date_end
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/terrains/historique')
+def get_terrain_history():
+    try:
+        terrain_num = request.args.get('terrain')
+        date_start = request.args.get('start_date')
+        date_end = request.args.get('end_date')
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+
+        print(f"\nRequête historique reçue:")
+        print(f"Terrain: {terrain_num}")
+        print(f"Date début: {date_start}")
+        print(f"Date fin: {date_end}")
+
+        if not terrain_num:
+            return jsonify({'error': 'Numéro de terrain requis'}), 400
+
+        # Convertir les dates
+        start_date = datetime.strptime(date_start, '%Y-%m-%d').date()
+        end_date = datetime.strptime(date_end, '%Y-%m-%d').date()
+
+        print(f"Dates après conversion:")
+        print(f"Start: {start_date}")
+        print(f"End: {end_date}")
+
+        # Récupérer les locations
+        locations = LocationTerrain.query.filter(
+            LocationTerrain.numero_terrain == int(terrain_num),
+            LocationTerrain.date_location.between(start_date, end_date)
+        ).all()
+
+        print(f"Locations trouvées: {len(locations)}")
+        for loc in locations:
+            print(f"Location: {loc.date_location}, {loc.heure_debut}-{loc.heure_fin}, {loc.locateur}")
+
+        # Récupérer les séances
+        seances = Seance.query.filter(
+            Seance.terrain == int(terrain_num),
+            Seance.date.between(start_date, end_date)
+        ).all()
+
+        print(f"Séances trouvées: {len(seances)}")
+        for seance in seances:
+            print(f"Séance: {seance.date}, {seance.heure_debut}-{seance.heure_fin}, {seance.groupe}")
+
+        # Combiner les résultats
+        historique = []
+        
+        for loc in locations:
+            historique.append({
+                'date': loc.date_location.strftime('%Y-%m-%d'),
+                'heure_debut': loc.heure_debut.strftime('%H:%M'),
+                'heure_fin': loc.heure_fin.strftime('%H:%M'),
+                'utilisateur': loc.locateur,
+                'montant': float(loc.montant_location),
+                'type': 'location'
+            })
+        
+        for seance in seances:
+            historique.append({
+                'date': seance.date.strftime('%Y-%m-%d'),
+                'heure_debut': seance.heure_debut.strftime('%H:%M'),
+                'heure_fin': seance.heure_fin.strftime('%H:%M'),
+                'utilisateur': seance.groupe,
+                'montant': None,
+                'type': 'seance'
+            })
+
+        # Trier par date et heure
+        historique.sort(key=lambda x: (x['date'], x['heure_debut']), reverse=True)
+
+        # Pagination
+        total = len(historique)
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paginated_historique = historique[start_idx:end_idx]
+
+        print(f"Nombre total d'entrées: {total}")
+        print(f"Entrées paginées: {len(paginated_historique)}")
+
+        return jsonify({
+            'historique': paginated_historique,
+            'total': total,
+            'pages': (total + per_page - 1) // per_page,
+            'current_page': page
+        })
+
+    except Exception as e:
+        print(f"Erreur dans get_terrain_history: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 # Running the app
 if __name__ == '__main__':
