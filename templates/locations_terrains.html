@@ -63,7 +63,7 @@
                 <!-- Formulaire de recherche -->
                 <form class="mb-4">
                     <div class="input-group">
-                        <input type="text" name="search" class="form-control" placeholder="Rechercher par nom de locateur..." value="{{ request.args.get('search', '') }}">
+                        <input type="text" name="search" class="form-control" placeholder="Rechercher par nom de locataire..." value="{{ request.args.get('search', '') }}">
                         <button type="submit" class="btn btn-primary">Rechercher</button>
                     </div>
                 </form>
@@ -95,7 +95,7 @@
                                     <input type="time" name="heure_fin" class="form-control" min="08:00" max="20:00" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Locateur</label>
+                                    <label class="form-label">locataire</label>
                                     <input type="text" name="locateur" class="form-control" required>
                                 </div>
                                 <div class="col-md-6">
@@ -119,7 +119,7 @@
                                 <th>Terrain</th>
                                 <th>Date</th>
                                 <th>Heures</th>
-                                <th>Locateur</th>
+                                <th>locataire</th>
                                 <th>Montant</th>
                                 <th>Actions</th>
                             </tr>

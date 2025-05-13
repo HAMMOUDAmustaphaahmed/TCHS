@@ -78,7 +78,7 @@ class SituationAdherent {
         // Update payment information
         $("#total-a-payer").text(`${data.paiements.total_a_payer.toFixed(2)} €`);
         $("#total-paye").text(`${data.paiements.total_paye.toFixed(2)} €`);
-        $("#total-remise").text(`${data.paiements.total_remise.toFixed(2)} €`);
+        $("#total-remise").text(`${data.paiements.total_remise.toFixed(2)} %`);
         $("#reste-a-payer").text(`${data.paiements.reste_a_payer.toFixed(2)} €`)
             .removeClass()
             .addClass(data.paiements.reste_a_payer > 0 ? 'text-danger' : 'text-success');

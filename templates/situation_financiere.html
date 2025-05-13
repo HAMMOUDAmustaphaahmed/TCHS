@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Situation Financière</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --cyber-bg: #10151b;
+            --card-bg: #181d23;
+            --primary: #9abbd8;
+            --primary-dark: #8fccdb;
+            --accent: #b9cfdd;
+            --text: #f0f0f0;
+            --muted: #626f86;
+            --border: #242b34;
+            --shadow: 0 8px 32px 0 rgba(0,0,0,0.37);
+        }
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Roboto', Arial, sans-serif;
+            background: var(--cyber-bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            text-align: center;
+            color: var(--primary);
+            margin-top: 2rem;
+            letter-spacing: 2px;
+            font-size: 2.8rem;
+            text-shadow: 0 0 10px var(--primary-dark);
+        }
+        .financial-dashboard {
+            max-width: 1200px;
+            margin: 2rem auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            border: 1.5px solid var(--border);
+            transition: transform 0.15s;
+            position: relative;
+        }
+        .card:hover {
+            transform: scale(1.012);
+            border-color: var(--accent);
+        }
+        .card-title {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            letter-spacing: 1px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            background: transparent;
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background: var(--cyber-bg);
+            color: var(--accent);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .card-actions {
+            display: flex;
+            gap: 1rem;
+        }
+        .cyber-btn {
+            padding: 0.7rem 1.7rem;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, var(--primary) 10%, var(--accent) 90%);
+            color: var(--cyber-bg);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 8px 0 rgba(165, 203, 214, 0.24);
+            transition: background 0.2s, color 0.2s;
+        }
+        .cyber-btn:hover {
+            background: linear-gradient(90deg, var(--accent) 10%, var(--primary) 90%);
+            color: var(--primary-dark);
+        }
+        @media (max-width: 800px) {
+            .financial-dashboard {
+                padding: 0 0.5rem;
+            }
+            .card {
+                padding: 1.2rem;
+            }
+            th, td {
+                font-size: 0.98rem;
+            }
+            h1 {
+                font-size: 2.1rem;
+            }
+        }
+        @media (max-width: 500px) {
+            .card {
+                padding: 0.7rem;
+            }
+            th, td {
+                font-size: 0.89rem;
+                padding: 0.45rem;
+            }
+            h1 {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Situation Financière Globale</h1>
+    <div class="financial-dashboard">
+        <!-- Synthèse Globale -->
+        <div class="card" id="card-global">
+            <div class="card-title">Synthèse Globale</div>
+            <table id="table-global">
+                <thead>
+                    <tr>
+                        <th>Intitulé</th>
+                        <th>Montant (€)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Total prévu (cotisation)</td><td>{{ '{:,.2f}'.format(total_prevu) }}</td></tr>
+                    <tr><td>Total payé</td><td>{{ '{:,.2f}'.format(total_paye) }}</td></tr>
+                    <tr><td>Total restant</td><td>{{ '{:,.2f}'.format(total_restant) }}</td></tr>
+                    
+                </tbody>
+            </table>
+            <div class="card-actions">
+                <button class="cyber-btn" onclick="exportSectionXlsx('global')">Exporter XLSX</button>
+                <button class="cyber-btn" onclick="printSection('card-global')">Imprimer</button>
+            </div>
+        </div>
+        <!-- Locations par mois -->
+        <div class="card" id="card-locations-mois">
+            <div class="card-title">Montant total des locations de terrains par mois</div>
+            <table id="table-locations-mois">
+                <thead>
+                    <tr>
+                        <th>Année</th>
+                        <th>Mois</th>
+                        <th>Montant total (€)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for annee, mois, montant in locations_par_mois %}
+                    <tr>
+                        <td>{{ annee }}</td>
+                        <td>{{ '{:02d}'.format(mois) }}</td>
+                        <td>{{ '{:,.2f}'.format(montant) }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <div class="card-actions">
+                <button class="cyber-btn" onclick="exportSectionXlsx('locations_par_mois')">Exporter XLSX</button>
+                <button class="cyber-btn" onclick="printSection('card-locations-mois')">Imprimer</button>
+            </div>
+        </div>
+        <!-- Locations par terrain -->
+        <div class="card" id="card-locations-terrain">
+            <div class="card-title">Montant total des locations par terrain</div>
+            <table id="table-locations-terrain">
+                <thead>
+                    <tr>
+                        <th>Numéro de terrain</th>
+                        <th>Montant total (€)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for numero, montant in locations_par_terrain %}
+                    <tr>
+                        <td>{{ numero }}</td>
+                        <td>{{ '{:,.2f}'.format(montant) }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <div class="card-actions">
+                <button class="cyber-btn" onclick="exportSectionXlsx('locations_par_terrain')">Exporter XLSX</button>
+                <button class="cyber-btn" onclick="printSection('card-locations-terrain')">Imprimer</button>
+            </div>
+        </div>
+        <!-- Paiements par saison -->
+        <div class="card" id="card-paiements-saison">
+            <div class="card-title">Montant total payé par les adhérents par saison</div>
+            <table id="table-paiements-saison">
+                <thead>
+                    <tr>
+                        <th>Code Saison</th>
+                        <th>Montant payé (€)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for saison, montant in paiements_par_saison %}
+                    <tr>
+                        <td>{{ saison }}</td>
+                        <td>{{ '{:,.2f}'.format(montant) }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <div class="card-actions">
+                <button class="cyber-btn" onclick="exportSectionXlsx('paiements_par_saison')">Exporter XLSX</button>
+                <button class="cyber-btn" onclick="printSection('card-paiements-saison')">Imprimer</button>
+            </div>
+        </div>
+        <!-- Paiements par mois -->
+        <div class="card" id="card-paiements-mois">
+            <div class="card-title">Montant total payé par les adhérents par mois</div>
+            <table id="table-paiements-mois">
+                <thead>
+                    <tr>
+                        <th>Année</th>
+                        <th>Mois</th>
+                        <th>Montant payé (€)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for annee, mois, montant in paiements_par_mois %}
+                    <tr>
+                        <td>{{ annee }}</td>
+                        <td>{{ '{:02d}'.format(mois) }}</td>
+                        <td>{{ '{:,.2f}'.format(montant) }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <div class="card-actions">
+                <button class="cyber-btn" onclick="exportSectionXlsx('paiements_par_mois')">Exporter XLSX</button>
+                <button class="cyber-btn" onclick="printSection('card-paiements-mois')">Imprimer</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    // Export XLSX via backend route
+    function exportSectionXlsx(section) {
+        let url = '';
+        switch(section) {
+            case 'global': url = '/export_xlsx/global'; break;
+            case 'locations_par_mois': url = '/export_xlsx/locations_par_mois'; break;
+            case 'locations_par_terrain': url = '/export_xlsx/locations_par_terrain'; break;
+            case 'paiements_par_saison': url = '/export_xlsx/paiements_par_saison'; break;
+            case 'paiements_par_mois': url = '/export_xlsx/paiements_par_mois'; break;
+            default: return;
+        }
+        window.open(url, '_blank');
+    }
+
+    // Print only a section/card
+    function printSection(cardId) {
+        const card = document.getElementById(cardId);
+        const printWindow = window.open('', '', 'width=1000,height=800');
+        printWindow.document.write(`
+        <html>
+            <head>
+                <title>Impression</title>
+                <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+                <style>
+                    body { background: #fff; color: #222; font-family: 'Roboto', Arial, sans-serif; margin: 30px;}
+                    h1, .card-title { color: #009688; font-family: 'Orbitron', sans-serif; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;}
+                    th, td { padding: 0.65rem; text-align: left; border-bottom: 1px solid #ccc;}
+                    th { background: #f4f4f4; color: #009688;}
+                    tr:last-child td { border-bottom: none; }
+                </style>
+            </head>
+            <body>
+                <div>${card.innerHTML}</div>
+            </body>
+        </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+    }
+    </script>
+</body>
+</html>

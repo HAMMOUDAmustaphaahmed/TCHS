@@ -261,19 +261,19 @@ document.getElementById('submitMotDePasse').addEventListener('click', function()
                                         {% if seance.date == current_day.date() and seance.terrain == 1 
                                             and seance.heure_debut.strftime('%H:%M') == creneau.start.strftime('%H:%M') %}
                                             <div class="session-card">
-                                              <small>{{ seance.groupe }}</small>
-                                              <small style="font-size:1em">
-                                                  <button type="button" 
-                                                          class="btn btn-warning presence-btn" 
-                                                          data-groupe="{{ seance.groupe }}"
-                                                          data-date="{{ seance.date }}"
-                                                          data-heure="{{ seance.heure_debut.strftime('%H:%M') }}"
-                                                          data-entraineur="{{ seance.entraineur }}"
-                                                          onclick="openPresenceModal(this)">
-                                                      Présence
-                                                  </button>
-                                              </small>
-                                          </div>
+                                                <small>{{ seance.groupe }}</small>
+                                                <div class="text-muted">{{ seance.entraineur }}</div>
+                                                <button type="button" 
+                                                        class="btn btn-warning btn-sm presence-btn mt-2" 
+                                                        data-groupe="{{ seance.groupe }}"
+                                                        data-date="{{ seance.date }}"
+                                                        data-heure="{{ seance.heure_debut.strftime('%H:%M') }}"
+                                                        data-entraineur="{{ seance.entraineur }}"
+                                                        data-seance-id="{{ seance.seance_id }}"
+                                                        onclick="openPresenceModal(this)">
+                                                    <i class="fas fa-clipboard-check"></i> Présence
+                                                </button>
+                                            </div>
                                         {% endif %}
                                     {% endfor %}
                                 </td>
@@ -289,7 +289,17 @@ document.getElementById('submitMotDePasse').addEventListener('click', function()
                                                 and seance.heure_debut.strftime('%H:%M') == creneau.start.strftime('%H:%M') %}
                                                 <div class="session-card">
                                                     <small>{{ seance.groupe }}</small>
-                                                    <div class="text-muted" style="font-size:1em">{{ seance.entraineur }}</div>
+                                                    <div class="text-muted">{{ seance.entraineur }}</div>
+                                                    <button type="button" 
+                                                            class="btn btn-warning btn-sm presence-btn mt-2" 
+                                                            data-groupe="{{ seance.groupe }}"
+                                                            data-date="{{ seance.date }}"
+                                                            data-heure="{{ seance.heure_debut.strftime('%H:%M') }}"
+                                                            data-entraineur="{{ seance.entraineur }}"
+                                                            data-seance-id="{{ seance.seance_id }}"
+                                                            onclick="openPresenceModal(this)">
+                                                        <i class="fas fa-clipboard-check"></i> Présence
+                                                    </button>
                                                 </div>
                                             {% endif %}
                                         {% endfor %}
@@ -324,172 +334,199 @@ document.getElementById('submitMotDePasse').addEventListener('click', function()
             }
         </script>
           <!-- Modal Présence -->
+<!-- Modal Présence -->
 <div class="modal fade" id="presenceModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-          <div class="modal-header bg-warning">
-              <h5 class="modal-title">
-                  <i class="fas fa-clipboard-check"></i>
-                  Gestion des Présences
-              </h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-              <div class="session-info mb-3">
-                  <p><strong>Groupe:</strong> <span id="modalGroupe"></span></p>
-                  <p><strong>Date:</strong> <span id="modalDate"></span></p>
-                  <p><strong>Heure:</strong> <span id="modalHeure"></span></p>
-              </div>
-              <div class="alert alert-info">
-                  <i class="fas fa-info-circle"></i>
-                  Veuillez marquer la présence pour chaque adhérent.
-              </div>
-              <form id="presenceForm">
-                  <div class="table-responsive">
-                      <table class="table table-hover">
-                          <thead>
-                              <tr>
-                                  <th>Matricule</th>
-                                  <th>Nom</th>
-                                  <th>Prénom</th>
-                                  <th class="text-center">Présence</th>
-                              </tr>
-                          </thead>
-                          <tbody id="adherentsList">
-                              <!-- Les adhérents seront ajoutés ici dynamiquement -->
-                          </tbody>
-                      </table>
-                  </div>
-              </form>
-          </div>
-          <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-              <button type="button" class="btn btn-warning" onclick="savePresences()">
-                  <i class="fas fa-save"></i> Enregistrer
-              </button>
-          </div>
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">
+          <i class="fas fa-clipboard-check"></i>
+          Gestion des Présences
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
+      <div class="modal-body">
+        <div class="session-info mb-3">
+          <p><strong>Groupe:</strong> <span id="modalGroupe"></span></p>
+          <p><strong>Date:</strong> <span id="modalDate"></span></p>
+          <p><strong>Heure:</strong> <span id="modalHeure"></span></p>
+        </div>
+
+        <!-- Section for marking trainer presence -->
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i>
+          Veuillez marquer votre présence en tant qu'entraîneur.
+        </div>
+        <div class="text-center mb-4">
+          <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="trainerPresence" id="trainerPresent" value="O" required>
+            <label class="btn btn-outline-success" for="trainerPresent">
+              <i class="fas fa-check"></i> Présent(e)
+            </label>
+
+            <input type="radio" class="btn-check" name="trainerPresence" id="trainerAbsent" value="N" required>
+            <label class="btn btn-outline-danger" for="trainerAbsent">
+              <i class="fas fa-times"></i> Absent(e)
+            </label>
+          </div>
+        </div>
+
+        <!-- Adherents Table -->
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i>
+          Veuillez marquer la présence pour chaque adhérent.
+        </div>
+        <form id="presenceForm">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Matricule</th>
+                  <th>Nom</th>
+                  <th>Prénom</th>
+                  <th class="text-center">Présence</th>
+                </tr>
+              </thead>
+              <tbody id="adherentsList">
+                <!-- Les adhérents seront ajoutés ici dynamiquement -->
+              </tbody>
+            </table>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-warning" onclick="savePresences()">
+          <i class="fas fa-save"></i> Enregistrer
+        </button>
+      </div>
+    </div>
   </div>
 </div>
+
 <script>
-  // Fonction pour ouvrir le modal de présence
-function openPresenceModal(button) {
+  // Function to open the modal
+  function openPresenceModal(button) {
     const groupe = button.dataset.groupe;
     const date = button.dataset.date;
     const heure = button.dataset.heure;
     const entraineur = button.dataset.entraineur;
+    const seanceId = button.dataset.seanceId;
 
-    // Mettre à jour les informations dans le modal
+    // Update modal fields
     document.getElementById('modalGroupe').textContent = groupe;
     document.getElementById('modalDate').textContent = date;
     document.getElementById('modalHeure').textContent = heure;
 
-    // Charger les adhérents du groupe
+    // Fetch adherents for the group
     fetch(`/api/adherents/${groupe}`)
-        .then(response => response.json())
-        .then(adherents => {
-            const adherentsList = document.getElementById('adherentsList');
-            adherentsList.innerHTML = '';
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch adherents.");
+        }
+        return response.json();
+      })
+      .then(adherents => {
+        const adherentsList = document.getElementById('adherentsList');
+        adherentsList.innerHTML = '';
 
-            adherents.forEach(adherent => {
-                const row = `
-                    <tr>
-                        <td>${adherent.matricule}</td>
-                        <td>${adherent.nom}</td>
-                        <td>${adherent.prenom}</td>
-                        <td class="text-center">
-                            <div class="btn-group" role="group">
-                                <input type="radio" 
-                                       class="btn-check" 
-                                       name="presence_${adherent.matricule}" 
-                                       id="present_${adherent.matricule}" 
-                                       value="O" 
-                                       required>
-                                <label class="btn btn-outline-success" 
-                                       for="present_${adherent.matricule}">
-                                    <i class="fas fa-check"></i> Présent(e)
-                                </label>
-
-                                <input type="radio" 
-                                       class="btn-check" 
-                                       name="presence_${adherent.matricule}" 
-                                       id="absent_${adherent.matricule}" 
-                                       value="N" 
-                                       required>
-                                <label class="btn btn-outline-danger" 
-                                       for="absent_${adherent.matricule}">
-                                    <i class="fas fa-times"></i> Absent(e)
-                                </label>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                adherentsList.insertAdjacentHTML('beforeend', row);
-            });
+        adherents.forEach(adherent => {
+          const row = `
+            <tr>
+              <td>${adherent.matricule}</td>
+              <td>${adherent.nom}</td>
+              <td>${adherent.prenom}</td>
+              <td class="text-center">
+                <div class="btn-group" role="group">
+                  <input type="radio" class="btn-check" name="presence_${adherent.matricule}" id="present_${adherent.matricule}" value="O" required>
+                  <label class="btn btn-outline-success" for="present_${adherent.matricule}">
+                    <i class="fas fa-check"></i> Présent(e)
+                  </label>
+                  <input type="radio" class="btn-check" name="presence_${adherent.matricule}" id="absent_${adherent.matricule}" value="N" required>
+                  <label class="btn btn-outline-danger" for="absent_${adherent.matricule}">
+                    <i class="fas fa-times"></i> Absent(e)
+                  </label>
+                </div>
+              </td>
+            </tr>
+          `;
+          adherentsList.insertAdjacentHTML('beforeend', row);
         });
+      })
+      .catch(error => {
+        console.error('Erreur lors du chargement des adhérents:', error);
+        alert("Une erreur s'est produite lors du chargement des adhérents.");
+      });
 
-    // Afficher le modal
+    // Show the modal
     const presenceModal = new bootstrap.Modal(document.getElementById('presenceModal'));
     presenceModal.show();
-}
+  }
 
-// Fonction pour sauvegarder les présences
+  // Function to save presences
 function savePresences() {
     const groupe = document.getElementById('modalGroupe').textContent;
     const date = document.getElementById('modalDate').textContent;
     const heure = document.getElementById('modalHeure').textContent;
-    const presences = [];
-    let hasMarkedPresence = false;
 
-    // Récupérer toutes les présences
+    const trainerPresence = document.querySelector('input[name="trainerPresence"]:checked');
+    if (!trainerPresence) {
+        alert("Veuillez marquer votre présence en tant qu'entraîneur.");
+        return;
+    }
+
+    const presences = [];
     document.querySelectorAll('#adherentsList tr').forEach(row => {
         const matricule = row.cells[0].textContent;
-        const radioButtons = row.querySelector('.btn-group').querySelectorAll('input[type="radio"]');
-        let presence = null;
-        
-        radioButtons.forEach(radio => {
-            if (radio.checked) {
-                presence = radio.value;
-                hasMarkedPresence = true;
-            }
-        });
-
-        if (presence) {
+        const presence = row.querySelector('input[type="radio"]:checked');
+        const seanceId = document.querySelector('[data-seance-id]').dataset.seanceId; // Fetch seance_id dynamically
+        if (presence && seanceId) {
             presences.push({
                 groupe_nom: groupe,
                 adherent_matricule: matricule,
-                entraineur_nom: document.querySelector('[data-entraineur]').dataset.entraineur,
                 date_seance: date,
                 heure_debut: heure,
-                est_present: presence
+                est_present: presence.value,
+                seance_id: seanceId
             });
         }
     });
 
-    if (!hasMarkedPresence) {
-        alert("Veuillez marquer au moins une présence ou absence.");
-        return;
-    }
+    const data = {
+        trainerPresence: {
+            groupe_nom: groupe,
+            entraineur_nom: document.querySelector('[data-entraineur]').dataset.entraineur,
+            date_seance: date,
+            heure_debut: heure,
+            est_present: trainerPresence.value
+        },
+        adherentsPresence: presences
+    };
 
-    // Envoyer les données au serveur
+    // Send the data to the server
     fetch('/api/presences', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(presences)
+        body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Failed to save presences.");
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             alert("Présences enregistrées avec succès!");
             bootstrap.Modal.getInstance(document.getElementById('presenceModal')).hide();
         } else {
-            alert("Erreur lors de l'enregistrement des présences.");
+            alert(`Erreur: ${data.error}`);
         }
     })
     .catch(error => {
-        console.error('Erreur:', error);
+        console.error('Erreur lors de l\'enregistrement des présences:', error);
         alert("Une erreur est survenue lors de l'enregistrement des présences.");
     });
 }

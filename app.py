@@ -518,15 +518,25 @@ def api_get_session(session_id):
 
 @app.route('/edit_session', methods=['POST'])
 def edit_session():
-    if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
-        flash("Accès non autorisé.", "danger")
-        return redirect(url_for('login'))
+    
+    
     data = request.get_json()
     seance_id = data['session_id']  # ID de la séance
-    new_date = data['date']
+    date_str = data['date']
     new_heure_debut = data['heure_debut']
     new_terrain = data['terrain']
     entraineur_id = data['entraineur']
+
+    # Handle different date formats
+    try:
+        # First try YYYY-MM-DD format
+        new_date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        try:
+            # If that fails, try DD/MM/YYYY format
+            new_date_obj = datetime.strptime(date_str, '%d/%m/%Y').date()
+        except ValueError:
+            return jsonify({"error": "Format de date invalide. Utilisez YYYY-MM-DD ou DD/MM/YYYY"}), 400
 
     # Récupérer l'entraîneur par ID
     entraineur = Entraineur.query.filter_by(id_entraineur=entraineur_id).first()
@@ -541,7 +551,6 @@ def edit_session():
 
     try:
         # Mise à jour des données
-        new_date_obj = datetime.strptime(new_date, '%Y-%m-%d').date()
         new_heure_debut_obj = datetime.strptime(new_heure_debut, '%H:%M').time()
         new_heure_fin_obj = (datetime.combine(new_date_obj, new_heure_debut_obj) + timedelta(minutes=90)).time()
 
@@ -829,31 +838,6 @@ def changer_mot_de_passe():
 
     return jsonify({"message": "Mot de passe mis à jour avec succès."}), 200
 
-@app.route('/api/marquer_presence/<int:seance_id>', methods=['POST'])
-def api_marquer_presence(seance_id):
-    data = request.get_json()
-    presences = data.get('presences', [])
-
-    seance = Seance.query.get(seance_id)
-    if not seance:
-        return "Séance introuvable", 404
-
-    try:
-        for presence in presences:
-            new_presence = Presence(
-                groupe_nom=seance.groupe,
-                adherent_matricule=presence['matricule'],
-                entraineur_nom=seance.entraineur,
-                date_seance=seance.date,
-                heure_debut=seance.heure,
-                est_present=presence['est_present']
-            )
-            db.session.add(new_presence)
-        db.session.commit()
-        return "Présence enregistrée avec succès", 200
-    except Exception as e:
-        db.session.rollback()
-        return f"Erreur lors de l'enregistrement des présences : {str(e)}", 500
 
 
 
@@ -907,6 +891,7 @@ def export_schedule():
     else:
         return generate_pdf(seances, days, creneaux, scope)
 import locale
+
 def generate_excel(seances, days, creneaux, scope):
     try:
         locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
@@ -1958,6 +1943,7 @@ class Presence(db.Model):
     date_seance = db.Column(db.Date, nullable=False)
     heure_debut = db.Column(db.Time, nullable=False)
     est_present = db.Column(db.Enum('O', 'N'), nullable=False, default='N')
+    seance_id = db.Column(db.Integer, db.ForeignKey('seances.seance_id'), nullable=False)
 
     def __repr__(self):
         return f'<Presence {self.groupe_nom} - {self.adherent_matricule} - {self.date_seance}>'
@@ -2034,16 +2020,12 @@ from PIL import Image
 
 SAVE_DIR = "static/bons_paiements"  # Assurez-vous que ce dossier existe
 
+
+import fitz  # PyMuPDF
+
 def generer_bon_paiement(matricule_adherent, montant_paye, type_paiement, code_saison, id_bon, id_carnet):
     """
     Génère un bon de paiement en PDF et en PNG avec les informations de l'adhérent.
-
-    :param matricule_adherent: ID de l'adhérent
-    :param montant_paye: Montant payé
-    :param type_paiement: Méthode de paiement (ex: "Espèce", "Chèque")
-    :param code_saison: Code de la saison (ex: "S2025")
-    :param id_bon: Numéro du bon de paiement
-    :param id_carnet: Numéro du carnet
     """
     # Récupérer les infos de l'adhérent depuis la base de données
     adherent = Adherent.query.filter_by(matricule=matricule_adherent).first()
@@ -2051,7 +2033,7 @@ def generer_bon_paiement(matricule_adherent, montant_paye, type_paiement, code_s
         print(f"Erreur : Aucun adhérent trouvé avec le matricule {matricule_adherent}")
         return
 
-    nom_complet = f"{adherent.prenom} {adherent.nom}"  # Ex: "Ahmed Mustapha"
+    nom_complet = f"{adherent.prenom} {adherent.nom}"
 
     # Définition des chemins
     pdf_filename = os.path.join(SAVE_DIR, f"paiement_{id_bon}.pdf")
@@ -2106,13 +2088,18 @@ def generer_bon_paiement(matricule_adherent, montant_paye, type_paiement, code_s
     # Finaliser et enregistrer le PDF
     c.save()
 
-    # Convertir le PDF en PNG avec PyMuPDF (sans Poppler)
-    
-    page = doc[0]  # Première page
-    pix = page.get_pixmap()  # Conversion en image
-    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-    img.save(png_filename, "PNG")  # Sauvegarde l'image
-    doc.close()
+    try:
+        # Convertir PDF en PNG avec PyMuPDF
+        pdf_document = fitz.open(pdf_filename)
+        page = pdf_document[0]
+        pix = page.get_pixmap()
+        pix.save(png_filename)
+        pdf_document.close()
+    except Exception as e:
+        print(f"Erreur lors de la conversion en PNG : {str(e)}")
+
+    return pdf_filename, png_filename
+
 
 import os
 from reportlab.lib.pagesizes import letter
@@ -2811,7 +2798,7 @@ def get_situation_adherent(matricule):
             'total_paye': total_paye,
             'total_a_payer': total_a_payer,
             'total_remise': total_remise,
-            'reste_a_payer': total_a_payer - total_paye - total_remise,
+            'reste_a_payer': total_a_payer - total_paye,
             'historique': historique_paiements
         },
         'presences': {
@@ -3250,162 +3237,399 @@ def get_adherents_groupe(groupe):
         'prenom': a.prenom
     } for a in adherents])
 
+
+
 @app.route('/api/presences', methods=['POST'])
 def save_presences():
-    presences = request.json
     try:
-        for p in presences:
+        data = request.get_json()
+
+        # Initialize the trainer presence
+        trainer_presence = data.get('trainerPresence')
+
+        presence_entraineur = None  # This will remain None if there's no trainer presence
+
+        if trainer_presence:
+            # Save trainer presence
+            presence_entraineur = Presence_Entraineur(
+                groupe_nom=trainer_presence['groupe_nom'],
+                entraineur_nom=trainer_presence['entraineur_nom'],
+                date_seance=datetime.strptime(trainer_presence['date_seance'], '%Y-%m-%d').date(),
+                heure_debut=datetime.strptime(trainer_presence['heure_debut'], '%H:%M').time(),
+                est_present=trainer_presence['est_present']
+            )
+            db.session.add(presence_entraineur)
+
+        # Save adherents presence
+        adherents_presence = data.get('adherentsPresence', [])
+        for adherent in adherents_presence:
+            seance_id = adherent.get('seance_id')  # Ensure seance_id is provided in the request
+            if not seance_id:
+                return jsonify({"success": False, "error": "seance_id is required for adherent presence"}), 400
+
             presence = Presence(
-                groupe_nom=p['groupe_nom'],
-                adherent_matricule=p['adherent_matricule'],
-                entraineur_nom=p['entraineur_nom'],
-                date_seance=datetime.strptime(p['date_seance'], '%Y-%m-%d').date(),
-                heure_debut=datetime.strptime(p['heure_debut'], '%H:%M').time(),
-                est_present=p['est_present']
+                groupe_nom=adherent['groupe_nom'],
+                adherent_matricule=adherent['adherent_matricule'],
+                entraineur_nom=trainer_presence['entraineur_nom'] if trainer_presence else None,
+                date_seance=datetime.strptime(adherent['date_seance'], '%Y-%m-%d').date(),
+                heure_debut=datetime.strptime(adherent['heure_debut'], '%H:%M').time(),
+                est_present=adherent['est_present'],
+                seance_id=seance_id  # Now correctly assigning seance_id
             )
             db.session.add(presence)
+
         db.session.commit()
-        return jsonify({'success': True})
+        return jsonify({"success": True})
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/api/marquer_presence/<int:seance_id>', methods=['POST'])
+def api_marquer_presence(seance_id):
+    data = request.get_json()
+    presences = data.get('presences', [])
 
+    # Retrieve the seance
+    seance = Seance.query.get(seance_id)
+    if not seance:
+        return jsonify({"error": "Séance introuvable"}), 404
 
+    try:
+        # Mark presence for adherents
+        for presence in presences:
+            existing_presence = Presence.query.filter_by(
+                groupe_nom=seance.groupe,
+                adherent_matricule=presence['matricule'],
+                date_seance=seance.date
+            ).first()
 
-@app.route('/situation_presence')
-def situation_presence():
-    # Récupérer les données pour les listes déroulantes
-    groupes = db.session.query(Groupe.categorie).distinct().all()
-    entraineurs = db.session.query(Entraineur.nom, Entraineur.prenom).distinct().all()
-    terrains = list(range(1, 10))  # Terrains de 1 à 9
+            if existing_presence:
+                existing_presence.est_present = presence['est_present']
+            else:
+                new_presence = Presence(
+                    groupe_nom=seance.groupe,
+                    adherent_matricule=presence['matricule'],
+                    entraineur_nom=seance.entraineur,
+                    date_seance=seance.date,
+                    heure_debut=seance.heure_debut,
+                    est_present=presence['est_present'],
+                    seance_id=seance.id  # Ensure seance_id is set
+                )
+                db.session.add(new_presence)
 
-    return render_template('situation_presence.html',
-                         groupes=[g[0] for g in groupes],
-                         entraineurs=entraineurs,
-                         terrains=terrains)
+        # Mark the trainer (entraîneur) as present
+        existing_trainer_presence = Presence_Entraineur.query.filter_by(
+            groupe_nom=seance.groupe,
+            entraineur_nom=seance.entraineur,
+            date_seance=seance.date
+        ).first()
 
-@app.route('/api/search_adherent_presence')
-def search_adherent_presence():
-    search_type = request.args.get('type')  # 'matricule' ou 'nom'
-    query = request.args.get('query', '').strip()
-    
-    if not query:
-        return jsonify([])
-
-    if search_type == 'matricule':
-        adherents = Adherent.query.filter(
-            Adherent.matricule.ilike(f'%{query}%')
-        ).limit(10).all()
-    else:
-        adherents = Adherent.query.filter(
-            or_(
-                Adherent.nom.ilike(f'%{query}%'),
-                Adherent.prenom.ilike(f'%{query}%')
+        if not existing_trainer_presence:
+            trainer_presence = Presence_Entraineur(
+                groupe_nom=seance.groupe,
+                entraineur_nom=seance.entraineur,
+                date_seance=seance.date,
+                heure_debut=seance.heure_debut,
+                est_present='O'
             )
-        ).limit(10).all()
+            db.session.add(trainer_presence)
 
-    return jsonify([{
-        'matricule': a.matricule,
-        'nom': a.nom,
-        'prenom': a.prenom
-    } for a in adherents])
+        # Commit all changes
+        db.session.commit()
+        return jsonify({"message": "Présence enregistrée avec succès"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Erreur lors de l'enregistrement des présences : {str(e)}"}), 500
 
-@app.route('/api/presences/search')
-def search_presences():
-    # Récupérer les paramètres
-    date = request.args.get('date')
-    groupe = request.args.get('groupe')
-    entraineur = request.args.get('entraineur')
-    adherent = request.args.get('adherent')
-    heure_debut = request.args.get('heure_debut')
-    heure_fin = request.args.get('heure_fin')
-    terrain = request.args.get('terrain')
 
-    # Construire la requête de base
-    query = db.session.query(
-        Presence,
-        Adherent.nom.label('adherent_nom'),
-        Adherent.prenom.label('adherent_prenom')
-    ).join(Adherent, Presence.adherent_matricule == Adherent.matricule)
+@app.route('/presence', methods=['GET', 'POST'])
+def presence():
+    # Fetch data from the database
+    groupes = Groupe.query.all()
+    entraineurs = Entraineur.query.all()
+    adherents = Adherent.query.all()
 
-    # Appliquer les filtres
-    if date:
-        query = query.filter(Presence.date_seance == datetime.strptime(date, '%Y-%m-%d').date())
-    
-    if groupe:
-        query = query.filter(Presence.groupe_nom == groupe)
-    
-    if entraineur:
-        query = query.filter(Presence.entraineur_nom == entraineur)
-    
-    if adherent:
-        query = query.filter(Presence.adherent_matricule == adherent)
-    
-    if heure_debut:
-        query = query.filter(Presence.heure_debut >= datetime.strptime(heure_debut, '%H:%M').time())
-    
-    if heure_fin:
-        query = query.filter(Presence.heure_debut <= datetime.strptime(heure_fin, '%H:%M').time())
+    # Render the template with the results
+    return render_template('presence.html', groupes=groupes, entraineurs=entraineurs, adherents=adherents)
 
-    # Exécuter la requête
-    presences = query.all()
+@app.route('/search_presence', methods=['GET'])
+def search_presence():
+    search_type = request.args.get('searchType')
+    search_value = request.args.get('entraineur') or request.args.get('adherent')
 
-    # Formater les résultats
+    # Initialize an empty results list
     results = []
-    for p, nom, prenom in presences:
-        results.append({
-            'date': p.date_seance.strftime('%Y-%m-%d'),
-            'heure': p.heure_debut.strftime('%H:%M'),
-            'groupe': p.groupe_nom,
-            'adherent': f"{nom} {prenom}",
-            'matricule': p.adherent_matricule,
-            'entraineur': p.entraineur_nom,
-            'statut': 'Présent(e)' if p.est_present == 'O' else 'Absent(e)',
-            'classe_statut': 'present' if p.est_present == 'O' else 'absent'
-        })
+
+    if search_type == 'entraineur':
+        # Query the Entraineur table to find the trainer by ID
+        entraineur = Entraineur.query.filter_by(id_entraineur=search_value).first()
+        if not entraineur:
+            return jsonify({"error": "Entraineur not found"}), 404
+
+        # Prepare the search value using the trainer's full name
+        search_value = f"{entraineur.nom} {entraineur.prenom}"
+
+        # Query the Presence_Entraineur table
+        query = Presence_Entraineur.query.filter(Presence_Entraineur.entraineur_nom == search_value)
+        presences = query.all()
+
+        # Format the results
+        results = [{
+            'date': presence.date_seance.strftime('%Y-%m-%d'),
+            'heure': presence.heure_debut.strftime('%H:%M'),
+            'groupe': presence.groupe_nom,
+            'entraineur': presence.entraineur_nom,
+            'presence': 'Présent' if presence.est_present == 'O' else 'Absent'
+        } for presence in presences]
+
+    elif search_type == 'adherent':
+        # Query the Presence table for the specified adherent
+        query = Presence.query.filter(Presence.adherent_matricule == search_value)
+        presences = query.all()
+
+        # Format the results
+        results = [{
+            'date': presence.date_seance.strftime('%Y-%m-%d'),
+            'heure': presence.heure_debut.strftime('%H:%M'),
+            'groupe': presence.groupe_nom,
+            'adherent': presence.adherent_matricule,
+            'entraineur': presence.entraineur_nom,
+            'presence': 'Présent' if presence.est_present == 'O' else 'Absent'
+        } for presence in presences]
 
     return jsonify(results)
 
-@app.route('/export_presences')
-def export_presences():
-    # Logique d'exportation similaire à la recherche mais au format Excel
-    # Utilisez pandas pour créer le fichier Excel
-    results = search_presences().get_json()
+
+class Presence_Entraineur(db.Model):
+    __tablename__ = 'presence_entraineur'
     
-    df = pd.DataFrame(results)
-    
+    id_presence = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    groupe_nom = db.Column(db.String(100), nullable=False)
+    entraineur_nom = db.Column(db.String(100), nullable=False)
+    date_seance = db.Column(db.Date, nullable=False)
+    heure_debut = db.Column(db.Time, nullable=False)
+    est_present = db.Column(db.Enum('O', 'N'), nullable=False, default='N')
+
+    def __repr__(self):
+        return f'<Presence_Entraineur {self.groupe_nom} - {self.entraineur_nom} - {self.date_seance}>'
+
+
+from flask import request, jsonify, send_file
+import pandas as pd
+from io import BytesIO
+
+@app.route('/export_monthly_presence', methods=['GET'])
+def export_monthly_presence():
+    # Get query parameters
+    month = request.args.get('month')
+    type = request.args.get('type')
+
+    if not month or not type:
+        return jsonify({"error": "Month and type are required."}), 400
+
+    # Parse the month into a year and a month
+    year, month = map(int, month.split('-'))
+
+    # Query the database based on the type (adherent or entraineur)
+    if type == 'adherent':
+        query = Presence.query.filter(
+            db.extract('year', Presence.date_seance) == year,
+            db.extract('month', Presence.date_seance) == month
+        ).all()
+
+        # Format the data for adherents
+        data = [{
+            'Date': presence.date_seance.strftime('%Y-%m-%d'),
+            'Heure': presence.heure_debut.strftime('%H:%M'),
+            'Groupe': presence.groupe_nom,
+            'Adhérent': presence.adherent_matricule,
+            'Entraîneur': presence.entraineur_nom,
+            'Présence': 'Présent' if presence.est_present == 'O' else 'Absent'
+        } for presence in query]
+
+    elif type == 'entraineur':
+        query = Presence_Entraineur.query.filter(
+            db.extract('year', Presence_Entraineur.date_seance) == year,
+            db.extract('month', Presence_Entraineur.date_seance) == month
+        ).all()
+
+        # Format the data for entraineurs
+        data = [{
+            'Date': presence.date_seance.strftime('%Y-%m-%d'),
+            'Heure': presence.heure_debut.strftime('%H:%M'),
+            'Groupe': presence.groupe_nom,
+            'Entraîneur': presence.entraineur_nom,
+            'Présence': 'Présent' if presence.est_present == 'O' else 'Absent'
+        } for presence in query]
+
+    else:
+        return jsonify({"error": "Invalid type."}), 400
+
+    # Generate XLSX using pandas
+    df = pd.DataFrame(data)
     output = BytesIO()
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    df.to_excel(writer, index=False, sheet_name='Présences')
-    
-    # Formatage du fichier Excel
-    workbook = writer.book
-    worksheet = writer.sheets['Présences']
-    
-    # Formats
-    header_format = workbook.add_format({
-        'bold': True,
-        'text_wrap': True,
-        'valign': 'top',
-        'bg_color': '#D9EAD3',
-        'border': 1
-    })
-    
-    # Appliquer les formats
-    for col_num, value in enumerate(df.columns.values):
-        worksheet.write(0, col_num, value, header_format)
-        worksheet.set_column(col_num, col_num, 15)
-    
-    writer.save()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Présence Mensuelle')
+
+    # Return the XLSX file as a response
     output.seek(0)
-    
     return send_file(
         output,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name=f'presences_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+        download_name=f'presence_{type}_{year}-{month:02d}.xlsx',
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
+
+
+
+
+from flask import Blueprint, render_template, send_file, jsonify
+from sqlalchemy import extract, func
+from io import BytesIO
+import pandas as pd
+from datetime import datetime
+
+
+
+
+
+@app.route('/situation_financiere')
+def situation_financiere():
+    # 1. Montant total des locations des terrains par mois
+    locations_par_mois = (
+        db.session.query(
+            extract('year', LocationTerrain.date_location).label('annee'),
+            extract('month', LocationTerrain.date_location).label('mois'),
+            func.sum(LocationTerrain.montant_location).label('total_location')
+        )
+        .group_by('annee', 'mois')
+        .order_by('annee', 'mois')
+        .all()
+    )
+
+    # 2. Montant total des locations par terrain
+    locations_par_terrain = (
+        db.session.query(
+            LocationTerrain.numero_terrain,
+            func.sum(LocationTerrain.montant_location).label('total_location')
+        )
+        .group_by(LocationTerrain.numero_terrain)
+        .all()
+    )
+
+    # 3. Montant total payé par les adhérents par saison
+    paiements_par_saison = (
+        db.session.query(
+            Paiement.code_saison,
+            func.sum(Paiement.montant_paye).label('total_paye')
+        )
+        .group_by(Paiement.code_saison)
+        .all()
+    )
+
+    # 4. Montant total payé par les adhérents par mois
+    paiements_par_mois = (
+        db.session.query(
+            extract('year', Paiement.date_paiement).label('annee'),
+            extract('month', Paiement.date_paiement).label('mois'),
+            func.sum(Paiement.montant_paye).label('total_paye')
+        )
+        .group_by('annee', 'mois')
+        .order_by('annee', 'mois')
+        .all()
+    )
+
+    # 5. Montant total prévu (cotisation)
+    total_prevu = db.session.query(func.sum(Paiement.cotisation)).scalar() or 0
+
+    # 6. Montant total payé
+    total_paye = db.session.query(func.sum(Paiement.montant_paye)).scalar() or 0
+
+    # 7. Montant total restant
+    total_restant = db.session.query(func.sum(Paiement.montant_reste)).scalar() or 0
+
+    # 8. Montant total des remises
+    total_remise = db.session.query(func.sum(Paiement.remise)).scalar() or 0
+
+    return render_template(
+        'situation_financiere.html',
+        locations_par_mois=locations_par_mois,
+        locations_par_terrain=locations_par_terrain,
+        paiements_par_saison=paiements_par_saison,
+        paiements_par_mois=paiements_par_mois,
+        total_prevu=total_prevu,
+        total_paye=total_paye,
+        total_restant=total_restant,
+        total_remise=total_remise
+    )
+
+# --- Export endpoints for XLSX (1 per section) ---
+
+def df_to_xlsx_response(df, filename):
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False)
+    output.seek(0)
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+@app.route('/export_xlsx/locations_par_mois')
+def export_xlsx_locations_par_mois():
+    data = db.session.query(
+        extract('year', LocationTerrain.date_location).label('Année'),
+        extract('month', LocationTerrain.date_location).label('Mois'),
+        func.sum(LocationTerrain.montant_location).label('Montant total')
+    ).group_by('Année', 'Mois').order_by('Année', 'Mois').all()
+    df = pd.DataFrame(data, columns=['Année', 'Mois', 'Montant total'])
+    return df_to_xlsx_response(df, 'locations_par_mois.xlsx')
+
+@app.route('/export_xlsx/locations_par_terrain')
+def export_xlsx_locations_par_terrain():
+    data = db.session.query(
+        LocationTerrain.numero_terrain,
+        func.sum(LocationTerrain.montant_location).label('Montant total')
+    ).group_by(LocationTerrain.numero_terrain).all()
+    df = pd.DataFrame(data, columns=['Numéro terrain', 'Montant total'])
+    return df_to_xlsx_response(df, 'locations_par_terrain.xlsx')
+
+@app.route('/export_xlsx/paiements_par_saison')
+def export_xlsx_paiements_par_saison():
+    data = db.session.query(
+        Paiement.code_saison,
+        func.sum(Paiement.montant_paye).label('Montant payé')
+    ).group_by(Paiement.code_saison).all()
+    df = pd.DataFrame(data, columns=['Code saison', 'Montant payé'])
+    return df_to_xlsx_response(df, 'paiements_par_saison.xlsx')
+
+@app.route('/export_xlsx/paiements_par_mois')
+def export_xlsx_paiements_par_mois():
+    data = db.session.query(
+        extract('year', Paiement.date_paiement).label('Année'),
+        extract('month', Paiement.date_paiement).label('Mois'),
+        func.sum(Paiement.montant_paye).label('Montant payé')
+    ).group_by('Année', 'Mois').order_by('Année', 'Mois').all()
+    df = pd.DataFrame(data, columns=['Année', 'Mois', 'Montant payé'])
+    return df_to_xlsx_response(df, 'paiements_par_mois.xlsx')
+@app.route('/export_xlsx/global')
+def export_xlsx_global():
+    # Export global summary
+    total_prevu = db.session.query(func.sum(Paiement.cotisation)).scalar() or 0
+    total_paye = db.session.query(func.sum(Paiement.montant_paye)).scalar() or 0
+    total_restant = db.session.query(func.sum(Paiement.montant_reste)).scalar() or 0
+   
+    df = pd.DataFrame([
+        {'Label': 'Total prévu', 'Montant': total_prevu},
+        {'Label': 'Total payé', 'Montant': total_paye},
+        {'Label': 'Total restant', 'Montant': total_restant},
+        
+    ])
+    return df_to_xlsx_response(df, 'synthese_globale.xlsx')
+
 
 
 # Running the app

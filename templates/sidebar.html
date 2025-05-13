@@ -42,9 +42,7 @@
 <a href="{{ url_for('gerer_adherent') }}" class="dropdown-item">
     <i class="fa fa-users-cog me-2"></i>Gérer Les Adhérents
 </a>
-<a href="{{ url_for('recherche_abonnements') }}" class="dropdown-item">
-    <i class="fa fa-users-cog me-2"></i>Abonnements
-</a>
+
 </div>
 </div>
 
@@ -77,9 +75,7 @@
         <a href="{{ url_for('paiement') }}" class="dropdown-item">
             <i class="fa fa-credit-card"> </i>  Ajouter un Paiement
         </a>
-        <a href="{{ url_for('recherche_paiements') }}" class="dropdown-item">
-            <i class="fa fa-list"> </i>  Gérer Les Paiements
-        </a>
+        
     </div>
 </div>
 
@@ -97,9 +93,13 @@
     <a href="{{ url_for('show_situation_terrains') }}" class="dropdown-item">
         <i class="fa fa-search"></i>Situation Terrains
     </a>
-    <a href="{{ url_for('situation_presence') }}" class="dropdown-item">
+    <a href="{{ url_for('presence') }}" class="dropdown-item">
         <i class="fa fa-search"></i>Situation Presence
     </a>
+    <a href="{{ url_for('situation_financiere') }}" class="dropdown-item">
+        <i class="fa fa-search"></i>Situation Financiere
+    </a>
+    
 </div>
 </div>
         
@@ -120,11 +120,7 @@
                 </a>
             </div>
             
-            <div class="nav-item">
-                <a href="{{ url_for('tournois') }}" class="nav-link">
-                    <i class="fa fa-trophy me-2"></i>Tournois
-                </a>
-            </div>
+            
             <div class="nav-item">
                 <a href="{{ url_for('calendrier') }}" class="nav-link">
                     <i class="fa fa-calendar me-2"></i>Calendrier
