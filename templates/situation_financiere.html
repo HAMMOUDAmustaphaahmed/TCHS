@@ -5,135 +5,233 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Situation Financière</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    <style>
-        :root {
-            --cyber-bg: #10151b;
-            --card-bg: #181d23;
-            --primary: #9abbd8;
-            --primary-dark: #8fccdb;
-            --accent: #b9cfdd;
-            --text: #f0f0f0;
-            --muted: #626f86;
-            --border: #242b34;
-            --shadow: 0 8px 32px 0 rgba(0,0,0,0.37);
-        }
-        body {
-            margin: 0; padding: 0;
-            font-family: 'Roboto', Arial, sans-serif;
-            background: var(--cyber-bg);
-            color: var(--text);
-            min-height: 100vh;
-        }
-        h1 {
-            font-family: 'Orbitron', sans-serif;
-            text-align: center;
-            color: var(--primary);
-            margin-top: 2rem;
-            letter-spacing: 2px;
-            font-size: 2.8rem;
-            text-shadow: 0 0 10px var(--primary-dark);
-        }
-        .financial-dashboard {
-            max-width: 1200px;
-            margin: 2rem auto;
-            display: flex;
+   <style>
+    :root {
+        --primary-color: #2196f3;
+        --secondary-color: #1976d2;
+        --background-color: #f5f5f5;
+        --card-background: #ffffff;
+        --text-color: #333333;
+        --border-color: #e0e0e0;
+        --shadow: 0 2px 4px rgba(0,0,0,0.1);
+        --hover-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Roboto', Arial, sans-serif;
+        background-color: var(--background-color);
+        color: var(--text-color);
+    }
+
+    .main-container {
+        display: flex;
+        min-height: 100vh;
+    }
+
+    .sidebar {
+        width: 250px;
+        background-color: #333333;
+        padding: 20px;
+        color: white;
+    }
+
+    .content {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+    }
+
+    header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        background-color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+    }
+
+    h1 {
+        margin: 0;
+        color: var(--secondary-color);
+        font-size: 24px;
+    }
+
+    .financial-dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .card {
+        background-color: var(--card-background);
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+        transition: box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+        box-shadow: var(--hover-shadow);
+    }
+
+    .card-title {
+        color: var(--secondary-color);
+        font-size: 18px;
+        margin-bottom: 15px;
+        font-weight: 500;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+    }
+
+    th, td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+        background-color: #f8f9fa;
+        color: var(--secondary-color);
+        font-weight: 500;
+    }
+
+    tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .card-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .cyber-btn {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background-color 0.3s ease;
+    }
+
+    .cyber-btn:hover {
+        background-color: var(--secondary-color);
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .logout-btn {
+        color: var(--text-color);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    @media (max-width: 768px) {
+        .main-container {
             flex-direction: column;
-            gap: 2rem;
         }
-        .card {
-            background: var(--card-bg);
-            border-radius: 20px;
-            box-shadow: var(--shadow);
-            padding: 2rem;
-            border: 1.5px solid var(--border);
-            transition: transform 0.15s;
-            position: relative;
-        }
-        .card:hover {
-            transform: scale(1.012);
-            border-color: var(--accent);
-        }
-        .card-title {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--primary);
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            letter-spacing: 1px;
-        }
-        table {
+
+        .sidebar {
             width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 1.5rem;
-            background: transparent;
+            padding: 10px;
         }
+
+        .content {
+            padding: 10px;
+        }
+
+        .financial-dashboard {
+            grid-template-columns: 1fr;
+        }
+
+        .card {
+            padding: 15px;
+        }
+
+        table {
+            font-size: 14px;
+        }
+
         th, td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
+            padding: 8px;
         }
-        th {
-            background: var(--cyber-bg);
-            color: var(--accent);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.1rem;
-        }
-        tr:last-child td {
-            border-bottom: none;
-        }
+
         .card-actions {
-            display: flex;
-            gap: 1rem;
+            flex-direction: column;
         }
+
         .cyber-btn {
-            padding: 0.7rem 1.7rem;
-            border: none;
-            border-radius: 8px;
-            background: linear-gradient(90deg, var(--primary) 10%, var(--accent) 90%);
-            color: var(--cyber-bg);
-            font-family: 'Orbitron', sans-serif;
-            font-weight: bold;
-            font-size: 1.1rem;
-            cursor: pointer;
-            letter-spacing: 1px;
-            box-shadow: 0 2px 8px 0 rgba(165, 203, 214, 0.24);
-            transition: background 0.2s, color 0.2s;
+            width: 100%;
+            justify-content: center;
         }
-        .cyber-btn:hover {
-            background: linear-gradient(90deg, var(--accent) 10%, var(--primary) 90%);
-            color: var(--primary-dark);
+    }
+
+    @media print {
+        .sidebar, .card-actions, .logout-btn {
+            display: none;
         }
-        @media (max-width: 800px) {
-            .financial-dashboard {
-                padding: 0 0.5rem;
-            }
-            .card {
-                padding: 1.2rem;
-            }
-            th, td {
-                font-size: 0.98rem;
-            }
-            h1 {
-                font-size: 2.1rem;
-            }
+
+        .content {
+            padding: 0;
         }
-        @media (max-width: 500px) {
-            .card {
-                padding: 0.7rem;
-            }
-            th, td {
-                font-size: 0.89rem;
-                padding: 0.45rem;
-            }
-            h1 {
-                font-size: 1.3rem;
-            }
+
+        .card {
+            break-inside: avoid;
+            box-shadow: none;
+            border: 1px solid var(--border-color);
         }
-    </style>
+    }
+</style>
 </head>
+
+
+
 <body>
-    <h1>Situation Financière Globale</h1>
-    <div class="financial-dashboard">
+    <div class="main-container">
+    <!-- Sidebar -->
+   
+
+    <!-- Main Content -->
+    <div class="content">
+        <header>
+            <h1>Situation Financière Globale</h1>
+            <div class="user-info">
+                
+                
+                <a href="{{ url_for('admin') }}"><i class="fas fa-home"></i> Accueil</a>
+                <a href="{{ url_for('logout') }}" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </header>
+
+        <!-- Your existing financial-dashboard div and its contents -->
+        <div class="financial-dashboard">
         <!-- Synthèse Globale -->
         <div class="card" id="card-global">
             <div class="card-title">Synthèse Globale</div>
@@ -141,7 +239,7 @@
                 <thead>
                     <tr>
                         <th>Intitulé</th>
-                        <th>Montant (€)</th>
+                        <th>Montant (TND)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -164,7 +262,7 @@
                     <tr>
                         <th>Année</th>
                         <th>Mois</th>
-                        <th>Montant total (€)</th>
+                        <th>Montant total (TND)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -189,7 +287,7 @@
                 <thead>
                     <tr>
                         <th>Numéro de terrain</th>
-                        <th>Montant total (€)</th>
+                        <th>Montant total (TND)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -213,7 +311,7 @@
                 <thead>
                     <tr>
                         <th>Code Saison</th>
-                        <th>Montant payé (€)</th>
+                        <th>Montant payé (TND)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -238,7 +336,7 @@
                     <tr>
                         <th>Année</th>
                         <th>Mois</th>
-                        <th>Montant payé (€)</th>
+                        <th>Montant payé (TND)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -257,6 +355,40 @@
             </div>
         </div>
     </div>
+    <div class="card" id="card-charts">
+    <div class="card-title">Visualisation des données</div>
+    <div class="filters-row" style="display:flex;flex-wrap:wrap;gap:1rem;align-items:center;margin-bottom:1rem;">
+        <div style="display: flex; gap: 1rem; margin: 1rem 0;">
+   
+    <button class="cyber-btn" onclick="exportChartPNG()">Exporter PNG</button>
+    <button class="cyber-btn" onclick="exportChartPDF()">Exporter PDF</button>
+    <button class="cyber-btn" onclick="printChart()">Imprimer</button>
+</div>
+        <label>Type de graphique:
+            <select id="chart-type">
+                <option value="bar">Barres</option>
+                <option value="line">Lignes</option>
+                <option value="pie">Camembert</option>
+            </select>
+        </label>
+        <label>Données à afficher:
+            <select id="data-type">
+                <option value="paiements_par_mois">Paiements par mois</option>
+                <option value="locations_par_mois">Locations par mois</option>
+                <option value="paiements_par_saison">Paiements par saison</option>
+            </select>
+        </label>
+        <label>Période :
+            <input type="text" id="start-date" placeholder="Début" style="width:120px;">
+            <input type="text" id="end-date" placeholder="Fin" style="width:120px;">
+        </label>
+        <button class="cyber-btn" id="update-chart">Actualiser</button>
+    </div>
+    <canvas id="finances-chart" height="70"></canvas>
+</div>
+    </div>
+</div>
+    
     <script>
     // Export XLSX via backend route
     function exportSectionXlsx(section) {
@@ -301,4 +433,166 @@
     }
     </script>
 </body>
+<!-- AJOUTE à la fin du <body> AVANT </body> : -->
+
+<!-- 1. Injection des datasets Jinja -->
+<script id="jdata-paiements_par_mois" type="application/json">
+{
+    "labels": [
+        {% for annee, mois, montant in paiements_par_mois %}
+        "{{ annee }}-{{ '%02d' % mois }}"{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    ],
+    "values": [
+        {% for annee, mois, montant in paiements_par_mois %}
+        {{ "%.2f" % montant }}{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    ]
+}
+</script>
+<script id="jdata-locations_par_mois" type="application/json">
+{
+    "labels": [
+        {% for annee, mois, montant in locations_par_mois %}
+        "{{ annee }}-{{ '%02d' % mois }}"{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    ],
+    "values": [
+        {% for annee, mois, montant in locations_par_mois %}
+        {{ "%.2f" % montant }}{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    ]
+}
+</script>
+<script id="jdata-paiements_par_saison" type="application/json">
+{
+    "labels": [
+        {% for saison, montant in paiements_par_saison %}
+        "{{ saison }}"{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    ],
+    "values": [
+        {% for saison, montant in paiements_par_saison %}
+        {{ "%.2f" % montant }}{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    ]
+}
+</script>
+
+<!-- 2. Script Chart.js (à placer ici et PAS dans le <head>) -->
+<script>
+flatpickr("#start-date", {dateFormat: "Y-m-d"});
+flatpickr("#end-date", {dateFormat: "Y-m-d"});
+
+let chart;
+const colorPalette = ["#2196f3", "#1976d2", "#4caf50", "#ff9800", "#e91e63", "#00bcd4", "#ffc107", "#9c27b0"];
+
+function getDataset(dataType) {
+    let node = document.getElementById("jdata-" + dataType);
+    if (node) return JSON.parse(node.textContent);
+    return {labels:[], values:[]};
+}
+
+function filterLabels(labels, values, start, end) {
+    if (!start && !end) return {labels, values};
+    let parse = l => {
+        if (l.includes("-")) {
+            let parts = l.split("-"); return new Date(parts[0], parts[1] ? parts[1]-1 : 0, 1);
+        }
+        return new Date(l);
+    };
+    let startD = start ? new Date(start) : null;
+    let endD = end ? new Date(end) : null;
+    let arr = labels.map((l,i)=>({l,i,d:parse(l)}));
+    if (startD) arr = arr.filter(obj=>obj.d>=startD);
+    if (endD) arr = arr.filter(obj=>obj.d<=endD);
+    return {
+        labels: arr.map(obj=>labels[obj.i]),
+        values: arr.map(obj=>values[obj.i])
+    };
+}
+
+function drawChart(type, labels, values) {
+    if(chart) chart.destroy();
+    chart = new Chart(document.getElementById('finances-chart').getContext('2d'), {
+        type: type,
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Montant (TND)",
+                data: values,
+                backgroundColor: colorPalette,
+                borderColor: colorPalette,
+                borderWidth: 2,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: type === "pie" },
+                tooltip: { enabled: true }
+            }
+        }
+    });
+}
+
+function updateChart() {
+    const type = document.getElementById("chart-type").value;
+    const dataType = document.getElementById("data-type").value;
+    const start = document.getElementById("start-date").value;
+    const end = document.getElementById("end-date").value;
+    let data = getDataset(dataType);
+    let filtered = filterLabels(data.labels, data.values, start, end);
+    drawChart(type, filtered.labels, filtered.values);
+}
+document.getElementById("update-chart").onclick = updateChart;
+document.getElementById("chart-type").onchange = updateChart;
+document.getElementById("data-type").onchange = updateChart;
+updateChart();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+let chartZoom = 1;
+function zoomChart(plus) {
+    chartZoom += plus ? 0.2 : -0.2;
+    if (chartZoom < 0.4) chartZoom = 0.4;
+    if (chartZoom > 2.5) chartZoom = 2.5;
+    const canvas = document.getElementById('finances-chart');
+    const baseWidth = 600, baseHeight = 300;
+    canvas.width = baseWidth * chartZoom;
+    canvas.height = baseHeight * chartZoom;
+    canvas.style.width = (baseWidth * chartZoom) + "px";
+    canvas.style.height = (baseHeight * chartZoom) + "px";
+    if (chart) chart.resize();
+}
+
+function exportChartPNG() {
+    const canvas = document.getElementById('finances-chart');
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = 'graphique.png';
+    link.click();
+}
+
+function exportChartPDF() {
+    const canvas = document.getElementById('finances-chart');
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new window.jspdf.jsPDF({
+        orientation: 'landscape',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+    });
+    pdf.addImage(imgData, 'PNG', 10, 10, canvas.width-20, canvas.height-20);
+    pdf.save('graphique.pdf');
+}
+
+function printChart() {
+    const canvas = document.getElementById('finances-chart');
+    const win = window.open('', 'PrintChart');
+    win.document.write(`<html><head><title>Imprimer le graphique</title></head><body style="margin:0"><img src="${canvas.toDataURL('image/png')}" style="max-width:100%"/></body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); win.close(); }, 500);
+}
+</script>
 </html>
