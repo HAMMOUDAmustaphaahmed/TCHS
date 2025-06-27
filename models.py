@@ -79,7 +79,6 @@ class Presence(db.Model):
     
     id_presence = db.Column(db.Integer, primary_key=True, autoincrement=True)
     groupe_nom = db.Column(db.String(100), nullable=False)
-    adherent_matricule = db.Column(db.String(50), nullable=False)
     entraineur_nom = db.Column(db.String(100), nullable=False)
     date_seance = db.Column(db.Date, nullable=False)
     heure_debut = db.Column(db.Time, nullable=False)

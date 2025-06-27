@@ -48,22 +48,37 @@
                             <a class="">
                                 <h3 class="text-primary">TCHS.</h3>
                             </a>
-                            
                         </div>
                         <form method="POST" action="{{ url_for('login') }}">
-
                             <div class="form-floating mb-3">
                                 <input type="text" class="form-control" id="utilisateur" name="utilisateur" placeholder="name@example.com">
-                                <label for="floatingInput">Utilisateur</label>
+                                <label for="utilisateur">Utilisateur</label>
                             </div>
                             <div class="form-floating mb-4">
                                 <input type="password" class="form-control" id="password" name="password" placeholder="Password">
-                                <label for="floatingPassword">Mot de Passe</label>
+                                <label for="password">Mot de Passe</label>
+                            </div>
+                            
+                            <!-- New fields -->
+                            <div class="form-floating mb-3">
+                                <select class="form-select" id="type_saison" name="type_saison">
+                                    <option value="abonnement_annuel">Abonnement Annuel</option>
+                                    <option value="ecole_ete">École d'été</option>
+                                </select>
+                                <label for="type_saison">Type de Saison</label>
+                            </div>
+                            
+                            <div class="form-floating mb-3">
+                                <select class="form-select" id="annee_saison" name="annee_saison">
+                                    {% for year in range(2010, 2100) %}
+                                        <option value="{{ year }}">{{ year }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label for="annee_saison">Année</label>
                             </div>
                             
                             <button type="submit" class="btn btn-primary py-3 w-100 mb-4">Se Connecter</button>
                         </form>
-
                     </div>
                 </div>
             </div>

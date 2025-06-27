@@ -31,6 +31,12 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 @app.route('/')
 def home():
     return render_template('signin.html')
+@app.route('/page')
+def page():
+    return render_template('landing_page1.html')
+
+
+
 
 @app.route('/presentation')
 def presentation():
@@ -369,7 +375,7 @@ def directeur_technique():
     } for a in all_adherents]
 
     return render_template(
-        'directeur_technique.html',
+        'gestion_groupes.html',
         current_day=current_day,
         week_offset=week_offset,
         day_offset=day_offset,
@@ -384,6 +390,104 @@ def directeur_technique():
         adherents_json=json.dumps(adherents_list)
     )
 
+
+
+@app.route('/planning', methods=['GET', 'POST'])
+def planning():
+    if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
+        flash("Accès non autorisé.", "danger")
+        return redirect(url_for('login'))
+
+    # Création des créneaux horaires
+    creneaux = [
+        {'start': time(8, 0), 'end': time(9, 30)},
+        {'start': time(9, 30), 'end': time(11, 0)},
+        {'start': time(11, 0), 'end': time(12, 30)},
+        {'start': time(12, 30), 'end': time(14, 0)},
+        {'start': time(14, 0), 'end': time(15, 30)},
+        {'start': time(15, 30), 'end': time(17, 0)},
+        {'start': time(17, 0), 'end': time(18, 30)},
+        {'start': time(18, 30), 'end': time(20, 0)}
+    ]
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'changer_entraineur':
+            groupe_id = request.form.get('groupe_id')
+            nouvel_entraineur_id = request.form.get('entraineur_id')
+            groupe = Groupe.query.get(groupe_id)
+            ancien_entraineur = groupe.entraineur_nom
+            nouveau_entraineur = Entraineur.query.get(nouvel_entraineur_id)
+            
+            # Mettre à jour toutes les séances concernées
+            Seance.query.filter_by(entraineur=ancien_entraineur).update({'entraineur': nouveau_entraineur.nom + ' ' + nouveau_entraineur.prenom})
+            groupe.entraineur_nom = nouveau_entraineur.nom + ' ' + nouveau_entraineur.prenom
+            db.session.commit()
+            flash("Entraîneur modifié avec succès", "success")
+
+        elif action == 'supprimer_seance':
+            seance_id = request.form.get('seance_id')
+            seance = Seance.query.get(seance_id)
+            db.session.delete(seance)
+            db.session.commit()
+            flash("Séance supprimée", "success")
+    
+    # Gestion de la navigation
+    week_offset = request.args.get('week_offset', 0, type=int)
+    day_offset = request.args.get('day_offset', 0, type=int)
+    
+    # Calcul des dates
+    today = datetime.today()
+    start_of_week = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
+    day_offset = max(0, min(6, day_offset))  # Bloque entre 0 (lundi) et 6 (dimanche)
+    current_day = start_of_week + timedelta(days=day_offset)
+
+    # Récupération des données
+    groupes = Groupe.query.all()
+    entraineurs = Entraineur.query.all()
+    
+    # Séances pour la semaine entière (pour les stats)
+    seances_week = Seance.query.filter(
+        Seance.date >= start_of_week.date(),
+        Seance.date <= (start_of_week + timedelta(days=6)).date()
+    ).all()
+    
+    # Séances pour le jour actuel (pour l'emploi du temps)
+    seances_day = Seance.query.filter(
+        Seance.date == current_day.date()
+    ).all()
+
+    # Calcul des séances par groupe
+    seances_par_groupe = {}
+    for seance in seances_week:
+        if seance.groupe not in seances_par_groupe:
+            seances_par_groupe[seance.groupe] = 0
+        seances_par_groupe[seance.groupe] += 1
+
+    # Récupérer tous les adhérents pour la recherche
+    all_adherents = Adherent.query.all()
+    adherents_list = [{
+        'matricule': a.matricule,
+        'nom': a.nom,
+        'prenom': a.prenom
+    } for a in all_adherents]
+
+    return render_template(
+        'planning.html',
+        current_day=current_day,
+        week_offset=week_offset,
+        day_offset=day_offset,
+        groupes=groupes,
+        entraineurs=entraineurs,
+        seances=seances_day,  # Utilise les séances du jour seulement
+        seances_week=seances_week,  # Pour les stats hebdomadaires
+        creneaux=creneaux,
+        terrains=range(1, 10),
+        seances_par_groupe=seances_par_groupe,
+        all_adherents=adherents_list,  
+        adherents_json=json.dumps(adherents_list)
+    )
 
 @app.route('/update_seance_adherents/<int:seance_id>', methods=['POST'])
 def update_seance_adherents(seance_id):
@@ -1057,34 +1161,41 @@ def login():
     if request.method == 'POST':
         utilisateur = request.form.get('utilisateur')
         password = request.form.get('password')
+        type_saison = request.form.get('type_saison')
+        annee_saison = request.form.get('annee_saison')
+        
         user = User.query.filter_by(utilisateur=utilisateur).first()
         
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
-        if user and user.password == hashed_password and user.role == 'admin':
+        if user and user.password == hashed_password:
+            # Store all the necessary information in session
             session['user_id'] = user.id
             session['username'] = user.utilisateur
             session['role'] = user.role
-            flash('Connexion réussie.', 'success')
-            return redirect(url_for('admin'))  
-        elif user and user.password == hashed_password and user.role == 'directeur_technique':
-            session['user_id'] = user.id
-            session['username'] = user.utilisateur
-            session['role'] = user.role
-            flash('Connexion réussie.', 'success')
-            return redirect(url_for('directeur_technique'))
-        elif user and user.password == hashed_password and user.role == 'entraineur':
-            session['user_id'] = user.id
-            session['username'] = user.utilisateur
-            session['role'] = user.role
-            flash('Connexion réussie.', 'success')
-            return redirect(url_for('entraineur'))
+            session['type_saison'] = type_saison
+            session['annee_saison'] = annee_saison
+            
+            # Create session_saison
+            if type_saison == 'abonnement_annuel':
+                # For annual subscription, use the format S{year}
+                session['session_saison'] = f"S{annee_saison}"
+            else:
+                # For summer school, use the format E{year}
+                session['session_saison'] = f"E{annee_saison}"
+            
+            flash("Connexion réussie.", "success")
+            
+            # Redirect based on role
+            if user.role == 'admin':
+                return redirect(url_for('admin'))
+            elif user.role == 'directeur_technique':
+                return redirect(url_for('directeur_technique'))
+            elif user.role == 'entraineur':
+                return redirect(url_for('entraineur'))
         else:
-            flash('Nom d’utilisateur ou mot de passe incorrect.', 'danger')
+            flash("Nom d'utilisateur ou mot de passe incorrect.", "danger")  # Fixed the quote issue here
     
     return render_template('signin.html')
-
-
-
 
 @app.route('/ajouter_utilisateur', methods=['GET', 'POST'])
 def ajouter_utilisateur():
@@ -1391,7 +1502,6 @@ def supprimer_entraineur(id):
     
     return redirect(url_for('gerer_entraineur'))
 
-
 @app.route('/discussions', methods=['GET', 'POST'])
 def discussions():
     users = User.query.all()  # Récupère tous les utilisateurs
@@ -1440,14 +1550,13 @@ def discussions():
 
     return render_template('discussions.html', users=users_list, messages_envoyes=messages_envoyes_data, messages_recus=messages_recus_data)
 
-
-
 @app.route('/message/<int:id>/marquer_lu', methods=['POST'])
 def marquer_lu(id):
     message = Message.query.get(id)
     message.statut = 'lu'
     db.session.commit()
     return redirect(url_for('discussions'))
+
 @app.route('/message/<int:id>/repondre', methods=['GET', 'POST'])
 def repondre(id):
     if request.method == 'POST':
@@ -1466,6 +1575,15 @@ def paiement():
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
 
+    # Gestion du type saison via l'URL ou formulaire
+    saison_type = request.args.get('type') or request.form.get('type')
+    if saison_type == 'ete':
+        saison_type = 'ete'
+    elif saison_type == 'annuel':
+        saison_type = 'annuel'
+    else:
+        saison_type = 'autres'
+
     adherent = None
     paiements = []
     cotisation = 0
@@ -1474,16 +1592,34 @@ def paiement():
     reste_a_payer = 0  # Nouvelle variable pour le reste à payer
     numero_carnet = 1  # Initialisation par défaut
     numero_bon = 1  # Initialisation par défaut
-    #generation de code saison
+
+    # Calcul dynamique du code saison (Saison ou Été)
     aujourdhui = datetime.now()
     debut_saison = datetime(aujourdhui.year, 9, 1)  # 1er septembre de l'année en cours
-    
     if aujourdhui < debut_saison:
-        code_saison= f"S{aujourdhui.year}"
+        annee_saison = aujourdhui.year
     else:
-        code_saison= f"S{aujourdhui.year + 1}"  # Génération dynamique du code saison
+        annee_saison = aujourdhui.year + 1
 
+    matricule = request.form.get('matricule')
+    adherent = Adherent.query.filter_by(matricule=matricule).first()
+    if adherent :
+        if saison_type == 'ete' or adherent.type_abonnement == "Ecole d'été":
+            code_saison = f"E{annee_saison}"
+        else:
+            code_saison = f"S{annee_saison}"
+    else:
+        if saison_type == 'ete':
+            code_saison = f"E{annee_saison}"
+        else:
+            code_saison = f"S{annee_saison}"
+
+    # Filtrer les cotisations selon le type de saison
     cotisations = Cotisation.query.all()
+    if saison_type == 'ete':
+        cotisations = [c for c in cotisations if "été" in c.nom_cotisation.lower()]
+    else:
+        cotisations = [c for c in cotisations if "été" not in c.nom_cotisation.lower()]
 
     if request.method == 'POST':
         # Recherche de l'adhérent
@@ -1528,6 +1664,10 @@ def paiement():
                 paiement_total = cotisation - remise_montant
                 montant_restant = paiement_total - sum([p.montant_paye for p in paiements]) - montant_paye
 
+                if saison_type == 'ete' or adherent.type_abonnement == "Ecole d'été":
+                    code_saison = f"E{annee_saison}"
+                else:
+                    code_saison = f"S{annee_saison}"
                 # Créer un nouveau paiement
                 nouveau_paiement = Paiement(
                     matricule_adherent=matricule,
@@ -1541,14 +1681,21 @@ def paiement():
                     remise=remise,  # Stocker le pourcentage de remise
                     numero_bon=numero_bon,
                     numero_carnet=numero_carnet,
-                    code_saison=code_saison
+                    code_saison=code_saison,
+                    saison_type=saison_type
                 )
 
                 db.session.add(nouveau_paiement)
                 db.session.commit()
                 # Exemple d'utilisation
-                generer_bon_paiement(matricule_adherent=matricule, montant_paye=montant_paye, type_paiement=type_reglement, code_saison=code_saison, id_bon=numero_bon, id_carnet=numero_carnet)
-
+                generer_bon_paiement(
+                    matricule_adherent=matricule,
+                    montant_paye=montant_paye,
+                    type_paiement=type_reglement,
+                    code_saison=code_saison,
+                    id_bon=numero_bon,
+                    id_carnet=numero_carnet
+                )
 
                 # Recharger les paiements pour mise à jour
                 paiements = Paiement.query.filter_by(matricule_adherent=matricule).all()
@@ -1571,10 +1718,9 @@ def paiement():
         numero_carnet=numero_carnet,
         numero_bon=numero_bon,
         code_saison=code_saison,
-        cotisations=cotisations
+        cotisations=cotisations,
+        saison_type=saison_type
     )
-
-
 
 @app.route('/cotisations', methods=['GET', 'POST'])
 def gestion_cotisations():
@@ -1931,6 +2077,156 @@ class Seance(db.Model):
         self.groupe = groupe
         self.entraineur = entraineur
         self.terrain = terrain
+    
+class Reservation(db.Model):
+    __tablename__ = 'reservations'
+    
+    id_reservation = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nom_entraineur = db.Column(db.String(100), nullable=False)
+    prenom_entraineur = db.Column(db.String(100), nullable=False)
+    date_reservation = db.Column(db.Date, nullable=False)
+    heure_debut = db.Column(db.Time, nullable=False)
+    heure_fin = db.Column(db.Time, nullable=False)
+    numero_terrain = db.Column(db.Integer, nullable=False)
+    commentaire = db.Column(db.Text, nullable=True)
+    status = db.Column(db.Enum('en_attente', 'acceptée', 'refusée'), default='en_attente')
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)    
+
+@app.route('/api/mes_reservations', methods=['GET'])
+def get_mes_reservations():
+    if 'user_id' not in session:
+        return jsonify({"error": "Non autorisé"}), 403
+
+    try:
+        # Récupérer le nom et prénom de l'entraineur depuis le username
+        username = session.get('username')
+        nom, prenom = username.split('.')
+
+        # Récupérer les réservations de l'entraineur
+        reservations = Reservation.query.filter_by(
+            nom_entraineur=nom,
+            prenom_entraineur=prenom
+        ).order_by(Reservation.date_reservation.desc()).all()
+
+        # Convertir les réservations en format JSON
+        reservations_list = []
+        for res in reservations:
+            reservations_list.append({
+                'date': res.date_reservation.strftime('%d/%m/%Y'),
+                'heure_debut': res.heure_debut.strftime('%H:%M'),
+                'heure_fin': res.heure_fin.strftime('%H:%M'),
+                'numero_terrain': res.numero_terrain,
+                'status': res.status,
+                'commentaire': res.commentaire
+            })
+
+        return jsonify({
+            "success": True,
+            "reservations": reservations_list
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/api/reserver_terrain', methods=['POST'])
+def api_reserver_terrain():
+    if 'user_id' not in session:
+        return jsonify({"error": "Non autorisé"}), 403
+
+    try:
+        data = request.get_json()
+        username = session.get('username')
+        nom, prenom = username.split('.')  # Assurez-vous que cela correspond à votre format
+
+        nouvelle_reservation = Reservation(
+            nom_entraineur=nom,
+            prenom_entraineur=prenom,
+            date_reservation=datetime.strptime(data['date'], '%Y-%m-%d').date(),
+            heure_debut=datetime.strptime(data['heure_debut'], '%H:%M').time(),
+            heure_fin=datetime.strptime(data['heure_fin'], '%H:%M').time(),
+            numero_terrain=int(data['numero_terrain']),
+            commentaire=data.get('commentaire', ''),
+            status='en_attente'
+        )
+        
+        db.session.add(nouvelle_reservation)
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Réservation créée avec succès"
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/api/all_reservations', methods=['GET'])
+def get_all_reservations():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return jsonify({"error": "Non autorisé"}), 403
+
+    try:
+        reservations = Reservation.query.order_by(
+            Reservation.date_creation.desc()
+        ).all()
+
+        reservations_list = []
+        for res in reservations:
+            reservations_list.append({
+                'id': res.id_reservation,
+                'entraineur': f"{res.nom_entraineur} {res.prenom_entraineur}",
+                'date': res.date_reservation.strftime('%d/%m/%Y'),
+                'heure_debut': res.heure_debut.strftime('%H:%M'),
+                'heure_fin': res.heure_fin.strftime('%H:%M'),
+                'numero_terrain': res.numero_terrain,
+                'status': res.status,
+                'commentaire': res.commentaire,
+                'date_creation': res.date_creation.strftime('%Y-%m-%d %H:%M:%S')
+            })
+
+        return jsonify({
+            "success": True,
+            "reservations": reservations_list
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/api/update_reservation_status', methods=['POST'])
+def update_reservation_status():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return jsonify({"error": "Non autorisé"}), 403
+
+    try:
+        data = request.get_json()
+        reservation_id = data.get('reservation_id')
+        new_status = data.get('status')
+
+        if not reservation_id or not new_status:
+            return jsonify({"error": "Paramètres manquants"}), 400
+
+        reservation = Reservation.query.get(reservation_id)
+        if not reservation:
+            return jsonify({"error": "Réservation non trouvée"}), 404
+
+        reservation.status = new_status
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": f"Statut mis à jour avec succès : {new_status}"
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/reservations')
+def reservations():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        flash('Accès non autorisé', 'error')
+        return redirect(url_for('login'))
+    return render_template('reservations.html')
 
 
 class Presence(db.Model):

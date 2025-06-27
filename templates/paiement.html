@@ -61,7 +61,13 @@
             <div class="container-xxl position-relative bg-white d-flex p-0">
                 <!-- Sign In Start -->
                 <div class="container mt-5">
-                    <h1 class="mb-4">Gestion des Paiements</h1>
+                    {% if saison_type == 'ete' %}
+                        <h1 class="mb-4">Gestion des Paiements Ecole d'été</h1>
+                    {% elif saison_type == 'annuel' %}
+                        <h1 class="mb-4">Gestion des Paiements Abonnements Annuels</h1>
+                    {% else %}
+                        <h1 class="mb-4">Gestion des autres Paiements</h1>
+                    {% endif %}
                     
                     <!-- Formulaire de recherche d'adhérent -->
                     <form method="POST" class="mb-4" id="searchForm">

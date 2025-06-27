@@ -129,16 +129,14 @@ document.getElementById('submitMotDePasse').addEventListener('click', function()
 });
 
 </script>          
-          <div class="nav-item">
-            <a href="{{ url_for('equipement') }}" class="nav-link">
-                <i class="fa fa-trophy me-2"></i>Tournois
-            </a>
-        </div>
-        <div class="nav-item">
-            <a href="{{ url_for('equipement') }}" class="nav-link">
-                <i class="fa fa-boxes me-2"></i>Équipement
-            </a>
-        </div>
+         <div class="nav-item">
+    <a href="#" class="nav-link" id="showReservationSection">
+        <i class="fa fa-clipboard me-2"></i>Reserver Terrain
+    </a>
+</div>
+
+
+        
         <div class="nav-item">
           <a href="{{ url_for('discussions') }}" class="nav-link">
             <i class="fab fa-facebook-messenger"></i>Discussions
@@ -180,6 +178,279 @@ document.getElementById('submitMotDePasse').addEventListener('click', function()
             </div>
             <!-- Emploi du Temps de l'Entraîneur -->
             <div class="mt-5">
+              <!-- Reservation section (hidden by default) -->
+    <!-- Reservation section -->
+    <div id="reservationSection" class="bg-light rounded p-4" style="display: none;">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h5 class="mb-0">Réservation de Terrain</h5>
+        </div>
+
+        <!-- Reservation Form -->
+        <form id="reservationForm" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-control" id="dateReservation" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Heure début</label>
+                <input type="time" class="form-control" id="heureDebut" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Heure fin</label>
+                <input type="time" class="form-control" id="heureFin" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Terrain</label>
+                <select class="form-select" id="numeroTerrain" required>
+                    <option value="">Sélectionner un terrain</option>
+                    {% for i in range(1, 10) %}
+                    <option value="{{ i }}">Terrain {{ i }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12">
+                <label class="form-label">Commentaire</label>
+                <textarea class="form-control" id="commentaire" rows="3"></textarea>
+            </div>
+            <div class="col-12">
+                <button type="button" class="btn btn-primary" id="submitBtn" onclick="soumettreReservation()">
+    <span class="normal-state">
+        <i class="fas fa-save me-2"></i>Enregistrer la réservation
+    </span>
+    <span class="loading-state">
+        <i class="fas fa-spinner fa-spin me-2"></i>En cours...
+    </span>
+</button>
+            </div>
+        </form>
+
+        <!-- Reservations List -->
+        <div class="mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6>Mes réservations</h6>
+        <button onclick="chargerReservations()" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-sync-alt"></i> Rafraîchir
+        </button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Heure</th>
+                    <th>Terrain</th>
+                    <th>Status</th>
+                    <th>Commentaire</th>
+                </tr>
+            </thead>
+            <tbody id="reservationsList">
+                <!-- Les réservations seront chargées ici dynamiquement -->
+            </tbody>
+        </table>
+    </div>
+</div>
+    </div>
+<style>
+    #reservationSection {
+        margin-top: 20px;
+        background-color: white;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .table-responsive {
+        margin-top: 20px;
+    }
+
+    #reservationSection.show {
+        display: block !important;
+    }
+
+    .badge {
+        padding: 8px 12px;
+        font-size: 0.9em;
+    }
+
+    #reservationsList tr {
+        transition: background-color 0.2s;
+    }
+
+    #reservationsList tr:hover {
+        background-color: rgba(0,0,0,0.05);
+    }
+
+    .loading-state {
+        display: none;
+    }
+    
+    .btn:disabled .normal-state {
+        display: none;
+    }
+    
+    .btn:disabled .loading-state {
+        display: inline;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const showReservationButton = document.getElementById('showReservationSection');
+    const reservationSection = document.getElementById('reservationSection');
+    
+    if (!showReservationButton || !reservationSection) {
+        console.error('Required elements not found');
+        return;
+    }
+
+    showReservationButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Toggle the display of the reservation section
+        const currentDisplay = reservationSection.style.display;
+        reservationSection.style.display = currentDisplay === 'none' ? 'block' : 'none';
+        
+        // Scroll reservationSection into view if it's being shown
+        if (reservationSection.style.display === 'block') {
+            reservationSection.scrollIntoView({ behavior: 'smooth' });
+            chargerReservations(); // Load reservations when section is shown
+        }
+    });
+
+    // Initial load of reservations
+    chargerReservations();
+});
+
+function resetReservationForm() {
+    document.getElementById('reservationForm').reset();
+}
+
+function getBadgeClass(status) {
+    switch(status) {
+        case 'acceptée':
+            return 'bg-success';
+        case 'refusée':
+            return 'bg-danger';
+        default:
+            return 'bg-warning';
+    }
+}
+
+function chargerReservations() {
+    fetch('/api/mes_reservations', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erreur réseau');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            afficherReservations(data.reservations);
+        } else {
+            console.error('Erreur:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors du chargement des réservations:', error);
+    });
+}
+
+function afficherReservations(reservations) {
+    const tbody = document.getElementById('reservationsList');
+    tbody.innerHTML = ''; // Clear the table
+
+    reservations.forEach(reservation => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${reservation.date}</td>
+            <td>${reservation.heure_debut} - ${reservation.heure_fin}</td>
+            <td>${reservation.numero_terrain}</td>
+            <td>
+                <span class="badge ${getBadgeClass(reservation.status)}">
+                    ${reservation.status}
+                </span>
+            </td>
+            <td>${reservation.commentaire || ''}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function soumettreReservation() {
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+
+    // Get form values
+    const dateReservation = document.getElementById('dateReservation').value;
+    const heureDebut = document.getElementById('heureDebut').value;
+    const heureFin = document.getElementById('heureFin').value;
+    const numeroTerrain = document.getElementById('numeroTerrain').value;
+    const commentaire = document.getElementById('commentaire').value;
+
+    // Validation
+    if (!dateReservation || !heureDebut || !heureFin || !numeroTerrain) {
+        alert('Veuillez remplir tous les champs obligatoires');
+        submitBtn.disabled = false;
+        return;
+    }
+
+    // Check end time is after start time
+    if (heureDebut >= heureFin) {
+        alert("L'heure de fin doit être après l'heure de début");
+        submitBtn.disabled = false;
+        return;
+    }
+
+    // Create data object
+    const data = {
+        date: dateReservation,
+        heure_debut: heureDebut,
+        heure_fin: heureFin,
+        numero_terrain: parseInt(numeroTerrain),
+        commentaire: commentaire
+    };
+
+    // Send request
+    fetch('/api/reserver_terrain', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(data),
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert('Réservation créée avec succès');
+            resetReservationForm();
+            chargerReservations(); // Reload reservations instead of page refresh
+        } else {
+            alert('Erreur : ' + (data.error || 'Une erreur est survenue'));
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la création de la réservation : ' + (error.message || error));
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+    });
+}
+</script>
               <h4 class="text-start mb-4">Emploi du Temps</h4>
           
               <!-- Navigation double -->
