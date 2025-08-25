@@ -104,7 +104,606 @@
     </div>
 </div>
 <!-- Sale & Revenue End -->
+<!-- Adherents Indicators Start -->
+<div class="container-fluid pt-4 px-4">
+    <div class="bg-light rounded p-4">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h6 class="mb-0">Indicateurs Adhérents</h6>
+            <button class="btn btn-sm btn-outline-primary" onclick="resetFilters()">Réinitialiser</button>
+        </div>
+        
+        <!-- Filtres -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h6 class="mb-3">Filtrer par Type d'Abonnement:</h6>
+                <div id="typeAbonnementFilters" class="d-flex flex-wrap gap-2">
+                    <!-- Les checkboxes seront générées dynamiquement -->
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h6 class="mb-3">Filtrer par Groupe:</h6>
+                <div id="groupeFilters" class="d-flex flex-wrap gap-2">
+                    <!-- Les checkboxes seront générées dynamiquement -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Indicateur principal -->
+        <div class="row">
+            <div class="col-12">
+                <div class="bg-primary text-white rounded p-4 text-center">
+                    <i class="fa fa-users fa-3x mb-3"></i>
+                    <h2 id="totalAdherents" class="mb-2">0</h2>
+                    <p class="mb-0">Adhérents Sélectionnés</p>
+                    <small id="filterStatus" class="text-light">Tous les adhérents</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistiques détaillées -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="bg-white rounded p-3">
+                    <h6 class="mb-3">Répartition par Type D'Abonnement</h6>
+                    <div id="typeStats"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="bg-white rounded p-3">
+                    <h6 class="mb-3">Répartition par Groupe</h6>
+                    <div id="groupeStats"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Section Indicateurs de Paiement -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="bg-light rounded p-4">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <h6 class="mb-0">Indicateurs de Paiement</h6>
+                <button class="btn btn-sm btn-outline-success" onclick="refreshPaymentData()">
+                    <i class="fa fa-refresh me-1"></i>Actualiser
+                </button>
+            </div>
+            
+           <!-- Indicateurs principaux de paiement -->
+<div class="row mb-4 g-3">
+    <div class="col-md-3">
+        <div class="stat-card bg-success text-white d-flex flex-column justify-content-between rounded p-3 text-center h-100">
+            <div>
+                <i class="fa fa-check-circle fa-2x mb-2"></i>
+                <h4 id="totalPaiementsComplets" class="mb-1">0</h4>
+                <small>Paiements Complets</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-warning text-white d-flex flex-column justify-content-between rounded p-3 text-center h-100">
+            <div>
+                <i class="fa fa-clock-o fa-2x mb-2"></i>
+                <h4 id="totalPaiementsPartiels" class="mb-1">0</h4>
+                <small>Paiements Partiels</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-danger text-white d-flex flex-column justify-content-between rounded p-3 text-center h-100">
+            <div>
+                <i class="fa fa-times-circle fa-2x mb-2"></i>
+                <h4 id="totalPaiementsImpaye" class="mb-1">0</h4>
+                <small>Impayés</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-info text-white d-flex flex-column justify-content-between rounded p-3 text-center h-100">
+            <div>
+                <i class="fa fa-euro fa-2x mb-2"></i>
+                <h4 id="totalMontantPercu" class="mb-1">0€</h4>
+                <small>Montant Total Perçu</small>
+            </div>
+            <!-- 🟢 Nouveau conteneur aligné en bas -->
+            <div id="montantParAbonnement" class="mt-3 text-start small bg-light text-dark p-2 rounded"></div>
+        </div>
+    </div>
+</div>
+<style>
+    .stat-card {
+    min-height: 150px; /* Hauteur minimale pour uniformiser */
+}
+#montantParAbonnement {
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
 
+</style>
+            
+            <!-- Statistiques détaillées de paiement -->
+            <div class="row g-3">
+    <div class="col-md-4 d-flex">
+        <div class="stat-card bg-white rounded shadow-sm p-3 d-flex flex-column justify-content-between w-100 h-100">
+            <h6 class="mb-3">Répartition par Type de Règlement</h6>
+            <div id="reglementStats" class="flex-grow-1"></div>
+        </div>
+    </div>
+    <div class="col-md-4 d-flex">
+        <div class="stat-card bg-white rounded shadow-sm p-3 d-flex flex-column justify-content-between w-100 h-100">
+            <h6 class="mb-3">Status de Paiement par Type d'Abonnement</h6>
+            <div id="paiementTypeAbonnementStats" class="flex-grow-1"></div>
+        </div>
+    </div>
+    <div class="col-md-4 d-flex">
+        <div class="stat-card bg-white rounded shadow-sm p-3 d-flex flex-column justify-content-between w-100 h-100">
+            <h6 class="mb-3">Paiements Récents</h6>
+            <div id="paiementsRecents" class="flex-grow-1 overflow-auto" style="max-height: 250px;"></div>
+        </div>
+    </div>
+</div>
+<style>
+    .stat-card {
+    min-height: 280px; /* même hauteur pour toutes les cartes */
+    display: flex;
+    flex-direction: column;
+}
+
+#paiementsRecents {
+    scrollbar-width: thin; 
+    scrollbar-color: #ccc transparent;
+}
+#paiementsRecents::-webkit-scrollbar {
+    width: 6px;
+}
+#paiementsRecents::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+</style>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales pour les paiements
+let paiementsData = [];
+
+// Charger les données de paiement au chargement initial
+document.addEventListener('DOMContentLoaded', function() {
+    // Délai pour laisser le temps aux adhérents de se charger
+    setTimeout(() => {
+        loadPaiementsData();
+    }, 1000);
+});
+
+// Fonction pour charger les données des paiements
+async function loadPaiementsData() {
+    try {
+        const response = await fetch('/api/paiements-indicators');
+        const data = await response.json();
+        
+        if (data.success) {
+            paiementsData = data.paiements;
+            updatePaiementDisplay(data.statistics, data.montant_par_abonnement); // 🟢 modifié
+            updateDetailedPaiementStats(data);
+        } else {
+            showPaiementError(data.error);
+        }
+    } catch (error) {
+        showPaiementError('Erreur de connexion');
+    }
+}
+
+// Mettre à jour l'affichage principal des paiements
+function updatePaiementDisplay(stats, montantParAbonnement) {
+    document.getElementById('totalPaiementsComplets').textContent = stats.complets || 0;
+    document.getElementById('totalPaiementsPartiels').textContent = stats.partiels || 0;
+    document.getElementById('totalPaiementsImpaye').textContent = stats.impayes || 0;
+    document.getElementById('totalMontantPercu').textContent = `${(stats.montant_total || 0).toLocaleString('fr-FR')}€`;
+
+    // 🟢 Mise à jour du détail par type d'abonnement
+    const container = document.getElementById('montantParAbonnement');
+    container.innerHTML = '';
+    if (montantParAbonnement && Object.keys(montantParAbonnement).length > 0) {
+        Object.entries(montantParAbonnement).forEach(([type, montant]) => {
+            container.innerHTML += `<div>${type}: <strong>${montant.toLocaleString('fr-FR')}€</strong></div>`;
+        });
+    } else {
+        container.innerHTML = '<span class="text-muted">Aucun paiement</span>';
+    }
+}
+// Mettre à jour les statistiques détaillées
+function updateDetailedPaiementStats(data) {
+    // Stats par type de règlement
+    updateReglementStats(data.reglement_stats);
+    
+    // Stats paiement par type d'abonnement
+    updatePaiementTypeAbonnementStats(data.type_abonnement_payment_stats);
+    
+    // Paiements récents
+    updatePaiementsRecents(data.paiements_recents);
+}
+
+// Mettre à jour les stats par type de règlement
+function updateReglementStats(reglementStats) {
+    const container = document.getElementById('reglementStats');
+    container.innerHTML = '';
+    
+    if (!reglementStats || Object.keys(reglementStats).length === 0) {
+        container.innerHTML = '<p class="text-muted">Aucun paiement enregistré</p>';
+        return;
+    }
+    
+    Object.entries(reglementStats).sort((a, b) => b[1] - a[1]).forEach(([type, count]) => {
+        const total = Object.values(reglementStats).reduce((sum, val) => sum + val, 0);
+        const percentage = ((count / total) * 100).toFixed(1);
+        
+        container.innerHTML += `
+            <div class="d-flex justify-content-between mb-2">
+                <span>${type || 'Non spécifié'}:</span>
+                <span><strong>${count}</strong> (${percentage}%)</span>
+            </div>
+        `;
+    });
+}
+
+// Mettre à jour les stats paiement par type d'abonnement
+function updatePaiementTypeAbonnementStats(typeStats) {
+    const container = document.getElementById('paiementTypeAbonnementStats');
+    container.innerHTML = '';
+    
+    if (!typeStats || Object.keys(typeStats).length === 0) {
+        container.innerHTML = '<p class="text-muted">Aucune données disponible</p>';
+        return;
+    }
+    
+    Object.entries(typeStats).forEach(([type, stats]) => {
+        const total = stats.complets + stats.partiels + stats.impayes;
+        if (total > 0) {
+            container.innerHTML += `
+                <div class="mb-3">
+                    <strong>${type}</strong>
+                    <div class="small">
+                        <span class="text-success">✓ ${stats.complets}</span> | 
+                        <span class="text-warning">⏳ ${stats.partiels}</span> | 
+                        <span class="text-danger">✗ ${stats.impayes}</span>
+                    </div>
+                </div>
+            `;
+        }
+    });
+}
+
+// Mettre à jour les paiements récents
+function updatePaiementsRecents(paiementsRecents) {
+    const container = document.getElementById('paiementsRecents');
+    container.innerHTML = '';
+    
+    if (!paiementsRecents || paiementsRecents.length === 0) {
+        container.innerHTML = '<p class="text-muted">Aucun paiement récent</p>';
+        return;
+    }
+    
+    paiementsRecents.forEach(paiement => {
+        const dateFormatted = new Date(paiement.date_paiement).toLocaleDateString('fr-FR');
+        const statusClass = paiement.montant_reste <= 0 ? 'success' : 'warning';
+        const statusText = paiement.montant_reste <= 0 ? 'Complet' : 'Partiel';
+        
+        container.innerHTML += `
+            <div class="border-bottom pb-2 mb-2">
+                <div class="d-flex justify-content-between">
+                    <strong>${paiement.nom_adherent}</strong>
+                    <span class="badge bg-${statusClass}">${statusText}</span>
+                </div>
+                <div class="small text-muted">
+                    ${dateFormatted} - ${paiement.montant_paye}€/${paiement.montant}€
+                </div>
+            </div>
+        `;
+    });
+}
+
+// Afficher une erreur pour les paiements
+function showPaiementError(error) {
+    ['totalPaiementsComplets', 'totalPaiementsPartiels', 'totalPaiementsImpaye'].forEach(id => {
+        document.getElementById(id).textContent = '?';
+    });
+    document.getElementById('totalMontantPercu').textContent = 'Erreur';
+}
+
+// Fonction pour actualiser les données de paiement
+function refreshPaymentData() {
+    const button = document.querySelector('button[onclick="refreshPaymentData()"]');
+    const originalContent = button.innerHTML;
+    
+    button.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Chargement...';
+    button.disabled = true;
+    
+    loadPaiementsData().finally(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    });
+}
+</script>
+    </div>
+</div>
+<!-- Adherents Indicators End -->
+
+<script>
+// Variables globales
+let adherentsData = [];
+let allAdherents = [];
+let selectedTypes = new Set();
+let selectedGroupes = new Set();
+
+// Initialisation au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    loadAdherentsData();
+});
+
+// Fonction pour échapper les caractères spéciaux dans les identifiants
+function escapeId(str) {
+    return str.replace(/'/g, '_apostrophe_').replace(/\s+/g, '_space_').replace(/[^\w-]/g, '_');
+}
+
+// Fonction pour décoder les identifiants échappés
+function unescapeId(str) {
+    return str.replace(/_apostrophe_/g, "'").replace(/_space_/g, ' ').replace(/_/g, ' ');
+}
+
+// Fonction pour charger les données des adhérents
+async function loadAdherentsData() {
+    try {
+        const response = await fetch('/api/adherents-data');
+        const data = await response.json();
+        
+        if (data.success) {
+            allAdherents = data.adherents;
+            adherentsData = [...allAdherents];
+            
+            // Debug: afficher les informations détaillées dans la console
+            console.log('=== DEBUG ADHERENTS DÉTAILLÉ ===');
+            console.log(`Total en DB: ${data.debug_info.total_in_db}`);
+            console.log(`Total traité: ${data.debug_info.total_processed}`);
+            console.log('Échantillon brut:', data.debug_info.raw_sample);
+            console.log('Types d\'abonnement uniques:', data.types_abonnement);
+            console.log('Groupes uniques:', data.groupes);
+            console.log('Tous les adhérents traités:');
+            data.adherents.forEach((adh, index) => {
+                console.log(`  ${index + 1}. ID:${adh.id} | Type:"${adh.type_abonnement}" | Groupe:"${adh.groupe}" | Nom:"${adh.nom}"`);
+            });
+            
+            // Vérification des comptages
+            const typeCount = {};
+            const groupeCount = {};
+            data.adherents.forEach(adh => {
+                typeCount[adh.type_abonnement] = (typeCount[adh.type_abonnement] || 0) + 1;
+                groupeCount[adh.groupe] = (groupeCount[adh.groupe] || 0) + 1;
+            });
+            console.log('Comptage par type:', typeCount);
+            console.log('Comptage par groupe:', groupeCount);
+            
+            // Générer les filtres
+            generateTypeFilters(data.types_abonnement);
+            generateGroupeFilters(data.groupes);
+            
+            // Mettre à jour l'affichage
+            updateDisplay();
+        } else {
+            console.error('Erreur lors du chargement des données:', data.error);
+            // Afficher l'erreur dans l'interface
+            document.getElementById('totalAdherents').textContent = 'Erreur';
+            document.getElementById('filterStatus').textContent = data.error;
+        }
+    } catch (error) {
+        console.error('Erreur de connexion:', error);
+        document.getElementById('totalAdherents').textContent = 'Erreur';
+        document.getElementById('filterStatus').textContent = 'Erreur de connexion';
+    }
+}
+
+// Générer les filtres pour les types d'abonnement (VERSION CORRIGÉE)
+function generateTypeFilters(types) {
+    const container = document.getElementById('typeAbonnementFilters');
+    container.innerHTML = '';
+    
+    types.forEach(type => {
+        const div = document.createElement('div');
+        div.className = 'form-check form-check-inline';
+        
+        // Échapper l'identifiant pour éviter les problèmes avec les apostrophes
+        const escapedType = escapeId(type);
+        
+        div.innerHTML = `
+            <input class="form-check-input" type="checkbox" id="type_${escapedType}" 
+                   data-original-value="${type}" onchange="toggleTypeFilter(this)">
+            <label class="form-check-label" for="type_${escapedType}">
+                ${type}
+            </label>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Générer les filtres pour les groupes (VERSION CORRIGÉE)
+function generateGroupeFilters(groupes) {
+    const container = document.getElementById('groupeFilters');
+    container.innerHTML = '';
+    
+    groupes.forEach(groupe => {
+        const div = document.createElement('div');
+        div.className = 'form-check form-check-inline';
+        
+        // Échapper l'identifiant pour éviter les problèmes avec les apostrophes
+        const escapedGroupe = escapeId(groupe);
+        
+        div.innerHTML = `
+            <input class="form-check-input" type="checkbox" id="groupe_${escapedGroupe}" 
+                   data-original-value="${groupe}" onchange="toggleGroupeFilter(this)">
+            <label class="form-check-label" for="groupe_${escapedGroupe}">
+                ${groupe}
+            </label>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Basculer le filtre de type d'abonnement (VERSION CORRIGÉE)
+function toggleTypeFilter(checkbox) {
+    const type = checkbox.getAttribute('data-original-value');
+    
+    if (checkbox.checked) {
+        selectedTypes.add(type);
+        console.log(`Type ajouté: "${type}"`);
+    } else {
+        selectedTypes.delete(type);
+        console.log(`Type retiré: "${type}"`);
+    }
+    
+    console.log('Types sélectionnés:', Array.from(selectedTypes));
+    applyFilters();
+}
+
+// Basculer le filtre de groupe (VERSION CORRIGÉE)
+function toggleGroupeFilter(checkbox) {
+    const groupe = checkbox.getAttribute('data-original-value');
+    
+    if (checkbox.checked) {
+        selectedGroupes.add(groupe);
+        console.log(`Groupe ajouté: "${groupe}"`);
+    } else {
+        selectedGroupes.delete(groupe);
+        console.log(`Groupe retiré: "${groupe}"`);
+    }
+    
+    console.log('Groupes sélectionnés:', Array.from(selectedGroupes));
+    applyFilters();
+}
+
+// Appliquer les filtres (VERSION AMÉLIORÉE AVEC DEBUG)
+function applyFilters() {
+    console.log('=== DÉBUT FILTRAGE ===');
+    console.log('Types sélectionnés:', Array.from(selectedTypes));
+    console.log('Groupes sélectionnés:', Array.from(selectedGroupes));
+    console.log('Nombre total d\'adhérents:', allAdherents.length);
+    
+    adherentsData = allAdherents.filter(adherent => {
+        const typeMatch = selectedTypes.size === 0 || selectedTypes.has(adherent.type_abonnement);
+        const groupeMatch = selectedGroupes.size === 0 || selectedGroupes.has(adherent.groupe);
+        
+        const result = typeMatch && groupeMatch;
+        
+        if (selectedTypes.size > 0 || selectedGroupes.size > 0) {
+            console.log(`Adhérent "${adherent.nom}": type="${adherent.type_abonnement}" (${typeMatch}), groupe="${adherent.groupe}" (${groupeMatch}) => ${result ? 'INCLUS' : 'EXCLU'}`);
+        }
+        
+        return result;
+    });
+    
+    console.log('Nombre d\'adhérents filtrés:', adherentsData.length);
+    console.log('=== FIN FILTRAGE ===');
+    
+    updateDisplay();
+}
+
+// Mettre à jour l'affichage
+function updateDisplay() {
+    // Mettre à jour le nombre total
+    document.getElementById('totalAdherents').textContent = adherentsData.length;
+    
+    // Mettre à jour le statut du filtre
+    updateFilterStatus();
+    
+    // Mettre à jour les statistiques détaillées
+    updateDetailedStats();
+}
+
+// Mettre à jour le statut du filtre
+function updateFilterStatus() {
+    const statusElement = document.getElementById('filterStatus');
+    const totalFilters = selectedTypes.size + selectedGroupes.size;
+    
+    if (totalFilters === 0) {
+        statusElement.textContent = 'Tous les adhérents';
+    } else {
+        const filters = [];
+        if (selectedTypes.size > 0) {
+            filters.push(`${selectedTypes.size} type(s)`);
+        }
+        if (selectedGroupes.size > 0) {
+            filters.push(`${selectedGroupes.size} groupe(s)`);
+        }
+        statusElement.textContent = `Filtré par: ${filters.join(', ')}`;
+    }
+}
+
+// Mettre à jour les statistiques détaillées
+function updateDetailedStats() {
+    updateTypeStats();
+    updateGroupeStats();
+}
+
+// Mettre à jour les stats par type
+function updateTypeStats() {
+    const typeCount = {};
+    adherentsData.forEach(adherent => {
+        typeCount[adherent.type_abonnement] = (typeCount[adherent.type_abonnement] || 0) + 1;
+    });
+    
+    const container = document.getElementById('typeStats');
+    container.innerHTML = '';
+    
+    Object.entries(typeCount).sort((a, b) => b[1] - a[1]).forEach(([type, count]) => {
+        const percentage = ((count / adherentsData.length) * 100).toFixed(1);
+        container.innerHTML += `
+            <div class="d-flex justify-content-between mb-2">
+                <span>${type}:</span>
+                <span><strong>${count}</strong> (${percentage}%)</span>
+            </div>
+        `;
+    });
+}
+
+// Mettre à jour les stats par groupe
+function updateGroupeStats() {
+    const groupeCount = {};
+    adherentsData.forEach(adherent => {
+        groupeCount[adherent.groupe] = (groupeCount[adherent.groupe] || 0) + 1;
+    });
+    
+    const container = document.getElementById('groupeStats');
+    container.innerHTML = '';
+    
+    Object.entries(groupeCount).sort((a, b) => b[1] - a[1]).forEach(([groupe, count]) => {
+        const percentage = ((count / adherentsData.length) * 100).toFixed(1);
+        container.innerHTML += `
+            <div class="d-flex justify-content-between mb-2">
+                <span>${groupe}:</span>
+                <span><strong>${count}</strong> (${percentage}%)</span>
+            </div>
+        `;
+    });
+}
+
+// Réinitialiser tous les filtres (VERSION CORRIGÉE)
+function resetFilters() {
+    // Décocher toutes les checkboxes
+    document.querySelectorAll('#typeAbonnementFilters input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+    document.querySelectorAll('#groupeFilters input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+    
+    // Vider les sets
+    selectedTypes.clear();
+    selectedGroupes.clear();
+    
+    console.log('Filtres réinitialisés');
+    
+    // Réappliquer les filtres (tous les adhérents)
+    applyFilters();
+}
+</script>
 <!-- Charts Start -->
 <div class="container-fluid pt-4 ">
     <div class="row g-4">

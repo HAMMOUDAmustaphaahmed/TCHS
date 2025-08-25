@@ -32,7 +32,24 @@
 </head>
 
 <body>
+    <div class="content">
     {% include 'sidebar.html' %}
+    <!-- Navbar Start -->
+            <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+                <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                    <h2 class="text-primary mb-0"></h2>
+                </a>
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
+
+                
+
+                
+
+                
+            </nav>
+            <!-- Navbar End -->
     <div class="container-xxl position-relative bg-white d-flex p-0">
         <!-- Sign In Start -->
         <div class="container-fluid">
@@ -84,12 +101,11 @@
                                         <label for="type_abonnement">Type d'abonnement<span class="text-danger">*</span></label>
                                         <select id="type_abonnement" name="type_abonnement" class="form-control" required>
                                             <option value="" disabled selected>Choisissez un type d'abonnement</option>
-                                            <option value="Loisir">Loisir</option>
-                                            <option value="Ecole">Ecole</option>
                                             <option value="Compétitif">Compétitif</option>
+                                            <option value="Non Compétitif">Non Compétitif</option>
                                             <option value="Pré-Compétitif">Pré-Compétitif</option>
                                             <option value="Ecole d'été">Ecole d'été</option>
-                                            <option value="Adulte">Adulte</option>
+                                            <option value="Loisir">Loisir</option>
                                             <option value="N/D">N/D</option>
                                         </select>
                                     </div>
@@ -168,6 +184,7 @@
             </div>
         </div>
         <!-- Sign In End -->
+    </div>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function () {

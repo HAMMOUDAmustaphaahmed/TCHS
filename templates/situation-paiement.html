@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
+     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Situation Paiements</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -9,9 +9,54 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/situation-paiement.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+        <!-- Favicon -->
+    <!-- Favicon -->
+<link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Libraries Stylesheet -->
+<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+<!-- Customized Bootstrap Stylesheet -->
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+<!-- Template Stylesheet -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
 <body>
-    <div class="container-fluid">
+    <div class="container-fluid d-flex">
+        <!-- Sidebar (existant) -->
+        {% include 'sidebar.html' %}
+        <div class="content">
+            <!-- Navbar Start -->
+            <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+                <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                    <h2 class="text-primary mb-0"></h2>
+                </a>
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
+
+                
+
+                
+
+                
+            </nav>
+            <!-- Navbar End -->
+
+        <!-- Contenu principal -->
+        
+<div class="container-fluid">
         <div class="header-section">
             <h1 class="page-title">Situation Paiements</h1>
             <div class="date-filters">
@@ -179,9 +224,38 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        </div>
+    </div>
+
+    
+
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Plugins -->
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+<!-- jQuery UI CSS -->
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+<!-- jQuery UI JS -->
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+    <!-- Script spécifique -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
     <script src="{{ url_for('static', filename='js/situation-paiement.js') }}"></script>
+    <!-- Script général template -->
+   
 </body>
 </html>
+
+
