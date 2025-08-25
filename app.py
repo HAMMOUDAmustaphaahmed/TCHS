@@ -1793,13 +1793,7 @@ def repondre(id):
     return render_template('repondre.html', message_id=id)
 
 
-@app.route('/autres_paiements', methods=['GET', 'POST'])
-def autres_paiements():
-    if 'user_id' not in session or session.get('role') != 'admin':
-        flash("Accès non autorisé.", "danger")
-        return redirect(url_for('login'))
-    
-    return render_template('autres_paiements.html')
+
 
 
 
@@ -3070,48 +3064,6 @@ def get_seance_details(seance_id):
     })
 
 
-class AutresPaiements(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    amount = db.Column(db.Float, nullable=False)
-    category = db.Column(db.String(50), nullable=False)
-    date = db.Column(db.Date, nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    company_name = db.Column(db.String(100), nullable=False)
-    bank_name = db.Column(db.String(100), nullable=False)
-    rib = db.Column(db.String(100), nullable=True)
-    location = db.Column(db.String(200), nullable=True)
-    documents = db.Column(db.JSON, nullable=True)
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'amount': self.amount,
-            'category': self.category,
-            'date': self.date.isoformat(),
-            'description': self.description,
-            'timestamp': self.timestamp.isoformat(),
-            'company_name': self.company_name,
-            'bank_name': self.bank_name,
-            'rib': self.rib,
-            'location': self.location,
-            'documents': self.documents or []
-        }
-
-    @staticmethod
-    def from_dict(data):
-        return AutresPaiements(
-            amount=float(data['amount']),
-            category=data['category'],
-            date=datetime.strptime(data['date'], '%Y-%m-%d').date(),
-            description=data['description'],
-            company_name=data['company_name'],
-            bank_name=data['bank_name'],
-            rib=data.get('rib'),
-            location=data.get('location'),
-            documents=[]
-        )
-
 import os
 from werkzeug.utils import secure_filename
 # In your app configuration
@@ -3136,12 +3088,83 @@ def ensure_folder_exists(folder_path):
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
 
-@app.route('/autres-paiements')
-def show_autres_paiements():
+
+class AutresPaiements(db.Model):
+    __tablename__ = 'autres_paiements'
+    id = db.Column(db.Integer, primary_key=True)
+    nom_paiement = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    montant = db.Column(db.Float, nullable=False)
+    type_reglement = db.Column(db.String(50), nullable=False)  # 'espèce', 'chèque', 'virement'
+    banque = db.Column(db.String(255), nullable=True)          # seulement si chèque
+    numero_bon = db.Column(db.Integer, nullable=False)
+    numero_carnet = db.Column(db.Integer, nullable=False)
+    code_saison = db.Column(db.String(10), nullable=False)     # ex: S2025 ou E2025
+    date_paiement = db.Column(db.DateTime, default=datetime.now)
+
+@app.route('/autres_paiements', methods=['GET', 'POST'])
+def autres_paiements():
     if 'user_id' not in session or session.get('role') != 'admin':
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
-    return render_template('autres_paiements.html')
+
+    current_year = datetime.now().year
+    paiements = []
+    numero_carnet = 1
+    numero_bon = 1
+    code_saison = f"S{current_year}"  # par défaut
+
+    # Récupérer paiements existants pour affichage
+    paiements = AutresPaiements.query.order_by(AutresPaiements.id.asc()).all()
+    
+    # Calcul du dernier carnet/bon
+    dernier_paiement = AutresPaiements.query.order_by(AutresPaiements.id.desc()).first()
+    if dernier_paiement:
+        numero_carnet = dernier_paiement.numero_carnet
+        numero_bon = dernier_paiement.numero_bon + 1
+        if numero_bon > 50:
+            numero_carnet += 1
+            numero_bon = 1
+
+    if request.method == 'POST':
+        nom_paiement = request.form.get('nom_paiement')
+        description = request.form.get('description')
+        try:
+            montant = float(request.form.get('montant', 0))
+        except ValueError:
+            montant = 0.0
+        type_reglement = request.form.get('type_reglement')
+        banque = request.form.get('banque') if type_reglement == 'chèque' else None
+
+        saison_type = request.form.get('saison_type')
+        annee_saison = int(request.form.get('annee_saison', current_year))
+        code_saison = f"E{annee_saison}" if saison_type == 'ete' else f"S{annee_saison}"
+
+        nouveau_paiement = AutresPaiements(
+            nom_paiement=nom_paiement,
+            description=description,
+            montant=montant,
+            type_reglement=type_reglement,
+            banque=banque,
+            numero_bon=numero_bon,
+            numero_carnet=numero_carnet,
+            code_saison=code_saison
+        )
+        db.session.add(nouveau_paiement)
+        db.session.commit()
+
+        flash("Paiement ajouté avec succès.", "success")
+        return redirect(url_for('autres_paiements'))
+
+    return render_template(
+        'autres_paiements.html',
+        paiements=paiements,
+        numero_bon=numero_bon,
+        numero_carnet=numero_carnet,
+        code_saison=code_saison,
+        current_year=current_year
+    )
+
 
 @app.route('/api/autres-paiements', methods=['GET'])
 def get_autres_paiements():
