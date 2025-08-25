@@ -2436,7 +2436,6 @@ def api_reserver_terrain():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 400
-
 @app.route('/api/all_reservations', methods=['GET'])
 def get_all_reservations():
     if 'user_id' not in session or session.get('role') != 'admin':
@@ -2467,6 +2466,8 @@ def get_all_reservations():
         })
 
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         return jsonify({"error": str(e)}), 400
 
 @app.route('/api/update_reservation_status', methods=['POST'])

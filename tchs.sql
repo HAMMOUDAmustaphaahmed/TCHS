@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1
--- Généré le : ven. 09 mai 2025 à 16:12
+-- Généré le : lun. 25 août 2025 à 15:15
 -- Version du serveur : 10.4.32-MariaDB
 -- Version de PHP : 8.0.30
 
@@ -52,13 +52,13 @@ CREATE TABLE `adherent` (
 
 INSERT INTO `adherent` (`adherent_id`, `nom`, `prenom`, `date_naissance`, `sexe`, `date_inscription`, `tel1`, `tel2`, `type_abonnement`, `ancien_abonne`, `matricule`, `groupe`, `entraineur`, `email`, `paye`, `status`) VALUES
 (6, 'hammouda', 'ahmed', '1996-08-30', 'M', '2025-01-20', '54391747', '54391747', 'Compétitif', 'Non', 1, 'Ecole-1-A', 'Mhiri Afif', 'ahmed@gmail.com', 'N', 'Non-Actif'),
-(7, 'mohamed', 'ali', '1990-01-01', 'M', '2025-01-20', '12345678', '123546789', 'Loisir', 'Non', 2, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif'),
-(8, 'mohamed', 'saleh', '1994-01-01', 'M', '2025-01-20', '1234', '12345', 'Loisir', 'Non', 3, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif'),
-(9, 'Flen', 'Ben Flen', '2025-01-22', 'M', '2025-01-22', '1234', '1234', 'Loisir', 'Non', 4, 'loisir', 'john doe', 'flen@gmail.com', 'N', 'Actif'),
+(7, 'mohamed', 'ali', '1990-01-01', 'M', '2025-01-20', '12345678', '123546789', 'Non Compétitif', 'Non', 2, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif'),
+(8, 'mohamed', 'saleh', '1994-01-01', 'M', '2025-01-20', '1234', '12345', 'Non Compétitif', 'Non', 3, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif'),
+(9, 'Flen', 'Ben Flen', '2025-01-22', 'M', '2025-01-22', '1234', '1234', 'Non Compétitif', 'Non', 4, 'loisir', 'john doe', 'flen@gmail.com', 'N', 'Actif'),
 (10, 'Abdelmaksoud', 'Thameur', '2000-04-06', 'F', '2025-01-22', '28425595', '', 'N/D', 'Non', 5, 'X', 'test tedst', '', 'N', 'Actif'),
 (11, 'Foulani', 'Foulen', '2025-01-22', 'M', '2025-01-22', '1234', '', 'Compétitif', 'Non', 6, 'Poussin-1-A', 'Mhiri Afif', '', 'N', 'Actif'),
 (12, 'aaa', 'aaa', '2025-01-22', 'M', '2025-01-22', '134', '', 'Ecole d\'été', 'Non', 7, 'Poussin-1-A', 'Mhiri Afif', 'a@gmail.com', 'N', 'Actif'),
-(13, 'Da7ee7', 'Da7ee7', '2025-01-22', 'M', '2025-01-22', '1234', '', NULL, 'Non', 8, 'Poussin-1-A', 'Zallila Adam', 'da7ee7@gmail.com', 'N', 'Actif'),
+(13, 'Da7ee7', 'Da7ee7', '2025-01-22', 'M', '2025-01-22', '1234', '', 'N/D', 'Non', 8, 'Poussin-1-A', 'Zallila Adam', 'da7ee7@gmail.com', 'N', 'Actif'),
 (14, 'mohamed', 'mohamed', '1990-01-01', 'M', '2025-05-06', '12345678', '12345677', 'N/D', 'Non', 9, 'Ecole-1-A', 'Mhiri Afif', 'mohamed.mohamed@gmail.com', 'N', 'Actif');
 
 -- --------------------------------------------------------
@@ -69,41 +69,23 @@ INSERT INTO `adherent` (`adherent_id`, `nom`, `prenom`, `date_naissance`, `sexe`
 
 CREATE TABLE `autres_paiements` (
   `id` int(11) NOT NULL,
-  `amount` decimal(10,2) NOT NULL,
-  `category` varchar(50) NOT NULL,
-  `date` date NOT NULL,
-  `description` text NOT NULL,
-  `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
-  `company_name` varchar(100) NOT NULL,
-  `bank_name` varchar(100) NOT NULL,
-  `rib` varchar(100) DEFAULT NULL,
-  `location` varchar(200) DEFAULT NULL,
-  `documents` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`documents`))
-) ;
-
--- --------------------------------------------------------
-
---
--- Structure de la table `autres_paiements_backup`
---
-
-CREATE TABLE `autres_paiements_backup` (
-  `id` int(11) NOT NULL DEFAULT 0,
-  `type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `amount` decimal(10,2) NOT NULL,
-  `category` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `date` date NOT NULL,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `timestamp` timestamp NOT NULL DEFAULT current_timestamp()
+  `nom_paiement` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `montant` decimal(10,2) NOT NULL,
+  `type_reglement` varchar(50) NOT NULL,
+  `banque` varchar(255) DEFAULT NULL,
+  `numero_bon` int(11) NOT NULL,
+  `numero_carnet` int(11) NOT NULL,
+  `code_saison` varchar(10) NOT NULL,
+  `date_paiement` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Déchargement des données de la table `autres_paiements_backup`
+-- Déchargement des données de la table `autres_paiements`
 --
 
-INSERT INTO `autres_paiements_backup` (`id`, `type`, `amount`, `category`, `date`, `description`, `timestamp`) VALUES
-(1, 'revenue', 123.00, 'other', '2025-05-08', 'qefzefzef', '2025-05-08 10:17:25'),
-(2, 'expense', 99999999.99, 'rent', '2025-05-08', 'sdvsdvsdvsdv', '2025-05-08 10:17:45');
+INSERT INTO `autres_paiements` (`id`, `nom_paiement`, `description`, `montant`, `type_reglement`, `banque`, `numero_bon`, `numero_carnet`, `code_saison`, `date_paiement`) VALUES
+(1, 'test', 'aaazaevczv', 100.00, 'espèce', NULL, 1, 1, 'S2025', '2025-08-25 12:52:45');
 
 -- --------------------------------------------------------
 
@@ -346,7 +328,9 @@ INSERT INTO `paiements` (`id_paiement`, `matricule_adherent`, `numero_bon`, `num
 (29, '5', 5, 1, '2025-02-07 08:20:21', 450.00, 200, 200.00, 250.00, 'espèce', NULL, NULL, 500.00, 10.00, 'S2025'),
 (30, '4', 6, 1, '2025-02-07 09:34:14', 540.00, 300, 300.00, 240.00, 'espèce', NULL, NULL, 600.00, 10.00, 'S2025'),
 (31, '6', 7, 1, '2025-02-07 09:39:08', 250.00, 100, 100.00, 150.00, 'espèce', NULL, NULL, 250.00, 0.00, 'S2025'),
-(32, '1', 8, 1, '2025-02-09 13:48:50', 665.00, 165, 165.00, 500.00, 'espèce', NULL, NULL, 700.00, 5.00, 'S2025');
+(32, '1', 8, 1, '2025-02-09 13:48:50', 665.00, 165, 165.00, 500.00, 'espèce', NULL, NULL, 700.00, 5.00, 'S2025'),
+(33, '3', 9, 1, '2025-08-25 10:40:33', 200.00, 100, 100.00, 100.00, 'espèce', NULL, NULL, 200.00, 0.00, 'S2025'),
+(34, '3', 10, 1, '2025-08-25 10:40:43', 200.00, 200, 100.00, 0.00, 'espèce', NULL, NULL, 200.00, 0.00, 'S2025');
 
 -- --------------------------------------------------------
 
@@ -376,18 +360,38 @@ CREATE TABLE `presence` (
   `entraineur_nom` varchar(100) NOT NULL,
   `date_seance` date NOT NULL,
   `heure_debut` time NOT NULL,
-  `est_present` enum('O','N') NOT NULL DEFAULT 'N'
+  `est_present` enum('O','N') NOT NULL DEFAULT 'N',
+  `seance_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Déchargement des données de la table `presence`
 --
 
-INSERT INTO `presence` (`id_presence`, `groupe_nom`, `adherent_matricule`, `entraineur_nom`, `date_seance`, `heure_debut`, `est_present`) VALUES
-(1, 'loisir', '4', 'john doe', '2025-01-22', '10:30:00', 'O'),
-(2, 'loisir', '4', 'john doe', '2025-01-22', '10:30:00', 'N'),
-(3, 'groupe_onsjaber', '8', 'Jaber Ons', '2025-01-22', '16:30:00', 'O'),
-(4, 'groupe_onsjaber', '8', 'Jaber Ons', '2025-01-22', '16:30:00', 'N');
+INSERT INTO `presence` (`id_presence`, `groupe_nom`, `adherent_matricule`, `entraineur_nom`, `date_seance`, `heure_debut`, `est_present`, `seance_id`) VALUES
+(1, 'loisir', '4', 'john doe', '2025-01-22', '10:30:00', 'O', NULL),
+(2, 'loisir', '4', 'john doe', '2025-01-22', '10:30:00', 'N', NULL),
+(3, 'groupe_onsjaber', '8', 'Jaber Ons', '2025-01-22', '16:30:00', 'O', NULL),
+(4, 'groupe_onsjaber', '8', 'Jaber Ons', '2025-01-22', '16:30:00', 'N', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `reservations`
+--
+
+CREATE TABLE `reservations` (
+  `id_reservation` int(11) NOT NULL,
+  `nom_entraineur` varchar(100) NOT NULL,
+  `prenom_entraineur` varchar(100) NOT NULL,
+  `date_reservation` date NOT NULL,
+  `heure_debut` time NOT NULL,
+  `heure_fin` time NOT NULL,
+  `numero_terrain` int(11) NOT NULL,
+  `commentaire` text DEFAULT NULL,
+  `status` enum('en_attente','acceptée','refusée') DEFAULT 'en_attente',
+  `date_creation` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -457,7 +461,7 @@ CREATE TABLE `tournois` (
   `date_debut` datetime NOT NULL,
   `date_fin` datetime NOT NULL,
   `statut` varchar(20) NOT NULL DEFAULT 'en_attente'
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Déchargement des données de la table `tournois`
@@ -514,12 +518,7 @@ ALTER TABLE `adherent`
 -- Index pour la table `autres_paiements`
 --
 ALTER TABLE `autres_paiements`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_category` (`category`),
-  ADD KEY `idx_date` (`date`),
-  ADD KEY `idx_autres_paiements_date` (`date`),
-  ADD KEY `idx_autres_paiements_company` (`company_name`),
-  ADD KEY `idx_autres_paiements_bank` (`bank_name`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Index pour la table `bon_de_recette`
@@ -591,6 +590,12 @@ ALTER TABLE `presence`
   ADD PRIMARY KEY (`id_presence`);
 
 --
+-- Index pour la table `reservations`
+--
+ALTER TABLE `reservations`
+  ADD PRIMARY KEY (`id_reservation`);
+
+--
 -- Index pour la table `revenu`
 --
 ALTER TABLE `revenu`
@@ -629,7 +634,7 @@ ALTER TABLE `adherent`
 -- AUTO_INCREMENT pour la table `autres_paiements`
 --
 ALTER TABLE `autres_paiements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT pour la table `bon_de_recette`
@@ -683,7 +688,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT pour la table `paiements`
 --
 ALTER TABLE `paiements`
-  MODIFY `id_paiement` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id_paiement` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT pour la table `participanttournoi`
@@ -696,6 +701,12 @@ ALTER TABLE `participanttournoi`
 --
 ALTER TABLE `presence`
   MODIFY `id_presence` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT pour la table `reservations`
+--
+ALTER TABLE `reservations`
+  MODIFY `id_reservation` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `revenu`
@@ -713,30 +724,13 @@ ALTER TABLE `seances`
 -- AUTO_INCREMENT pour la table `tournois`
 --
 ALTER TABLE `tournois`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT pour la table `utilisateurs`
 --
 ALTER TABLE `utilisateurs`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
-
---
--- Contraintes pour les tables déchargées
---
-
---
--- Contraintes pour la table `match`
---
-ALTER TABLE `match`
-  ADD CONSTRAINT `match_ibfk_1` FOREIGN KEY (`id_tournoi`) REFERENCES `tournoi` (`id_tournoi`) ON DELETE CASCADE,
-  ADD CONSTRAINT `match_ibfk_2` FOREIGN KEY (`match_suivant`) REFERENCES `match` (`id_match`) ON DELETE SET NULL;
-
---
--- Contraintes pour la table `participanttournoi`
---
-ALTER TABLE `participanttournoi`
-  ADD CONSTRAINT `participanttournoi_ibfk_1` FOREIGN KEY (`id_tournoi`) REFERENCES `tournoi` (`id_tournoi`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

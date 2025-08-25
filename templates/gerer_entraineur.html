@@ -48,12 +48,29 @@
 </head>
 
 <body>
-    {% include 'sidebar.html' %}
-    <div class="container-xxl position-relative bg-light d-flex p-0">
+    <div class="container-xxl position-relative d-flex p-0">
+        <!-- Sidebar Start -->
+        {% include 'sidebar.html' %}
+        <!-- Sidebar End -->
+
+        <!-- Content Start -->
+        <div class="content">
+            <!-- Navbar Start -->
+            <nav class="navbar navbar-expand bg-light navbar-light sticky-top ">
+                <a href="{{ url_for('admin') }}" class="navbar-brand d-flex d-lg-none me-4">
+                    <h2 class="text-primary mb-0"></h2>
+                </a>
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
+            </nav>
+            <!-- Navbar End -->
+
+
         <!-- Sign In Start -->
-        <div class="container-fluid">
-            <div class="row h-200 align-items-center justify-content-center" style="min-height: 100vh;">
-                <div class="col-12 col-sm-8">
+        <div class="container-fluid mt-5">
+            <div class="row h-300 align-items-center justify-content-center" style="min-height: 100vh;">
+                
                     <div>
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <a href="{{ url_for('admin') }}">
@@ -120,12 +137,12 @@
                             </table>
                         </div>
                     </div>
-                </div>
+                
             </div>
         </div>
-        <!-- Sign In End -->
+        <!-- Sign In End -->    
     </div>
-
+    </div>
     <!-- JavaScript Libraries -->
     <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
