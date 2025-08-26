@@ -10,6 +10,26 @@
     <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
    <style>
     :root {
         --primary-color: #2196f3;
@@ -22,25 +42,9 @@
         --hover-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
 
-    body {
-        margin: 0;
-        padding: 0;
-        font-family: 'Roboto', Arial, sans-serif;
-        background-color: var(--background-color);
-        color: var(--text-color);
-    }
+    
 
-    .main-container {
-        display: flex;
-        min-height: 100vh;
-    }
-
-    .sidebar {
-        width: 250px;
-        background-color: #333333;
-        padding: 20px;
-        color: white;
-    }
+    
 
     .content {
         flex: 1;
@@ -48,16 +52,7 @@
         overflow-y: auto;
     }
 
-    header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 30px;
-        background-color: white;
-        padding: 15px 20px;
-        border-radius: 8px;
-        box-shadow: var(--shadow);
-    }
+    
 
     h1 {
         margin: 0;
@@ -143,23 +138,14 @@
         gap: 15px;
     }
 
-    .logout-btn {
-        color: var(--text-color);
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
+    
 
     @media (max-width: 768px) {
         .main-container {
             flex-direction: column;
         }
 
-        .sidebar {
-            width: 100%;
-            padding: 10px;
-        }
+        
 
         .content {
             padding: 10px;
@@ -212,226 +198,253 @@
 
 
 <body>
-    <div class="main-container">
-    <!-- Sidebar -->
-   
-
-    <!-- Main Content -->
     <div class="content">
-        <header>
-            <h1>Situation Financière Globale</h1>
-            <div class="user-info">
-                
-                
-                <a href="{{ url_for('admin') }}"><i class="fas fa-home"></i> Accueil</a>
-                <a href="{{ url_for('logout') }}" class="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i>
+    {% include 'sidebar.html' %}
+    <!-- Navbar Start -->
+            <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+                <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                    <h2 class="text-primary mb-0"></h2>
                 </a>
-            </div>
-        </header>
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
 
-        <!-- Your existing financial-dashboard div and its contents -->
-        <div class="financial-dashboard">
-        <!-- Synthèse Globale -->
-        <div class="card" id="card-global">
-            <div class="card-title">Synthèse Globale</div>
-            <table id="table-global">
-                <thead>
-                    <tr>
-                        <th>Intitulé</th>
-                        <th>Montant (TND)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr><td>Total prévu (cotisation)</td><td>{{ '{:,.2f}'.format(total_prevu) }}</td></tr>
-                    <tr><td>Total payé</td><td>{{ '{:,.2f}'.format(total_paye) }}</td></tr>
-                    <tr><td>Total restant</td><td>{{ '{:,.2f}'.format(total_restant) }}</td></tr>
-                    
-                </tbody>
-            </table>
-            <div class="card-actions">
-                <button class="cyber-btn" onclick="exportSectionXlsx('global')">Exporter XLSX</button>
-                <button class="cyber-btn" onclick="printSection('card-global')">Imprimer</button>
-            </div>
-        </div>
-        <!-- Locations par mois -->
-        <div class="card" id="card-locations-mois">
-            <div class="card-title">Montant total des locations de terrains par mois</div>
-            <table id="table-locations-mois">
-                <thead>
-                    <tr>
-                        <th>Année</th>
-                        <th>Mois</th>
-                        <th>Montant total (TND)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for annee, mois, montant in locations_par_mois %}
-                    <tr>
-                        <td>{{ annee }}</td>
-                        <td>{{ '{:02d}'.format(mois) }}</td>
-                        <td>{{ '{:,.2f}'.format(montant) }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-            <div class="card-actions">
-                <button class="cyber-btn" onclick="exportSectionXlsx('locations_par_mois')">Exporter XLSX</button>
-                <button class="cyber-btn" onclick="printSection('card-locations-mois')">Imprimer</button>
-            </div>
-        </div>
-        <!-- Locations par terrain -->
-        <div class="card" id="card-locations-terrain">
-            <div class="card-title">Montant total des locations par terrain</div>
-            <table id="table-locations-terrain">
-                <thead>
-                    <tr>
-                        <th>Numéro de terrain</th>
-                        <th>Montant total (TND)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for numero, montant in locations_par_terrain %}
-                    <tr>
-                        <td>{{ numero }}</td>
-                        <td>{{ '{:,.2f}'.format(montant) }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-            <div class="card-actions">
-                <button class="cyber-btn" onclick="exportSectionXlsx('locations_par_terrain')">Exporter XLSX</button>
-                <button class="cyber-btn" onclick="printSection('card-locations-terrain')">Imprimer</button>
-            </div>
-        </div>
-        <!-- Paiements par saison -->
-        <div class="card" id="card-paiements-saison">
-            <div class="card-title">Montant total payé par les adhérents par saison</div>
-            <table id="table-paiements-saison">
-                <thead>
-                    <tr>
-                        <th>Code Saison</th>
-                        <th>Montant payé (TND)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for saison, montant in paiements_par_saison %}
-                    <tr>
-                        <td>{{ saison }}</td>
-                        <td>{{ '{:,.2f}'.format(montant) }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-            <div class="card-actions">
-                <button class="cyber-btn" onclick="exportSectionXlsx('paiements_par_saison')">Exporter XLSX</button>
-                <button class="cyber-btn" onclick="printSection('card-paiements-saison')">Imprimer</button>
-            </div>
-        </div>
-        <!-- Paiements par mois -->
-        <div class="card" id="card-paiements-mois">
-            <div class="card-title">Montant total payé par les adhérents par mois</div>
-            <table id="table-paiements-mois">
-                <thead>
-                    <tr>
-                        <th>Année</th>
-                        <th>Mois</th>
-                        <th>Montant payé (TND)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for annee, mois, montant in paiements_par_mois %}
-                    <tr>
-                        <td>{{ annee }}</td>
-                        <td>{{ '{:02d}'.format(mois) }}</td>
-                        <td>{{ '{:,.2f}'.format(montant) }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-            <div class="card-actions">
-                <button class="cyber-btn" onclick="exportSectionXlsx('paiements_par_mois')">Exporter XLSX</button>
-                <button class="cyber-btn" onclick="printSection('card-paiements-mois')">Imprimer</button>
-            </div>
-        </div>
-    </div>
-    <div class="card" id="card-charts">
-    <div class="card-title">Visualisation des données</div>
-    <div class="filters-row" style="display:flex;flex-wrap:wrap;gap:1rem;align-items:center;margin-bottom:1rem;">
-        <div style="display: flex; gap: 1rem; margin: 1rem 0;">
-   
-    <button class="cyber-btn" onclick="exportChartPNG()">Exporter PNG</button>
-    <button class="cyber-btn" onclick="exportChartPDF()">Exporter PDF</button>
-    <button class="cyber-btn" onclick="printChart()">Imprimer</button>
-</div>
-        <label>Type de graphique:
-            <select id="chart-type">
-                <option value="bar">Barres</option>
-                <option value="line">Lignes</option>
-                <option value="pie">Camembert</option>
-            </select>
-        </label>
-        <label>Données à afficher:
-            <select id="data-type">
-                <option value="paiements_par_mois">Paiements par mois</option>
-                <option value="locations_par_mois">Locations par mois</option>
-                <option value="paiements_par_saison">Paiements par saison</option>
-            </select>
-        </label>
-        <label>Période :
-            <input type="text" id="start-date" placeholder="Début" style="width:120px;">
-            <input type="text" id="end-date" placeholder="Fin" style="width:120px;">
-        </label>
-        <button class="cyber-btn" id="update-chart">Actualiser</button>
-    </div>
-    <canvas id="finances-chart" height="70"></canvas>
-</div>
-    </div>
-</div>
+                
+
+                
+
+                
+            </nav>
+            <!-- Navbar End -->
     
-    <script>
-    // Export XLSX via backend route
-    function exportSectionXlsx(section) {
-        let url = '';
-        switch(section) {
-            case 'global': url = '/export_xlsx/global'; break;
-            case 'locations_par_mois': url = '/export_xlsx/locations_par_mois'; break;
-            case 'locations_par_terrain': url = '/export_xlsx/locations_par_terrain'; break;
-            case 'paiements_par_saison': url = '/export_xlsx/paiements_par_saison'; break;
-            case 'paiements_par_mois': url = '/export_xlsx/paiements_par_mois'; break;
-            default: return;
-        }
-        window.open(url, '_blank');
-    }
 
-    // Print only a section/card
-    function printSection(cardId) {
-        const card = document.getElementById(cardId);
-        const printWindow = window.open('', '', 'width=1000,height=800');
-        printWindow.document.write(`
-        <html>
-            <head>
-                <title>Impression</title>
-                <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-                <style>
-                    body { background: #fff; color: #222; font-family: 'Roboto', Arial, sans-serif; margin: 30px;}
-                    h1, .card-title { color: #009688; font-family: 'Orbitron', sans-serif; }
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;}
-                    th, td { padding: 0.65rem; text-align: left; border-bottom: 1px solid #ccc;}
-                    th { background: #f4f4f4; color: #009688;}
-                    tr:last-child td { border-bottom: none; }
-                </style>
-            </head>
-            <body>
-                <div>${card.innerHTML}</div>
-            </body>
-        </html>
-        `);
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
-    }
-    </script>
+                            
+
+                                <!-- Main Content -->
+                                <div class="content">
+                                    <header>
+                                        <h1>Situation Financière Globale</h1>
+                                        
+                                    </header>
+
+                                    <!-- Your existing financial-dashboard div and its contents -->
+                                    <div class="financial-dashboard">
+                                    <!-- Synthèse Globale -->
+                                    <div class="card" id="card-global">
+                                        <div class="card-title">Synthèse Globale</div>
+                                        <table id="table-global">
+                                            <thead>
+                                                <tr>
+                                                    <th>Intitulé</th>
+                                                    <th>Montant (TND)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr><td>Total prévu (cotisation)</td><td>{{ '{:,.2f}'.format(total_prevu) }}</td></tr>
+                                                <tr><td>Total payé</td><td>{{ '{:,.2f}'.format(total_paye) }}</td></tr>
+                                                <tr><td>Total restant</td><td>{{ '{:,.2f}'.format(total_restant) }}</td></tr>
+                                                
+                                            </tbody>
+                                        </table>
+                                        <div class="card-actions">
+                                            <button class="cyber-btn" onclick="exportSectionXlsx('global')">Exporter XLSX</button>
+                                            <button class="cyber-btn" onclick="printSection('card-global')">Imprimer</button>
+                                        </div>
+                                    </div>
+                                    <!-- Locations par mois -->
+                                    <div class="card" id="card-locations-mois">
+                                        <div class="card-title">Montant total des locations de terrains par mois</div>
+                                        <table id="table-locations-mois">
+                                            <thead>
+                                                <tr>
+                                                    <th>Année</th>
+                                                    <th>Mois</th>
+                                                    <th>Montant total (TND)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for annee, mois, montant in locations_par_mois %}
+                                                <tr>
+                                                    <td>{{ annee }}</td>
+                                                    <td>{{ '{:02d}'.format(mois) }}</td>
+                                                    <td>{{ '{:,.2f}'.format(montant) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                        <div class="card-actions">
+                                            <button class="cyber-btn" onclick="exportSectionXlsx('locations_par_mois')">Exporter XLSX</button>
+                                            <button class="cyber-btn" onclick="printSection('card-locations-mois')">Imprimer</button>
+                                        </div>
+                                    </div>
+                                    <!-- Locations par terrain -->
+                                    <div class="card" id="card-locations-terrain">
+                                        <div class="card-title">Montant total des locations par terrain</div>
+                                        <table id="table-locations-terrain">
+                                            <thead>
+                                                <tr>
+                                                    <th>Numéro de terrain</th>
+                                                    <th>Montant total (TND)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for numero, montant in locations_par_terrain %}
+                                                <tr>
+                                                    <td>{{ numero }}</td>
+                                                    <td>{{ '{:,.2f}'.format(montant) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                        <div class="card-actions">
+                                            <button class="cyber-btn" onclick="exportSectionXlsx('locations_par_terrain')">Exporter XLSX</button>
+                                            <button class="cyber-btn" onclick="printSection('card-locations-terrain')">Imprimer</button>
+                                        </div>
+                                    </div>
+                                    <!-- Paiements par saison -->
+                                    <div class="card" id="card-paiements-saison">
+                                        <div class="card-title">Montant total payé par les adhérents par saison</div>
+                                        <table id="table-paiements-saison">
+                                            <thead>
+                                                <tr>
+                                                    <th>Code Saison</th>
+                                                    <th>Montant payé (TND)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for saison, montant in paiements_par_saison %}
+                                                <tr>
+                                                    <td>{{ saison }}</td>
+                                                    <td>{{ '{:,.2f}'.format(montant) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                        <div class="card-actions">
+                                            <button class="cyber-btn" onclick="exportSectionXlsx('paiements_par_saison')">Exporter XLSX</button>
+                                            <button class="cyber-btn" onclick="printSection('card-paiements-saison')">Imprimer</button>
+                                        </div>
+                                    </div>
+                                    <!-- Paiements par mois -->
+                                    <div class="card" id="card-paiements-mois">
+                                        <div class="card-title">Montant total payé par les adhérents par mois</div>
+                                        <table id="table-paiements-mois">
+                                            <thead>
+                                                <tr>
+                                                    <th>Année</th>
+                                                    <th>Mois</th>
+                                                    <th>Montant payé (TND)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for annee, mois, montant in paiements_par_mois %}
+                                                <tr>
+                                                    <td>{{ annee }}</td>
+                                                    <td>{{ '{:02d}'.format(mois) }}</td>
+                                                    <td>{{ '{:,.2f}'.format(montant) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                        <div class="card-actions">
+                                            <button class="cyber-btn" onclick="exportSectionXlsx('paiements_par_mois')">Exporter XLSX</button>
+                                            <button class="cyber-btn" onclick="printSection('card-paiements-mois')">Imprimer</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card" id="card-charts">
+                                <div class="card-title">Visualisation des données</div>
+                                <div class="filters-row" style="display:flex;flex-wrap:wrap;gap:1rem;align-items:center;margin-bottom:1rem;">
+                                    <div style="display: flex; gap: 1rem; margin: 1rem 0;">
+                            
+                                <button class="cyber-btn" onclick="exportChartPNG()">Exporter PNG</button>
+                                <button class="cyber-btn" onclick="exportChartPDF()">Exporter PDF</button>
+                                <button class="cyber-btn" onclick="printChart()">Imprimer</button>
+                            </div>
+                                    <label>Type de graphique:
+                                        <select id="chart-type">
+                                            <option value="bar">Barres</option>
+                                            <option value="line">Lignes</option>
+                                            <option value="pie">Camembert</option>
+                                        </select>
+                                    </label>
+                                    <label>Données à afficher:
+                                        <select id="data-type">
+                                            <option value="paiements_par_mois">Paiements par mois</option>
+                                            <option value="locations_par_mois">Locations par mois</option>
+                                            <option value="paiements_par_saison">Paiements par saison</option>
+                                        </select>
+                                    </label>
+                                    <label>Période :
+                                        <input type="text" id="start-date" placeholder="Début" style="width:120px;">
+                                        <input type="text" id="end-date" placeholder="Fin" style="width:120px;">
+                                    </label>
+                                    <button class="cyber-btn" id="update-chart">Actualiser</button>
+                                </div>
+                                <canvas id="finances-chart" height="70"></canvas>
+                            </div>
+                                </div>
+                                <div class="container-fluid pt-4 px-4">
+                <div class="bg-light rounded-top p-4">
+                    <div class="row">
+                        <div class="col-12 col-sm-6 text-center text-sm-start">
+                            &copy; <a href="#">TCHS</a>, All Right Reserved. 
+                        </div>
+                        <div class="col-12 col-sm-6 text-center text-sm-end">
+                            <!--/*** This template is free as long as you keep the footer author’s credit link/attribution link/backlink. If you'd like to use the template without the footer author’s credit link/attribution link/backlink, you can purchase the Credit Removal License from "https://htmlcodex.com/credit-removal". Thank you for your support. ***/-->
+                            Designed by <a>AMH</a>
+                        </br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                            </div>
+        
+                                
+                                <script>
+                                // Export XLSX via backend route
+                                function exportSectionXlsx(section) {
+                                    let url = '';
+                                    switch(section) {
+                                        case 'global': url = '/export_xlsx/global'; break;
+                                        case 'locations_par_mois': url = '/export_xlsx/locations_par_mois'; break;
+                                        case 'locations_par_terrain': url = '/export_xlsx/locations_par_terrain'; break;
+                                        case 'paiements_par_saison': url = '/export_xlsx/paiements_par_saison'; break;
+                                        case 'paiements_par_mois': url = '/export_xlsx/paiements_par_mois'; break;
+                                        default: return;
+                                    }
+                                    window.open(url, '_blank');
+                                }
+
+                                // Print only a section/card
+                                function printSection(cardId) {
+                                    const card = document.getElementById(cardId);
+                                    const printWindow = window.open('', '', 'width=1000,height=800');
+                                    printWindow.document.write(`
+                                    <html>
+                                        <head>
+                                            <title>Impression</title>
+                                            <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+                                            <style>
+                                                body { background: #fff; color: #222; font-family: 'Roboto', Arial, sans-serif; margin: 30px;}
+                                                h1, .card-title { color: #009688; font-family: 'Orbitron', sans-serif; }
+                                                table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem;}
+                                                th, td { padding: 0.65rem; text-align: left; border-bottom: 1px solid #ccc;}
+                                                th { background: #f4f4f4; color: #009688;}
+                                                tr:last-child td { border-bottom: none; }
+                                            </style>
+                                        </head>
+                                        <body>
+                                            <div>${card.innerHTML}</div>
+                                        </body>
+                                    </html>
+                                    `);
+                                    printWindow.document.close();
+                                    printWindow.focus();
+                                    setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+                                }
+                                </script>
+
 </body>
 <!-- AJOUTE à la fin du <body> AVANT </body> : -->
 
@@ -595,4 +608,26 @@ function printChart() {
     setTimeout(() => { win.print(); win.close(); }, 500);
 }
 </script>
+ <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}" rel="stylesheet"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}" rel="stylesheet"></script>
 </html>
+
+
+
+
+
+
+
+
+

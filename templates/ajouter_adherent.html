@@ -32,6 +32,22 @@
 </head>
 
 <body>
+     <style>
+        .input-group {
+            height: 58px;
+        }
+        .input-group .form-select, 
+        .input-group .form-control {
+            height: 100%;
+        }
+        .form-text {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+        .text-primary {
+            font-weight: 600;
+        }
+    </style>
     <div class="content">
     {% include 'sidebar.html' %}
     <!-- Navbar Start -->
@@ -66,6 +82,21 @@
                             <div id="error-message" style="color: red; margin-bottom: 15px; display: none;"></div>
                         
                             <div class="row">
+                                <!-- Nouveau champ Code Saison -->
+                                <div class="col-6">
+                                    <div class="form-floating mb-3">
+                                        <label for="code_saison">Code Saison<span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <select id="prefix_saison" class="form-select" style="flex: 0 0 30%;">
+                                                <option value="S">S (Saison)</option>
+                                                <option value="E">E (École d'été)</option>
+                                            </select>
+                                            <input type="number" id="annee_saison" class="form-control" min="2020" max="2050" step="1" style="flex: 1;">
+                                            <input type="hidden" id="code_saison" name="code_saison" required>
+                                        </div>
+                                        <small class="form-text text-muted">Code généré automatiquement: <span id="code-saison-preview" class="text-primary font-weight-bold">{{ code_saison_defaut }}</span></small>
+                                    </div>
+                                </div>
                                 <div class="col-6">
                                     <div class="form-floating mb-3">
                                         <input type="text" class="form-control" id="floatingInput" name="Nom" placeholder="Nom" required>
@@ -194,47 +225,142 @@
             const groupesDatalist = document.getElementById('groupes');
             const errorMessage = document.getElementById('error-message');
             const form = document.querySelector('form');
-    
+            
+            // Éléments pour le code saison
+            const prefixSaison = document.getElementById('prefix_saison');
+            const anneeSaison = document.getElementById('annee_saison');
+            const codeSaisonHidden = document.getElementById('code_saison');
+            const codeSaisonPreview = document.getElementById('code-saison-preview');
+            
+            // Fonction pour générer le code saison automatiquement
+            function genererCodeSaisonAuto() {
+                const aujourd_hui = new Date();
+                const mois = aujourd_hui.getMonth() + 1; // getMonth() retourne 0-11
+                const annee = aujourd_hui.getFullYear();
+                
+                let prefix, anneeCode;
+                
+                if (mois >= 10) { // Octobre à décembre - début de saison
+                    prefix = 'S';
+                    anneeCode = annee + 1;
+                } else if (mois >= 6 && mois <= 8) { // Juin à août - école d'été
+                    prefix = 'E';
+                    anneeCode = annee;
+                } else { // Janvier à mai - fin de saison
+                    prefix = 'S';
+                    anneeCode = annee;
+                }
+                
+                return { prefix, anneeCode };
+            }
+            
+            // Initialiser les valeurs par défaut
+            function initialiserCodeSaison() {
+                const codeAuto = genererCodeSaisonAuto();
+                prefixSaison.value = codeAuto.prefix;
+                anneeSaison.value = codeAuto.anneeCode;
+                mettreAJourCodeSaison();
+            }
+            
+            // Mettre à jour le code saison
+            function mettreAJourCodeSaison() {
+                const prefix = prefixSaison.value;
+                const annee = anneeSaison.value;
+                const codeFinal = prefix + annee;
+                
+                codeSaisonHidden.value = codeFinal;
+                codeSaisonPreview.textContent = codeFinal;
+            }
+            
+            // Validation cohérence type abonnement/code saison
+            function validerCoherenceSaison() {
+                const typeAbonnement = typeAbonnementSelect.value;
+                const prefix = prefixSaison.value;
+                
+                if (typeAbonnement === 'Ecole d\'été' && prefix !== 'E') {
+                    errorMessage.innerText += "Pour l'école d'été, utilisez le préfixe 'E'.\n";
+                    errorMessage.style.display = 'block';
+                    return false;
+                }
+                
+                return true;
+            }
+
             function validateAbonnement() {
                 const selectedAbonnement = typeAbonnementSelect.value;
                 const selectedEntraineur = entraineurSelect.options[entraineurSelect.selectedIndex];
                 const groupeValue = groupeInput.value;
-    
+
                 errorMessage.style.display = 'none';
                 errorMessage.innerText = '';
                 let isValid = true;
-    
+
                 // Vérifier le type d'abonnement de l'entraîneur
                 if (selectedEntraineur) {
                     const entraineurAbonnement = selectedEntraineur.getAttribute('data-abonnement');
-                    if (entraineurAbonnement !== selectedAbonnement) {
+                    if (entraineurAbonnement && entraineurAbonnement !== selectedAbonnement) {
                         isValid = false;
                         errorMessage.innerText += "Le type d'abonnement de l'entraîneur ne correspond pas.\n";
                     }
                 }
-    
+
                 // Vérifier le type d'abonnement du groupe
                 if (groupesDatalist) {
                     const groupeOption = Array.from(groupesDatalist.options).find(option => option.value === groupeValue);
                     if (groupeOption) {
                         const groupeAbonnement = groupeOption.getAttribute('data-abonnement');
-                        if (groupeAbonnement !== selectedAbonnement) {
+                        if (groupeAbonnement && groupeAbonnement !== selectedAbonnement) {
                             isValid = false;
                             errorMessage.innerText += "Le type d'abonnement du groupe ne correspond pas.\n";
                         }
                     }
                 }
-    
+                
+                // Vérifier la cohérence avec le code saison
+                if (!validerCoherenceSaison()) {
+                    isValid = false;
+                }
+
                 if (!isValid) {
                     errorMessage.style.display = 'block';
                 }
                 return isValid;
             }
-    
-           
-            typeAbonnementSelect.addEventListener('change', validateAbonnement);
+            
+            // Initialiser le code saison au chargement
+            initialiserCodeSaison();
+            
+            // Event listeners
+            prefixSaison.addEventListener('change', function() {
+                mettreAJourCodeSaison();
+                validateAbonnement();
+            });
+            
+            anneeSaison.addEventListener('input', function() {
+                mettreAJourCodeSaison();
+            });
+            
+            typeAbonnementSelect.addEventListener('change', function() {
+                // Auto-ajuster le préfixe pour l'école d'été
+                if (this.value === 'Ecole d\'été') {
+                    prefixSaison.value = 'E';
+                    mettreAJourCodeSaison();
+                }
+                validateAbonnement();
+            });
+            
             entraineurSelect.addEventListener('change', validateAbonnement);
             groupeInput.addEventListener('input', validateAbonnement);
+            
+            // Bouton pour réinitialiser au code automatique
+            const resetButton = document.createElement('button');
+            resetButton.type = 'button';
+            resetButton.className = 'btn btn-sm btn-outline-secondary mt-1';
+            resetButton.textContent = 'Auto';
+            resetButton.title = 'Générer automatiquement selon la date actuelle';
+            resetButton.onclick = initialiserCodeSaison;
+            
+            document.querySelector('#code_saison').parentNode.appendChild(resetButton);
         });
     </script>
     

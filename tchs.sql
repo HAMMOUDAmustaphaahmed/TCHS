@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1
--- Généré le : lun. 25 août 2025 à 15:15
+-- Généré le : mar. 26 août 2025 à 11:20
 -- Version du serveur : 10.4.32-MariaDB
 -- Version de PHP : 8.0.30
 
@@ -43,23 +43,25 @@ CREATE TABLE `adherent` (
   `entraineur` varchar(50) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `paye` enum('O','N') NOT NULL,
-  `status` enum('Actif','Non-Actif') NOT NULL
+  `status` enum('Actif','Non-Actif') NOT NULL,
+  `code_saison` varchar(10) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Déchargement des données de la table `adherent`
 --
 
-INSERT INTO `adherent` (`adherent_id`, `nom`, `prenom`, `date_naissance`, `sexe`, `date_inscription`, `tel1`, `tel2`, `type_abonnement`, `ancien_abonne`, `matricule`, `groupe`, `entraineur`, `email`, `paye`, `status`) VALUES
-(6, 'hammouda', 'ahmed', '1996-08-30', 'M', '2025-01-20', '54391747', '54391747', 'Compétitif', 'Non', 1, 'Ecole-1-A', 'Mhiri Afif', 'ahmed@gmail.com', 'N', 'Non-Actif'),
-(7, 'mohamed', 'ali', '1990-01-01', 'M', '2025-01-20', '12345678', '123546789', 'Non Compétitif', 'Non', 2, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif'),
-(8, 'mohamed', 'saleh', '1994-01-01', 'M', '2025-01-20', '1234', '12345', 'Non Compétitif', 'Non', 3, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif'),
-(9, 'Flen', 'Ben Flen', '2025-01-22', 'M', '2025-01-22', '1234', '1234', 'Non Compétitif', 'Non', 4, 'loisir', 'john doe', 'flen@gmail.com', 'N', 'Actif'),
-(10, 'Abdelmaksoud', 'Thameur', '2000-04-06', 'F', '2025-01-22', '28425595', '', 'N/D', 'Non', 5, 'X', 'test tedst', '', 'N', 'Actif'),
-(11, 'Foulani', 'Foulen', '2025-01-22', 'M', '2025-01-22', '1234', '', 'Compétitif', 'Non', 6, 'Poussin-1-A', 'Mhiri Afif', '', 'N', 'Actif'),
-(12, 'aaa', 'aaa', '2025-01-22', 'M', '2025-01-22', '134', '', 'Ecole d\'été', 'Non', 7, 'Poussin-1-A', 'Mhiri Afif', 'a@gmail.com', 'N', 'Actif'),
-(13, 'Da7ee7', 'Da7ee7', '2025-01-22', 'M', '2025-01-22', '1234', '', 'N/D', 'Non', 8, 'Poussin-1-A', 'Zallila Adam', 'da7ee7@gmail.com', 'N', 'Actif'),
-(14, 'mohamed', 'mohamed', '1990-01-01', 'M', '2025-05-06', '12345678', '12345677', 'N/D', 'Non', 9, 'Ecole-1-A', 'Mhiri Afif', 'mohamed.mohamed@gmail.com', 'N', 'Actif');
+INSERT INTO `adherent` (`adherent_id`, `nom`, `prenom`, `date_naissance`, `sexe`, `date_inscription`, `tel1`, `tel2`, `type_abonnement`, `ancien_abonne`, `matricule`, `groupe`, `entraineur`, `email`, `paye`, `status`, `code_saison`) VALUES
+(6, 'hammouda', 'ahmed', '1996-08-30', 'M', '2025-01-20', '54391747', '54391747', 'Compétitif', 'Non', 1, 'Ecole-1-A', 'Mhiri Afif', 'ahmed@gmail.com', 'N', 'Non-Actif', NULL),
+(7, 'mohamed', 'ali', '1990-01-01', 'M', '2025-01-20', '12345678', '123546789', 'Non Compétitif', 'Non', 2, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif', NULL),
+(8, 'mohamed', 'saleh', '1994-01-01', 'M', '2025-01-20', '1234', '12345', 'Non Compétitif', 'Non', 3, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif', NULL),
+(9, 'Flen', 'Ben Flen', '2025-01-22', 'M', '2025-01-22', '1234', '1234', 'Non Compétitif', 'Non', 4, 'loisir', 'john doe', 'flen@gmail.com', 'N', 'Actif', NULL),
+(10, 'Abdelmaksoud', 'Thameur', '2000-04-06', 'F', '2025-01-22', '28425595', '', 'N/D', 'Non', 5, 'X', 'test tedst', '', 'N', 'Actif', NULL),
+(11, 'Foulani', 'Foulen', '2025-01-22', 'M', '2025-01-22', '1234', '', 'Compétitif', 'Non', 6, 'Poussin-1-A', 'Mhiri Afif', '', 'N', 'Actif', NULL),
+(12, 'aaa', 'aaa', '2025-01-22', 'M', '2025-01-22', '134', '', 'Ecole d\'été', 'Non', 7, 'Poussin-1-A', 'Mhiri Afif', 'a@gmail.com', 'N', 'Actif', NULL),
+(13, 'Da7ee7', 'Da7ee7', '2025-01-22', 'M', '2025-01-22', '1234', '', 'N/D', 'Non', 8, 'Poussin-1-A', 'Zallila Adam', 'da7ee7@gmail.com', 'N', 'Actif', NULL),
+(14, 'mohamed', 'mohamed', '1990-01-01', 'M', '2025-05-06', '12345678', '12345677', 'N/D', 'Non', 9, 'Ecole-1-A', 'Mhiri Afif', 'mohamed.mohamed@gmail.com', 'N', 'Actif', NULL),
+(15, 'Ali', 'Mohamed', '2000-01-01', 'M', '2025-08-26', '12345678', '', 'Ecole d\'été', 'Non', 10, 'Ecole d\'été-1-A', 'Mhiri Afif', '', 'N', 'Actif', 'E2025');
 
 -- --------------------------------------------------------
 
@@ -149,6 +151,14 @@ CREATE TABLE `depense` (
   `type_depense` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Déchargement des données de la table `depense`
+--
+
+INSERT INTO `depense` (`id`, `libelle`, `montant`, `date`, `type_depense`) VALUES
+(8, 'test1', 100.00, '2025-08-26', 'A'),
+(9, 'test2', 50.00, '2025-08-26', 'B');
+
 -- --------------------------------------------------------
 
 --
@@ -215,7 +225,8 @@ INSERT INTO `groupe` (`id_groupe`, `nom_groupe`, `entraineur_nom`, `type_abonnem
 (14, 'Minime-1-B', 'Gaaloul Ilhem', 'N/D', 'Minime'),
 (15, 'KD-1-A', 'Hdaya Aya', 'N/D', 'KD'),
 (16, 'KD-1-B', 'Hdaya Aya', 'N/D', 'KD'),
-(18, 'Ecole-1-A', 'Mhiri Afif', 'N/D', 'Ecole');
+(18, 'Ecole-1-A', 'Mhiri Afif', 'N/D', 'Ecole'),
+(21, 'Ecole d\'été-1-A', 'Mhiri Afif', 'N/D', 'Ecole d\'été');
 
 -- --------------------------------------------------------
 
@@ -369,10 +380,25 @@ CREATE TABLE `presence` (
 --
 
 INSERT INTO `presence` (`id_presence`, `groupe_nom`, `adherent_matricule`, `entraineur_nom`, `date_seance`, `heure_debut`, `est_present`, `seance_id`) VALUES
-(1, 'loisir', '4', 'john doe', '2025-01-22', '10:30:00', 'O', NULL),
+(1, 'loisir', '4', 'john doe', '2025-01-23', '10:30:00', 'O', NULL),
 (2, 'loisir', '4', 'john doe', '2025-01-22', '10:30:00', 'N', NULL),
 (3, 'groupe_onsjaber', '8', 'Jaber Ons', '2025-01-22', '16:30:00', 'O', NULL),
-(4, 'groupe_onsjaber', '8', 'Jaber Ons', '2025-01-22', '16:30:00', 'N', NULL);
+(4, 'groupe_onsjaber', '8', 'Jaber Ons', '2025-01-20', '16:30:00', 'N', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `presence_entraineur`
+--
+
+CREATE TABLE `presence_entraineur` (
+  `id_presence` int(11) NOT NULL,
+  `groupe_nom` varchar(100) NOT NULL,
+  `entraineur_nom` varchar(100) NOT NULL,
+  `date_seance` date NOT NULL,
+  `heure_debut` time NOT NULL,
+  `est_present` enum('O','N') NOT NULL DEFAULT 'N'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -392,6 +418,13 @@ CREATE TABLE `reservations` (
   `status` enum('en_attente','acceptée','refusée') DEFAULT 'en_attente',
   `date_creation` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Déchargement des données de la table `reservations`
+--
+
+INSERT INTO `reservations` (`id_reservation`, `nom_entraineur`, `prenom_entraineur`, `date_reservation`, `heure_debut`, `heure_fin`, `numero_terrain`, `commentaire`, `status`, `date_creation`) VALUES
+(1, 'Zallila', 'Adam', '2025-08-26', '15:00:00', '17:00:00', 1, 'test', 'en_attente', '2025-08-26 09:20:08');
 
 -- --------------------------------------------------------
 
@@ -441,7 +474,8 @@ INSERT INTO `seances` (`seance_id`, `date`, `heure_debut`, `heure_fin`, `groupe`
 (29, '2025-01-27', '08:00:00', '09:30:00', 'Poussin-1-B', 'Mhiri Afif', 1, NULL),
 (31, '2025-02-03', '08:00:00', '09:30:00', 'Ecole-1-A', 'Missoum Walid', 1, NULL),
 (32, '2025-02-03', '12:30:00', '14:00:00', 'Poussin-1-A', 'Mhiri Afif', 1, NULL),
-(33, '2025-05-07', '08:00:00', '09:30:00', 'Ecole-1-A', 'Mhiri Afif', 1, NULL);
+(33, '2025-05-07', '08:00:00', '09:30:00', 'Ecole-1-A', 'Mhiri Afif', 1, NULL),
+(34, '2025-08-26', '08:00:00', '09:30:00', 'Ecole d\'été-1-A', 'Zallila Adam', 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -590,6 +624,12 @@ ALTER TABLE `presence`
   ADD PRIMARY KEY (`id_presence`);
 
 --
+-- Index pour la table `presence_entraineur`
+--
+ALTER TABLE `presence_entraineur`
+  ADD PRIMARY KEY (`id_presence`);
+
+--
 -- Index pour la table `reservations`
 --
 ALTER TABLE `reservations`
@@ -628,7 +668,7 @@ ALTER TABLE `utilisateurs`
 -- AUTO_INCREMENT pour la table `adherent`
 --
 ALTER TABLE `adherent`
-  MODIFY `adherent_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `adherent_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT pour la table `autres_paiements`
@@ -652,7 +692,7 @@ ALTER TABLE `cotisations`
 -- AUTO_INCREMENT pour la table `depense`
 --
 ALTER TABLE `depense`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT pour la table `entraineur`
@@ -664,7 +704,7 @@ ALTER TABLE `entraineur`
 -- AUTO_INCREMENT pour la table `groupe`
 --
 ALTER TABLE `groupe`
-  MODIFY `id_groupe` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id_groupe` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT pour la table `locations_terrains`
@@ -703,10 +743,16 @@ ALTER TABLE `presence`
   MODIFY `id_presence` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
+-- AUTO_INCREMENT pour la table `presence_entraineur`
+--
+ALTER TABLE `presence_entraineur`
+  MODIFY `id_presence` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT pour la table `reservations`
 --
 ALTER TABLE `reservations`
-  MODIFY `id_reservation` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_reservation` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT pour la table `revenu`
@@ -718,7 +764,7 @@ ALTER TABLE `revenu`
 -- AUTO_INCREMENT pour la table `seances`
 --
 ALTER TABLE `seances`
-  MODIFY `seance_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+  MODIFY `seance_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT pour la table `tournois`

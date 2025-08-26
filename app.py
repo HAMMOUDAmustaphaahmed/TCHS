@@ -1498,6 +1498,25 @@ def supprimer_utilisateur(id):
 
 
 
+from datetime import datetime
+
+def generer_code_saison():
+    """
+    Génère le code saison basé sur la date actuelle
+    Saison (S): octobre à juin (année suivante)
+    École d'été (E): juin à août (même année)
+    """
+    aujourd_hui = datetime.now()
+    mois = aujourd_hui.month
+    annee = aujourd_hui.year
+    
+    if mois >= 10:  # Octobre à décembre - début de saison
+        return f"S{annee + 1}"
+    elif mois >= 6 and mois <= 8:  # Juin à août - école d'été
+        return f"E{annee}"
+    else:  # Janvier à mai - fin de saison
+        return f"S{annee}"
+
 @app.route('/ajouter_adherent', methods=['POST', 'GET'])
 def ajouter_adherent():
     if 'user_id' not in session or session.get('role') != 'admin':
@@ -1506,17 +1525,20 @@ def ajouter_adherent():
     
     entraineurs = Entraineur.query.all()
     groupes = Groupe.query.all()  # Récupérer tous les groupes pour le formulaire
+    
+    # Générer le code saison par défaut
+    code_saison_defaut = generer_code_saison()
 
     if request.method == 'POST':
         nom_groupe = request.form.get('groupe') or None
         entraineur_nom = request.form.get('entraineur') or None
         type_abonnement = request.form.get('type_abonnement') or None
-
-
+        code_saison = request.form.get('code_saison', code_saison_defaut)
 
         # Calculer le matricule de l'adhérent
         dernier_adherent = Adherent.query.order_by(Adherent.matricule.desc()).first()
         matricule = dernier_adherent.matricule + 1 if dernier_adherent else 1
+        
         # Ajouter un nouvel adhérent
         nouveau_adherent = Adherent(
             nom=request.form['Nom'],
@@ -1532,12 +1554,10 @@ def ajouter_adherent():
             groupe=nom_groupe,
             entraineur=entraineur_nom,
             email=request.form['email'],
+            code_saison=code_saison,  # Nouveau champ
             paye='N',
             status='Actif'
         )
-
-        
-        
 
         try:
             db.session.add(nouveau_adherent)
@@ -1549,7 +1569,10 @@ def ajouter_adherent():
             db.session.rollback()
             flash(f"Erreur lors de l\'ajout : {str(e)}", 'danger')
 
-    return render_template('ajouter_adherent.html', entraineurs=entraineurs, groupes=groupes)
+    return render_template('ajouter_adherent.html', 
+                         entraineurs=entraineurs, 
+                         groupes=groupes,
+                         code_saison_defaut=code_saison_defaut)
 
 @app.route('/gerer_adherent', methods=['POST','GET'])
 def gerer_adherent():
@@ -1565,10 +1588,14 @@ def modifier_adherent(id):
     if 'user_id' not in session or session.get('role') != 'admin':
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
+    
     # Récupérer l'adhérent par son ID, sinon retourner une erreur 404 si non trouvé
     groupes = Groupe.query.all()
     nom_groupes = [groupe.nom_groupe for groupe in groupes]
     adherent = Adherent.query.get_or_404(id)
+    
+    # Générer le code saison par défaut pour les nouveaux adhérents
+    code_saison_defaut = generer_code_saison()
 
     if request.method == 'POST':
         adherent.nom = request.form['nom']
@@ -1583,13 +1610,19 @@ def modifier_adherent(id):
         adherent.entraineur = request.form['entraineur']
         adherent.email = request.form['email']
         adherent.status = request.form['status']
+        adherent.code_saison = request.form['code_saison']  # Nouveau champ
         
         db.session.commit()
         return redirect(url_for('gerer_adherent'))
 
     # Get list of all trainers
     entraineurs = Entraineur.query.all()
-    return render_template('modifier_adherent.html', adherent=adherent, entraineurs=entraineurs,nom_groupes=nom_groupes)
+    return render_template('modifier_adherent.html', 
+                         adherent=adherent, 
+                         entraineurs=entraineurs,
+                         nom_groupes=nom_groupes,
+                         code_saison_defaut=code_saison_defaut)
+
 @app.route('/supprimer_adherent/<int:id>', methods=['GET', 'POST'])
 def supprimer_adherent(id):
     if 'user_id' not in session or session.get('role') != 'admin':
@@ -1604,8 +1637,6 @@ def supprimer_adherent(id):
 
     # Rediriger vers la page d'accueil ou la liste des adhérents
     return redirect(url_for('gerer_adherent'))
-
-
 
 @app.route('/ajouter_entraineur', methods=['POST', 'GET'])
 def ajouter_entraineur():
@@ -2278,6 +2309,7 @@ class Adherent(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     paye = db.Column(db.Enum('O', 'N'), nullable=False)
     status = db.Column(db.Enum('Actif', 'Non-Actif'), nullable=False)
+    code_saison = db.Column(db.String(10), nullable=True)  # Nouveau champ ajouté
 
     def __repr__(self):
         return f'<Adherent {self.nom} {self.prenom}>'
@@ -2299,7 +2331,8 @@ class Adherent(db.Model):
             "entraineur": self.entraineur,
             "email": self.email,
             "paye": self.paye,
-            "status": self.status
+            "status": self.status,
+            "code_saison": self.code_saison  # Ajouté dans to_dict aussi
         }
 
 class Entraineur(db.Model):
@@ -3956,6 +3989,184 @@ def presence():
     # Render the template with the results
     return render_template('presence.html', groupes=groupes, entraineurs=entraineurs, adherents=adherents)
 
+
+# Ajoute ces imports en haut de ton fichier si pas déjà présents
+from flask import request, jsonify
+from sqlalchemy import or_, cast, String
+
+# Nouvelle route
+@app.route('/search_presence_situation', methods=['GET', 'POST'])
+def search_presence_situation():
+    """
+    Retourne la situation (nb présent/nb absent + listes de dates) pour :
+    - type = 'adherent'  => pour chaque Adherent (lié par Adherent.matricule == Presence.adherent_matricule)
+    - type = 'entraineur' => pour chaque Entraineur (lié par "Nom Prenom" == Presence_Entraineur.entraineur_nom)
+    Paramètres acceptés (GET ou POST):
+      - search_term : chaîne (optionnel) pour filtrer par nom/prenom/matricule
+      - type : 'adherent' ou 'entraineur' (par défaut 'adherent')
+    """
+    search_term = (request.values.get("search_term") or "").strip()
+    search_type = (request.values.get("type") or "adherent").strip().lower()
+
+    results = []
+
+    # ------ ADHERENTS ------
+    if search_type == "adherent":
+        q = Adherent.query
+        if search_term:
+            like = f"%{search_term}%"
+            # Cherche sur nom, prenom ou matricule (cast matricule en string)
+            q = q.filter(or_(
+                Adherent.nom.ilike(like),
+                Adherent.prenom.ilike(like),
+                cast(Adherent.matricule, String).ilike(like)
+            ))
+        adherents = q.order_by(Adherent.nom, Adherent.prenom).all()
+
+        for a in adherents:
+            matricule_str = str(a.matricule)
+            pres_rows = Presence.query.filter(Presence.adherent_matricule == matricule_str).order_by(Presence.date_seance).all()
+
+            present_dates = [p.date_seance.strftime('%Y-%m-%d') for p in pres_rows if (p.est_present == 'O')]
+            absent_dates  = [p.date_seance.strftime('%Y-%m-%d') for p in pres_rows if (p.est_present == 'N')]
+
+            results.append({
+                "id": a.adherent_id,
+                "matricule": a.matricule,
+                "nom": a.nom,
+                "prenom": a.prenom,
+                "nb_present": len(present_dates),
+                "nb_absent": len(absent_dates),
+                "present_dates": present_dates,
+                "absent_dates": absent_dates
+            })
+
+        return jsonify(results)
+
+    # ------ ENTRAINEURS ------
+    elif search_type == "entraineur":
+        q = Entraineur.query
+        if search_term:
+            like = f"%{search_term}%"
+            q = q.filter(or_(
+                Entraineur.nom.ilike(like),
+                Entraineur.prenom.ilike(like)
+            ))
+        entraineurs = q.order_by(Entraineur.nom, Entraineur.prenom).all()
+
+        for t in entraineurs:
+            full_name = f"{t.nom} {t.prenom}"
+            pres_rows = Presence_Entraineur.query.filter(Presence_Entraineur.entraineur_nom == full_name).order_by(Presence_Entraineur.date_seance).all()
+
+            present_dates = [p.date_seance.strftime('%Y-%m-%d') for p in pres_rows if (p.est_present == 'O')]
+            absent_dates  = [p.date_seance.strftime('%Y-%m-%d') for p in pres_rows if (p.est_present == 'N')]
+
+            results.append({
+                "id": t.id_entraineur,
+                "nom": t.nom,
+                "prenom": t.prenom,
+                "nb_present": len(present_dates),
+                "nb_absent": len(absent_dates),
+                "present_dates": present_dates,
+                "absent_dates": absent_dates
+            })
+
+        return jsonify(results)
+
+    # si type invalide
+    return jsonify([]), 400
+
+import io
+import xlsxwriter
+from flask import send_file
+
+@app.route("/export_presence_xlsx")
+def export_presence_xlsx():
+    search_term = (request.args.get("search_term") or "").strip()
+    search_type = (request.args.get("type") or "adherent").strip().lower()
+
+    output = io.BytesIO()
+    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+    worksheet = workbook.add_worksheet("Présences")
+
+    # Styles
+    header_format = workbook.add_format({'bold': True, 'bg_color': '#D3D3D3'})
+    
+    # En-têtes
+    if search_type == "adherent":
+        headers = ["Matricule", "Nom", "Prénom", "Présent", "Absent", "Dates Présent", "Dates Absent"]
+    else:  # entraineur
+        headers = ["Nom", "Prénom", "Présent", "Absent", "Dates Présent", "Dates Absent"]
+
+    for col, h in enumerate(headers):
+        worksheet.write(0, col, h, header_format)
+
+    # Récupérer les données
+    if search_type == "adherent":
+        q = Adherent.query
+        if search_term:
+            like = f"%{search_term}%"
+            q = q.filter(or_(
+                Adherent.nom.ilike(like),
+                Adherent.prenom.ilike(like),
+                cast(Adherent.matricule, String).ilike(like)
+            ))
+        items = q.order_by(Adherent.nom, Adherent.prenom).all()
+    else:
+        q = Entraineur.query
+        if search_term:
+            like = f"%{search_term}%"
+            q = q.filter(or_(
+                Entraineur.nom.ilike(like),
+                Entraineur.prenom.ilike(like)
+            ))
+        items = q.order_by(Entraineur.nom, Entraineur.prenom).all()
+
+    row_num = 1
+    for item in items:
+        if search_type == "adherent":
+            matricule_str = str(item.matricule)
+            pres_rows = Presence.query.filter(Presence.adherent_matricule == matricule_str).order_by(Presence.date_seance).all()
+            present_dates = ", ".join(p.date_seance.strftime('%Y-%m-%d') for p in pres_rows if p.est_present == 'O')
+            absent_dates  = ", ".join(p.date_seance.strftime('%Y-%m-%d') for p in pres_rows if p.est_present == 'N')
+            data = [
+                item.matricule,
+                item.nom,
+                item.prenom,
+                sum(1 for p in pres_rows if p.est_present == 'O'),
+                sum(1 for p in pres_rows if p.est_present == 'N'),
+                present_dates,
+                absent_dates
+            ]
+        else:
+            full_name = f"{item.nom} {item.prenom}"
+            pres_rows = Presence_Entraineur.query.filter(Presence_Entraineur.entraineur_nom == full_name).order_by(Presence_Entraineur.date_seance).all()
+            present_dates = ", ".join(p.date_seance.strftime('%Y-%m-%d') for p in pres_rows if p.est_present == 'O')
+            absent_dates  = ", ".join(p.date_seance.strftime('%Y-%m-%d') for p in pres_rows if p.est_present == 'N')
+            data = [
+                item.nom,
+                item.prenom,
+                sum(1 for p in pres_rows if p.est_present == 'O'),
+                sum(1 for p in pres_rows if p.est_present == 'N'),
+                present_dates,
+                absent_dates
+            ]
+
+        for col, val in enumerate(data):
+            worksheet.write(row_num, col, val)
+        row_num += 1
+
+    workbook.close()
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name=f"presence_{search_type}.xlsx"
+    )
+
+
 @app.route('/search_presence', methods=['GET'])
 def search_presence():
     search_type = request.args.get('searchType')
@@ -4232,6 +4443,80 @@ def export_xlsx_global():
         
     ])
     return df_to_xlsx_response(df, 'synthese_globale.xlsx')
+
+
+
+
+
+class Depense(db.Model):
+    __tablename__ = 'depense'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    libelle = db.Column(db.String(255), nullable=False)
+    montant = db.Column(db.Numeric(10, 2), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    type_depense = db.Column(db.String(100), nullable=False)
+
+    def __repr__(self):
+        return f"<Depense {self.libelle} {self.montant}>"
+
+
+
+@app.route('/depenses')
+def depenses():
+    return render_template('depenses.html')
+
+@app.route('/get_depenses', methods=['GET'])
+def get_depenses():
+    search = request.args.get('search', '')
+    query = Depense.query
+    if search:
+        query = query.filter(Depense.libelle.ilike(f"%{search}%"))
+    depenses_list = query.order_by(Depense.date.desc()).all()
+    result = []
+    for d in depenses_list:
+        result.append({
+            'id': d.id,
+            'libelle': d.libelle,
+            'montant': str(d.montant),
+            'type_depense': d.type_depense,
+            'date': d.date.strftime('%Y-%m-%d')
+        })
+    return jsonify(result)
+
+@app.route('/add_depenses', methods=['POST'])
+def add_depenses():
+    libelle = request.form.get('libelle')
+    montant = request.form.get('montant')
+    date_str = request.form.get('date')
+    type_depense = request.form.get('type_depense')
+    if not (libelle and montant and date_str and type_depense):
+        return jsonify({'status': 'error', 'message': 'Tous les champs sont obligatoires'})
+    depense = Depense(
+        libelle=libelle,
+        montant=montant,
+        date=datetime.strptime(date_str, '%Y-%m-%d').date(),
+        type_depense=type_depense
+    )
+    db.session.add(depense)
+    db.session.commit()
+    return jsonify({'status': 'success'})
+
+@app.route('/delete_depense/<int:id>', methods=['DELETE'])
+def delete_depense(id):
+    depense = Depense.query.get_or_404(id)
+    db.session.delete(depense)
+    db.session.commit()
+    return jsonify({'status': 'success'})
+
+
+
+
+
+
+
+
+
+
 
 
 
