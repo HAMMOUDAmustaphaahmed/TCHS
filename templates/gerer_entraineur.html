@@ -48,7 +48,6 @@
 </head>
 
 <body>
-    <div class="container-xxl position-relative d-flex p-0">
         <!-- Sidebar Start -->
         {% include 'sidebar.html' %}
         <!-- Sidebar End -->
@@ -88,8 +87,7 @@
                                         <th onclick="sortTable(1)">Nom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
                                         <th onclick="sortTable(2)">Prénom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
                                         <th onclick="sortTable(3)">Sexe<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                        <th onclick="sortTable(4)">Type d'Abonnement<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                        <th onclick="sortTable(5)">Enfant<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                                        <th onclick="sortTable(4)">Catégorie<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
                                         
                                         <th scope="col">Actions</th>
                                     </tr>
@@ -125,7 +123,7 @@
                                         <td>{{ entraineur.prenom }}</td>
                                         <td>{{ entraineur.sexe }}</td>
                                         <td>{{ entraineur.type_abonnement }}</td>
-                                        <td>{{ entraineur.enfant }}</td>
+                                        
                                         
                                         <td>
                                             <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_entraineur', id=entraineur.id_entraineur) }}">Modifier</a>
@@ -142,7 +140,7 @@
         </div>
         <!-- Sign In End -->    
     </div>
-    </div>
+    
     <!-- JavaScript Libraries -->
     <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>

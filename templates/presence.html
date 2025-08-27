@@ -1,308 +1,919 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
     <meta charset="utf-8">
-    <title>TCHS Dashboard</title>
-
+    <title>TCHS Dashboard - Présences</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <meta content="" name="keywords">
-    <meta content="" name="description">
-
-    <!-- Favicon -->
-    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
-
-    <!-- Google Web Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
 
-    <!-- Icon Font Stylesheet -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Libraries Stylesheet -->
-    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
 
-    <!-- Customized Bootstrap Stylesheet -->
-    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+<!-- Libraries Stylesheet -->
+<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
 
-    <!-- Template Stylesheet -->
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+<!-- Customized Bootstrap Stylesheet -->
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
 
+<!-- Template Stylesheet -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         :root {
-            --primary-color: #2196F3;
-            --primary-dark: #1976D2;
-            --primary-light: #BBDEFB;
-            --accent-color: #FF4081;
-            --success-color: #4CAF50;
-            --danger-color: #F44336;
-            --background-color: #F5F5F5;
-            --surface-color: #FFFFFF;
-            --border-color: #E0E0E0;
-            --shadow-color: rgba(0, 0, 0, 0.1);
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --surface-hover: #f1f5f9;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --radius: 8px;
+            --radius-lg: 12px;
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
-            background: var(--background-color);
-            color: #333;
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: var(--background);
+            color: var(--text);
+            line-height: 1.6;
         }
 
-        main {
-            padding: 20px;
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
         }
 
-        .presence-dashboard {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-            background: var(--surface-color);
-            border-radius: 10px;
-            box-shadow: 0 4px 6px var(--shadow-color);
-        }
-
-        h1,
-        h2 {
+        .page-header {
+            margin-bottom: 3rem;
             text-align: center;
-            color: var(--primary-color);
-            margin-bottom: 20px;
         }
 
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 0.5rem;
         }
 
-        .tab-button {
-            padding: 8px 16px;
-            border: none;
-            background: #ddd;
-            cursor: pointer;
-            border-radius: 4px;
+        .page-subtitle {
+            font-size: 1.125rem;
+            color: var(--text-muted);
         }
 
-        .tab-button.active {
-            background: #007bff;
+        .dashboard-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
             color: white;
         }
 
-        .search-bar {
-            margin-bottom: 15px;
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-description {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .filters-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-input {
+            padding: 0.875rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            background: var(--surface);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgb(37 99 235 / 0.1);
+            transform: translateY(-1px);
+        }
+
+        .type-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .type-option {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .type-radio {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .type-card {
+            padding: 1.5rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            text-align: center;
+            transition: all 0.3s ease;
+            background: var(--surface);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .type-card:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .type-radio:checked + .type-card {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .type-radio:checked + .type-card:before {
+            left: 100%;
+        }
+
+        .type-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .type-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .type-description {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .search-section {
+            margin-top: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .search-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .search-toggle {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        .toggle-input:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+
+        .toggle-input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .search-input-container {
+            position: relative;
+        }
+
+        .search-input {
+            padding-left: 3rem;
+            font-size: 1rem;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .results-section {
+            margin-top: 3rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .results-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .results-count {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
         }
 
         .results-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        .results-table th,
-        .results-table td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
+            background: var(--surface);
         }
 
         .results-table th {
-            background: var(--primary-light);
-            color: var(--primary-dark);
+            background: var(--surface-hover);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
-        .details-row {
-            background: #f9f9f9;
+        .results-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .results-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .results-table tbody tr:hover {
+            background: var(--surface-hover);
+        }
+
+        .attendance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.5rem;
+            max-width: 800px;
+        }
+
+        .attendance-day {
+            padding: 0.5rem;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .attendance-day.present {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .attendance-day.absent {
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        .attendance-day.no-session {
+            background: var(--surface-hover);
+            color: var(--text-muted);
+            opacity: 0.5;
+        }
+
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card {
+            padding: 1rem;
+            border-radius: var(--radius);
+            text-align: center;
+        }
+
+        .stat-card.present {
+            background: #dcfce7;
+            border-left: 4px solid var(--success);
+        }
+
+        .stat-card.absent {
+            background: #fef2f2;
+            border-left: 4px solid var(--danger);
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .loading-spinner {
             display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
         }
 
-        .details-row td {
-            padding: 10px;
-            font-size: 0.9em;
-            color: #333;
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
-        .btn-search, .btn-success {
-            display: inline-block;
-            margin: 20px auto;
-            background: var(--accent-color);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            border: none;
-            cursor: pointer;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        .btn-search:hover, .btn-success:hover {
-            background: #ff6085;
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: var(--radius);
+            padding: 1rem;
+            color: #dc2626;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .type-selector {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="content">
+    
+        
+
+        <!-- Sidebar Start -->
         {% include 'sidebar.html' %}
+        <!-- Sidebar End -->
 
-        <!-- Navbar Start -->
-        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
-            <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
-                <h2 class="text-primary mb-0">TCHS</h2>
-            </a>
-            <a href="#" class="sidebar-toggler flex-shrink-0" aria-label="Menu latéral">
-                <i class="fa fa-bars"></i>
-            </a>
-        </nav>
-        <!-- Navbar End -->
 
-        <main>
-            <!-- Section Résumé Présence -->
-            <section class="presence-dashboard">
-                <h2>Situation des Présences</h2>
+        <!-- Content Start -->
+        <div class="content">
+            <!-- Navbar Start -->
+            <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+                <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                    <h2 class="text-primary mb-0"></h2>
+                </a>
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
 
-                <!-- Onglets -->
-                <div class="tabs">
-                    <button id="tabAdherents" class="tab-button active">Adhérents</button>
-                    <button id="tabEntraineurs" class="tab-button">Entraîneurs</button>
-                </div>
+                
 
-                <!-- Search -->
-                <div class="search-bar">
-                    <input type="text" id="searchInput" placeholder="Rechercher par nom ou prénom...">
-                </div>
+                
 
-                <!-- Export XLSX 
-                <div class="export-btn-container" style="margin-bottom:15px; text-align: right;">
-                    <button id="btnExport" class="btn btn-success">Exporter XLSX</button>
-                </div>-->
+                
+            </nav>
+            <!-- Navbar End -->
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">Dashboard Présences</h1>
+            <p class="page-subtitle">Suivi et analyse des présences des adhérents, entraîneurs et groupes</p>
+        </div>
 
-                <!-- Tableau -->
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th>Nom</th>
-                            <th>Prénom</th>
-                            <th>Présent</th>
-                            <th>Absent</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resultsBody">
-                        <!-- Rempli dynamiquement par jQuery -->
-                    </tbody>
-                </table>
-            </section>
-        </main>
-
-        <!-- Footer -->
-        <footer class="container-fluid pt-4 px-4">
-            <div class="bg-light rounded-top p-4 text-center text-sm-start">
-                &copy; <a href="#">TCHS</a>, Tous droits réservés.
-                <div class="text-sm-end mt-2">Designé par <a>AMH</a></div>
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h2 class="card-title">Filtres de Recherche</h2>
+                <p class="card-description">Sélectionnez la période et le type de données à analyser</p>
             </div>
-        </footer>
+            <div class="card-body">
+                <div class="filters-section">
+                    <div class="form-group">
+                        <label class="form-label">Date de début</label>
+                        <input type="date" class="form-input" id="startDate">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date de fin</label>
+                        <input type="date" class="form-input" id="endDate">
+                    </div>
+                </div>
+
+                <div class="type-selector">
+                    <div class="type-option">
+                        <input type="radio" name="searchType" value="adherent" class="type-radio" id="typeAdherent">
+                        <label for="typeAdherent" class="type-card">
+                            <i class="fas fa-users type-icon"></i>
+                            <div class="type-title">Adhérents</div>
+                            <div class="type-description">Membres du club</div>
+                        </label>
+                    </div>
+                    <div class="type-option">
+                        <input type="radio" name="searchType" value="entraineur" class="type-radio" id="typeEntraineur">
+                        <label for="typeEntraineur" class="type-card">
+                            <i class="fas fa-user-tie type-icon"></i>
+                            <div class="type-title">Entraîneurs</div>
+                            <div class="type-description">Équipe pédagogique</div>
+                        </label>
+                    </div>
+                    <div class="type-option">
+                        <input type="radio" name="searchType" value="groupe" class="type-radio" id="typeGroupe">
+                        <label for="typeGroupe" class="type-card">
+                            <i class="fas fa-layer-group type-icon"></i>
+                            <div class="type-title">Groupes</div>
+                            <div class="type-description">Classes d'entraînement</div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="search-section" id="searchSection">
+                    <div class="search-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" class="toggle-input" id="searchToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span>Rechercher un élément spécifique</span>
+                    </div>
+                    
+                    <div class="form-group" id="searchInputGroup" style="display: none;">
+                        <label class="form-label" id="searchLabel">Rechercher</label>
+                        <div class="search-input-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="form-input search-input" id="searchInput" placeholder="Tapez pour rechercher...">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="searchBtn">
+                        <i class="fas fa-search"></i>
+                        Rechercher
+                    </button>
+                    <button class="btn btn-outline" id="exportBtn" disabled>
+                        <i class="fas fa-file-excel"></i>
+                        Exporter Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">Résultats</h2>
+                    <div class="results-header">
+                        <span class="results-count" id="resultsCount">0 résultat(s)</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="loading-spinner" id="loadingSpinner">
+                        <div class="spinner"></div>
+                    </div>
+                    
+                    <div id="resultsContent"></div>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <!-- Back to Top -->
-    <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top" aria-label="Retour en haut"><i class="bi bi-arrow-up"></i></a>
-
-    <!-- JS Librairies -->
+        </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        let currentSearchType = null;
+        let searchResults = [];
 
-    <script>
-        // currentType global
-        let currentType = "adherent";
+        const API_BASE_URL = '/api'; // Ajustez selon la config Flask
 
-        $(function () {
-            const $resultsBody = $("#resultsBody");
-            const $searchInput = $("#searchInput");
+        // Sélection type
+        $('input[name="searchType"]').on('change', function() {
+            currentSearchType = $(this).val();
+            $('#searchSection').addClass('visible');
+            updateSearchPlaceholder();
+        });
 
-            // bascule onglets
-            $("#tabAdherents").on("click", function () {
-                $(".tab-button").removeClass("active");
-                $(this).addClass("active");
-                currentType = "adherent";
-                loadData($searchInput.val().trim());
-            });
+        // Toggle recherche spécifique
+        $('#searchToggle').on('change', function() {
+            if ($(this).is(':checked')) {
+                $('#searchInputGroup').show();
+            } else {
+                $('#searchInputGroup').hide();
+                $('#searchInput').val('');
+            }
+        });
 
-            $("#tabEntraineurs").on("click", function () {
-                $(".tab-button").removeClass("active");
-                $(this).addClass("active");
-                currentType = "entraineur";
-                loadData($searchInput.val().trim());
-            });
+        function updateSearchPlaceholder() {
+            const labels = {
+                'adherent': 'Rechercher un adhérent par nom, prénom ou matricule...',
+                'entraineur': 'Rechercher un entraîneur par nom ou prénom...',
+                'groupe': 'Rechercher un groupe par nom...'
+            };
+            $('#searchInput').attr('placeholder', labels[currentSearchType] || 'Rechercher...');
+            $('#searchLabel').text(`Rechercher ${currentSearchType}`);
+        }
 
-            // recherche dynamique
-            $searchInput.on("input", function () {
-                loadData($(this).val().trim());
-            });
-
-            // fonction principale : charge les données
-            function loadData(searchTerm = "") {
-                $resultsBody.empty();
-                $.post("/search_presence_situation", { search_term: searchTerm, type: currentType }, function (data) {
-                    if (!Array.isArray(data) || data.length === 0) {
-                        $resultsBody.html('<tr><td colspan="4" class="text-center small-muted">Aucun résultat</td></tr>');
-                        return;
-                    }
-
-                    data.forEach(item => {
-                        const $row = $("<tr>").addClass("data-row").attr("data-id", item.id);
-                        $row.append($("<td>").text(item.nom || ""));
-                        $row.append($("<td>").text(item.prenom || ""));
-                        const $tdPresent = $("<td>").addClass("count present-count").text(item.nb_present).data("dates", item.present_dates || []);
-                        const $tdAbsent = $("<td>").addClass("count absent-count").text(item.nb_absent).data("dates", item.absent_dates || []);
-                        $row.append($tdPresent).append($tdAbsent);
-
-                        const $details = $("<tr>").addClass("details-row").hide();
-                        const $detailsCell = $("<td>").attr("colspan", 4).append($("<div>").addClass("dates-list small-muted"));
-                        $details.append($detailsCell);
-
-                        $resultsBody.append($row, $details);
-                    });
-                }, "json").fail(function (xhr, status, err) {
-                    console.error("Erreur récupération présences:", status, err);
-                    $resultsBody.html('<tr><td colspan="4" class="text-center text-danger">Erreur lors de la récupération des données</td></tr>');
-                });
+        // Rechercher
+        $('#searchBtn').on('click', function() {
+            if (!currentSearchType) {
+                alert('Veuillez sélectionner un type de recherche');
+                return;
             }
 
-            // clique sur nb présent / absent => affiche les dates
-            $(document).on("click", ".present-count, .absent-count", function () {
-                const $td = $(this);
-                const dates = $td.data("dates") || [];
-                const $row = $td.closest("tr");
-                const $detailsRow = $row.next(".details-row");
-                const $container = $detailsRow.find(".dates-list");
+            const startDate = $('#startDate').val();
+            const endDate = $('#endDate').val();
+            const searchTerm = $('#searchToggle').is(':checked') ? $('#searchInput').val() : '';
 
-                if (dates.length === 0) {
-                    $container.html("<div class='small-muted'>Aucune séance</div>");
-                } else {
-                    $container.html("<ul class='mb-0'>" + dates.map(d => `<li>${d}</li>`).join("") + "</ul>");
+            if (!startDate || !endDate) {
+                alert('Veuillez sélectionner les dates de début et fin');
+                return;
+            }
+
+            performSearch(startDate, endDate, searchTerm);
+        });
+
+        function performSearch(startDate, endDate, searchTerm) {
+            $('#loadingSpinner').show();
+            $('#resultsContent').empty();
+            $('#resultsSection').addClass('visible');
+
+            const requestData = {
+                type: currentSearchType,
+                start_date: startDate,
+                end_date: endDate,
+                search_term: searchTerm
+            };
+
+            $.ajax({
+                url: `${API_BASE_URL}/presences/search`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(requestData),
+                success: function(response) {
+                    displayResults(response.data || []);
+                    $('#loadingSpinner').hide();
+                    $('#exportBtn').prop('disabled', false);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erreur lors de la recherche:', error);
+                    showError('Erreur serveur. Veuillez réessayer plus tard.');
+                    $('#loadingSpinner').hide();
                 }
-                $detailsRow.toggle();
+            });
+        }
+
+        function displayResults(data) {
+            searchResults = data;
+            $('#resultsCount').text(`${data.length} résultat(s)`);
+
+            if (data.length === 0) {
+                $('#resultsContent').html(`
+                    <div class="empty-state">
+                        <i class="fas fa-search empty-icon"></i>
+                        <p>Aucun résultat trouvé pour les critères sélectionnés</p>
+                    </div>
+                `);
+                return;
+            }
+
+            let tableHtml = `
+                <div class="table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+            `;
+
+            if (currentSearchType === 'adherent') {
+                tableHtml += `
+                    <th>Matricule</th>
+                    <th>Nom</th>
+                    <th>Prénom</th>
+                    <th>Présences</th>
+                `;
+            } else if (currentSearchType === 'entraineur') {
+                tableHtml += `
+                    <th>Nom</th>
+                    <th>Présences</th>
+                `;
+            } else if (currentSearchType === 'groupe') {
+                tableHtml += `
+                    <th>Nom du Groupe</th>
+                    <th>Présences</th>
+                `;
+            }
+
+            tableHtml += `
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            data.forEach(item => {
+                let presentCount = 0;
+                let absentCount = 0;
+                let attendanceHtml = '';
+
+                if (item.sessions && item.sessions.length > 0) {
+                    item.sessions.forEach(session => {
+                        const isPresent = (session.est_present && session.est_present === 'O');
+                        if (isPresent) {
+                            presentCount++;
+                        } else {
+                            absentCount++;
+                        }
+
+                        const date = new Date(session.date_seance);
+                        const day = date.getDate();
+                        const month = date.getMonth() + 1;
+
+                        attendanceHtml += `
+                            <div class="attendance-day ${isPresent ? 'present' : 'absent'}" 
+                                 title="${session.date_seance} - ${isPresent ? 'Présent' : 'Absent'}">
+                                ${day}/${month}
+                            </div>
+                        `;
+                    });
+                }
+
+                tableHtml += '<tr>';
+
+                if (currentSearchType === 'adherent') {
+                    tableHtml += `
+                        <td><strong>${item.matricule || 'N/A'}</strong></td>
+                        <td><strong>${item.nom || 'N/A'}</strong></td>
+                        <td>${item.prenom || 'N/A'}</td>
+                    `;
+                } else if (currentSearchType === 'entraineur') {
+                    tableHtml += `
+                        <td><strong>${item.nom || 'N/A'}</strong></td>
+                    `;
+                } else if (currentSearchType === 'groupe') {
+                    tableHtml += `
+                        <td><strong>${item.nom || 'N/A'}</strong></td>
+                    `;
+                }
+
+                tableHtml += `
+                    <td>
+                        <div class="stats-summary">
+                            <div class="stat-card present">
+                                <div class="stat-number">${presentCount}</div>
+                                <div class="stat-label">Présent(e)</div>
+                            </div>
+                            <div class="stat-card absent">
+                                <div class="stat-number">${absentCount}</div>
+                                <div class="stat-label">Absent(e)</div>
+                            </div>
+                        </div>
+                        <div class="attendance-grid">
+                            ${attendanceHtml}
+                        </div>
+                    </td>
+                </tr>
+                `;
             });
 
-            // initial load
-            loadData();
+            tableHtml += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            $('#resultsContent').html(tableHtml);
+        }
+
+        function showError(message) {
+            $('#resultsContent').html(`
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    ${message}
+                </div>
+            `);
+        }
+
+        // Export Excel
+        $('#exportBtn').on('click', function() {
+            if (searchResults.length === 0) return;
+
+            const params = new URLSearchParams({
+                type: currentSearchType,
+                start_date: $('#startDate').val(),
+                end_date: $('#endDate').val(),
+                search_term: $('#searchToggle').is(':checked') ? $('#searchInput').val() : ''
+            });
+
+            window.open(`${API_BASE_URL}/presences/export?${params.toString()}`, '_blank');
         });
 
-        // Export XLSX
-        $("#btnExport").on("click", function () {
-            const searchTerm = $("#searchInput").val().trim();
-            const url = `/export_presence_xlsx?search_term=${encodeURIComponent(searchTerm)}&type=${encodeURIComponent(currentType)}`;
-            window.open(url, "_blank");
-        });
-    </script>
+        // Dates par défaut
+        const today = new Date();
+        const oneMonthAgo = new Date(today);
+        oneMonthAgo.setMonth(today.getMonth() - 1);
 
+        $('#endDate').val(today.toISOString().split('T')[0]);
+        $('#startDate').val(oneMonthAgo.toISOString().split('T')[0]);
+    });
+</script>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+<!-- Template Javascript -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

@@ -1002,33 +1002,6 @@ class SituationTerrains {
 
     
 
-    showError(message) {
-        let notification = document.getElementById('error-notification');
-        if (!notification) {
-            notification = document.createElement('div');
-            notification.id = 'error-notification';
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background-color: #ff4444;
-                color: white;
-                padding: 15px;
-                border-radius: 5px;
-                z-index: 1000;
-                opacity: 0;
-                transition: opacity 0.3s ease;
-            `;
-            document.body.appendChild(notification);
-        }
-
-        notification.textContent = message;
-        notification.style.opacity = '1';
-
-        setTimeout(() => {
-            notification.style.opacity = '0';
-        }, 3000);
-    }
 }
 
 // Initialisation

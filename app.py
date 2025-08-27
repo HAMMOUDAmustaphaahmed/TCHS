@@ -4510,8 +4510,429 @@ def delete_depense(id):
 
 
 
+from flask import request, jsonify, send_file
+from sqlalchemy import func, and_, or_, cast, String, extract
+from datetime import datetime, timedelta
+import io
+import pandas as pd
+from collections import defaultdict
+import xlsxwriter
 
+@app.route('/api/presences/search', methods=['POST'])
+def search_presences():
+    """
+    Recherche les présences selon les critères spécifiés pour le dashboard
+    """
+    try:
+        data = request.get_json()
+        
+        # Validation des paramètres requis
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'Aucune donnée fournie'
+            }), 400
+            
+        search_type = data.get('type')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        search_term = data.get('search_term', '').strip()
+        
+        # Validation des paramètres
+        if not all([search_type, start_date, end_date]):
+            return jsonify({
+                'status': 'error',
+                'message': 'Type de recherche, date de début et date de fin sont requis'
+            }), 400
+            
+        if search_type not in ['adherent', 'entraineur', 'groupe']:
+            return jsonify({
+                'status': 'error',
+                'message': 'Type de recherche invalide'
+            }), 400
+        
+        # Conversion des dates
+        try:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({
+                'status': 'error',
+                'message': 'Format de date invalide. Utilisez YYYY-MM-DD'
+            }), 400
+            
+        # Validation de la période
+        if start_date > end_date:
+            return jsonify({
+                'status': 'error',
+                'message': 'La date de début doit être antérieure à la date de fin'
+            }), 400
+        
+        # Recherche selon le type
+        if search_type == 'adherent':
+            results = search_adherent_presences(start_date, end_date, search_term)
+        elif search_type == 'entraineur':
+            results = search_entraineur_presences(start_date, end_date, search_term)
+        elif search_type == 'groupe':
+            results = search_groupe_presences(start_date, end_date, search_term)
+        
+        return jsonify({
+            'status': 'success',
+            'data': results,
+            'count': len(results)
+        })
+        
+    except Exception as e:
+        print("Erreur backend:", e)
+        traceback.print_exc()  # 👈 voir l'erreur réelle dans la console Flask
+        return jsonify({
+            'status': 'error',
+            'message': f'Erreur lors de la recherche: {str(e)}'
+        }), 500
 
+def search_adherent_presences(start_date, end_date, search_term):
+    """
+    Recherche les présences des adhérents
+    """
+    # Query pour récupérer les adhérents
+    query = Adherent.query
+    
+    if search_term:
+        like_pattern = f"%{search_term}%"
+        query = query.filter(or_(
+            Adherent.nom.ilike(like_pattern),
+            Adherent.prenom.ilike(like_pattern),
+            cast(Adherent.matricule, String).ilike(like_pattern)
+        ))
+    
+    adherents = query.order_by(Adherent.nom, Adherent.prenom).all()
+    
+    results = []
+    for adherent in adherents:
+        # Récupérer les présences pour cet adhérent dans la période
+        presences = Presence.query.filter(
+            and_(
+                Presence.adherent_matricule == str(adherent.matricule),
+                Presence.date_seance >= start_date,
+                Presence.date_seance <= end_date
+            )
+        ).order_by(Presence.date_seance).all()
+        
+        # Formatter les sessions
+        sessions = []
+        for presence in presences:
+            sessions.append({
+                'date_seance': presence.date_seance.strftime('%Y-%m-%d'),
+                'heure_debut': presence.heure_debut.strftime('%H:%M'),
+                'groupe_nom': presence.groupe_nom,
+                'entraineur_nom': presence.entraineur_nom,
+                'est_present': presence.est_present
+            })
+        
+        # Calculer les statistiques
+        nb_present = sum(1 for p in presences if p.est_present == 'O')
+        nb_absent = sum(1 for p in presences if p.est_present == 'N')
+        
+        results.append({
+            'matricule': adherent.matricule,
+            'nom': adherent.nom,
+            'prenom': adherent.prenom,
+            'sessions': sessions,
+            'nb_present': nb_present,
+            'nb_absent': nb_absent,
+            'total_sessions': len(sessions)
+        })
+    
+    return results
+
+def search_entraineur_presences(start_date, end_date, search_term):
+    """
+    Recherche les présences des entraîneurs
+    """
+    # Query pour récupérer les entraîneurs
+    query = Entraineur.query
+    
+    if search_term:
+        like_pattern = f"%{search_term}%"
+        query = query.filter(or_(
+            Entraineur.nom.ilike(like_pattern),
+            Entraineur.prenom.ilike(like_pattern)
+        ))
+    
+    entraineurs = query.order_by(Entraineur.nom, Entraineur.prenom).all()
+    
+    results = []
+    for entraineur in entraineurs:
+        full_name = f"{entraineur.nom} {entraineur.prenom}"
+        
+        # Récupérer les présences pour cet entraîneur dans la période
+        presences = Presence_Entraineur.query.filter(
+            and_(
+                Presence_Entraineur.entraineur_nom == full_name,
+                Presence_Entraineur.date_seance >= start_date,
+                Presence_Entraineur.date_seance <= end_date
+            )
+        ).order_by(Presence_Entraineur.date_seance).all()
+        
+        # Formatter les sessions
+        sessions = []
+        for presence in presences:
+            sessions.append({
+                'date_seance': presence.date_seance.strftime('%Y-%m-%d'),
+                'heure_debut': presence.heure_debut.strftime('%H:%M'),
+                'groupe_nom': presence.groupe_nom,
+                'est_present': presence.est_present
+            })
+        
+        # Calculer les statistiques
+        nb_present = sum(1 for p in presences if p.est_present == 'O')
+        nb_absent = sum(1 for p in presences if p.est_present == 'N')
+        
+        results.append({
+            'nom': f"{entraineur.nom} {entraineur.prenom}",
+            'sessions': sessions,
+            'nb_present': nb_present,
+            'nb_absent': nb_absent,
+            'total_sessions': len(sessions)
+        })
+    
+    return results
+
+def search_groupe_presences(start_date, end_date, search_term):
+    """
+    Recherche les présences par groupe
+    """
+    # Query pour récupérer les groupes
+    query = Groupe.query
+
+    if search_term:
+        like_pattern = f"%{search_term}%"
+        query = query.filter(Groupe.nom_groupe.ilike(like_pattern))
+
+    groupes = query.order_by(Groupe.nom_groupe).all()
+
+    results = []
+    for groupe in groupes:
+        # Récupérer les présences des adhérents pour ce groupe dans la période
+        presences_adherents = Presence.query.filter(
+            and_(
+                Presence.groupe_nom == groupe.nom_groupe,
+                Presence.date_seance >= start_date,
+                Presence.date_seance <= end_date
+            )
+        ).order_by(Presence.date_seance).all()
+
+        # Récupérer les présences des entraîneurs pour ce groupe dans la période
+        presences_entraineurs = Presence_Entraineur.query.filter(
+            and_(
+                Presence_Entraineur.groupe_nom == groupe.nom_groupe,
+                Presence_Entraineur.date_seance >= start_date,
+                Presence_Entraineur.date_seance <= end_date
+            )
+        ).order_by(Presence_Entraineur.date_seance).all()
+
+        # Combiner les sessions
+        sessions = []
+
+        # Sessions d'adhérents
+        for presence in presences_adherents:
+            sessions.append({
+                'date_seance': presence.date_seance.strftime('%Y-%m-%d') if presence.date_seance else '',
+                'heure_debut': presence.heure_debut.strftime('%H:%M') if presence.heure_debut else '',
+                'type': 'adherent',
+                'participant': str(presence.adherent_matricule or ''),
+                'entraineur_nom': presence.entraineur_nom or '',
+                'est_present': presence.est_present or 'N'
+            })
+
+        # Sessions d'entraîneurs
+        for presence in presences_entraineurs:
+            sessions.append({
+                'date_seance': presence.date_seance.strftime('%Y-%m-%d') if presence.date_seance else '',
+                'heure_debut': presence.heure_debut.strftime('%H:%M') if presence.heure_debut else '',
+                'type': 'entraineur',
+                'participant': presence.entraineur_nom or '',
+                'entraineur_nom': presence.entraineur_nom or '',
+                'est_present': presence.est_present or 'N'
+            })
+
+        # Trier par date
+        sessions.sort(key=lambda x: x['date_seance'])
+
+        # Calculer les statistiques
+        nb_present = sum(1 for s in sessions if s['est_present'] == 'O')
+        nb_absent = sum(1 for s in sessions if s['est_present'] == 'N')
+
+        results.append({
+            'nom': groupe.nom_groupe,
+            'sessions': sessions,
+            'nb_present': nb_present,
+            'nb_absent': nb_absent,
+            'total_sessions': len(sessions)
+        })
+
+    return results
+
+@app.route('/api/presences/export', methods=['GET'])
+def export_presences():
+    """
+    Export des présences en format Excel
+    """
+    try:
+        # Récupérer les paramètres
+        search_type = request.args.get('type')
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        search_term = request.args.get('search_term', '')
+        
+        if not all([search_type, start_date, end_date]):
+            return jsonify({'error': 'Paramètres manquants'}), 400
+        
+        # Conversion des dates
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        
+        # Récupérer les données
+        if search_type == 'adherent':
+            data = search_adherent_presences(start_date, end_date, search_term)
+        elif search_type == 'entraineur':
+            data = search_entraineur_presences(start_date, end_date, search_term)
+        elif search_type == 'groupe':
+            data = search_groupe_presences(start_date, end_date, search_term)
+        else:
+            return jsonify({'error': 'Type invalide'}), 400
+        
+        # Créer le fichier Excel
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        
+        # Styles
+        header_format = workbook.add_format({
+            'bold': True,
+            'bg_color': '#4472C4',
+            'font_color': 'white',
+            'border': 1
+        })
+        
+        present_format = workbook.add_format({
+            'bg_color': '#C6EFCE',
+            'font_color': '#006100',
+            'border': 1
+        })
+        
+        absent_format = workbook.add_format({
+            'bg_color': '#FFC7CE',
+            'font_color': '#9C0006',
+            'border': 1
+        })
+        
+        cell_format = workbook.add_format({'border': 1})
+        
+        # Créer les feuilles selon le type
+        if search_type == 'adherent':
+            create_adherent_sheet(workbook, data, header_format, present_format, absent_format, cell_format)
+        elif search_type == 'entraineur':
+            create_entraineur_sheet(workbook, data, header_format, present_format, absent_format, cell_format)
+        elif search_type == 'groupe':
+            create_groupe_sheet(workbook, data, header_format, present_format, absent_format, cell_format)
+        
+        workbook.close()
+        output.seek(0)
+        
+        filename = f'presences_{search_type}_{start_date}_{end_date}.xlsx'
+        
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        return jsonify({'error': f'Erreur lors de l\'export: {str(e)}'}), 500
+
+def create_adherent_sheet(workbook, data, header_format, present_format, absent_format, cell_format):
+    """Créer la feuille Excel pour les adhérents"""
+    worksheet = workbook.add_worksheet('Adhérents')
+    
+    # En-têtes
+    headers = ['Matricule', 'Nom', 'Prénom', 'Date', 'Heure', 'Groupe', 'Entraîneur', 'Présence']
+    for col, header in enumerate(headers):
+        worksheet.write(0, col, header, header_format)
+    
+    row = 1
+    for adherent in data:
+        for session in adherent['sessions']:
+            worksheet.write(row, 0, adherent['matricule'], cell_format)
+            worksheet.write(row, 1, adherent['nom'], cell_format)
+            worksheet.write(row, 2, adherent['prenom'], cell_format)
+            worksheet.write(row, 3, session['date_seance'], cell_format)
+            worksheet.write(row, 4, session['heure_debut'], cell_format)
+            worksheet.write(row, 5, session['groupe_nom'], cell_format)
+            worksheet.write(row, 6, session['entraineur_nom'], cell_format)
+            
+            presence_text = 'Présent' if session['est_present'] == 'O' else 'Absent'
+            presence_format = present_format if session['est_present'] == 'O' else absent_format
+            worksheet.write(row, 7, presence_text, presence_format)
+            
+            row += 1
+    
+    # Ajuster la largeur des colonnes
+    worksheet.set_column('A:H', 15)
+
+def create_entraineur_sheet(workbook, data, header_format, present_format, absent_format, cell_format):
+    """Créer la feuille Excel pour les entraîneurs"""
+    worksheet = workbook.add_worksheet('Entraîneurs')
+    
+    # En-têtes
+    headers = ['Nom Entraîneur', 'Date', 'Heure', 'Groupe', 'Présence']
+    for col, header in enumerate(headers):
+        worksheet.write(0, col, header, header_format)
+    
+    row = 1
+    for entraineur in data:
+        for session in entraineur['sessions']:
+            worksheet.write(row, 0, entraineur['nom'], cell_format)
+            worksheet.write(row, 1, session['date_seance'], cell_format)
+            worksheet.write(row, 2, session['heure_debut'], cell_format)
+            worksheet.write(row, 3, session['groupe_nom'], cell_format)
+            
+            presence_text = 'Présent' if session['est_present'] == 'O' else 'Absent'
+            presence_format = present_format if session['est_present'] == 'O' else absent_format
+            worksheet.write(row, 4, presence_text, presence_format)
+            
+            row += 1
+    
+    # Ajuster la largeur des colonnes
+    worksheet.set_column('A:E', 15)
+
+def create_groupe_sheet(workbook, data, header_format, present_format, absent_format, cell_format):
+    """Créer la feuille Excel pour les groupes"""
+    worksheet = workbook.add_worksheet('Groupes')
+    
+    # En-têtes
+    headers = ['Groupe', 'Date', 'Heure', 'Type', 'Participant', 'Entraîneur', 'Présence']
+    for col, header in enumerate(headers):
+        worksheet.write(0, col, header, header_format)
+    
+    row = 1
+    for groupe in data:
+        for session in groupe['sessions']:
+            worksheet.write(row, 0, groupe['nom'], cell_format)
+            worksheet.write(row, 1, session['date_seance'], cell_format)
+            worksheet.write(row, 2, session['heure_debut'], cell_format)
+            worksheet.write(row, 3, session['type'], cell_format)
+            worksheet.write(row, 4, session['participant'], cell_format)
+            worksheet.write(row, 5, session.get('entraineur_nom', ''), cell_format)
+            
+            presence_text = 'Présent' if session['est_present'] == 'O' else 'Absent'
+            presence_format = present_format if session['est_present'] == 'O' else absent_format
+            worksheet.write(row, 6, presence_text, presence_format)
+            
+            row += 1
+    
+    # Ajuster la largeur des colonnes
+    worksheet.set_column('A:G', 15)
 
 
 

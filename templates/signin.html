@@ -68,14 +68,7 @@
                                 <label for="type_saison">Type de Saison</label>
                             </div>
                             
-                            <div class="form-floating mb-3">
-                                <select class="form-select" id="annee_saison" name="annee_saison">
-                                    {% for year in range(2010, 2100) %}
-                                        <option value="{{ year }}">{{ year }}</option>
-                                    {% endfor %}
-                                </select>
-                                <label for="annee_saison">Année</label>
-                            </div>
+                            
                             
                             <button type="submit" class="btn btn-primary py-3 w-100 mb-4">Se Connecter</button>
                         </form>
