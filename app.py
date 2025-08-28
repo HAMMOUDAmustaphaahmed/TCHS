@@ -1585,7 +1585,6 @@ def modifier_adherent(id):
     adherent = Adherent.query.get_or_404(id)
     
     # Générer le code saison par défaut pour les nouveaux adhérents
-    code_saison_defaut = generer_code_saison()
 
     if request.method == 'POST':
         adherent.nom = request.form['nom']
@@ -1600,7 +1599,6 @@ def modifier_adherent(id):
         adherent.entraineur = request.form['entraineur']
         adherent.email = request.form['email']
         adherent.status = request.form['status']
-        adherent.code_saison = request.form['code_saison']  # Nouveau champ
         
         db.session.commit()
         return redirect(url_for('gerer_adherent'))
@@ -1610,8 +1608,7 @@ def modifier_adherent(id):
     return render_template('modifier_adherent.html', 
                          adherent=adherent, 
                          entraineurs=entraineurs,
-                         nom_groupes=nom_groupes,
-                         code_saison_defaut=code_saison_defaut)
+                         nom_groupes=nom_groupes)
 
 @app.route('/supprimer_adherent/<int:id>', methods=['GET', 'POST'])
 def supprimer_adherent(id):
@@ -2594,17 +2591,13 @@ class Cotisation(db.Model):
     nom_cotisation = db.Column(db.String(100), nullable=False, unique=True)
     montant_cotisation = db.Column(db.Float, nullable=False)
 
-
 import os
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-
-
 from PIL import Image
 
 SAVE_DIR = "static/bons_paiements"  # Assurez-vous que ce dossier existe
-
 
 import fitz  # PyMuPDF
 
@@ -2680,9 +2673,11 @@ def generer_bon_paiement(matricule_adherent, montant_paye, type_paiement, code_s
         pix.save(png_filename)
         pdf_document.close()
     except Exception as e:
+        print(f"Erreur lors de la conversion PDF vers PNG: {e}")
+        # En cas d'échec de la conversion PNG, on retourne quand même le PDF
+        return pdf_filename, None
 
     return pdf_filename, png_filename
-
 
 import os
 from reportlab.lib.pagesizes import letter
@@ -3194,7 +3189,6 @@ def get_autres_paiements():
 @app.route('/api/autres-paiements', methods=['POST'])
 def add_autre_paiement():
     try:
-        
         # Create data dictionary from form data
         data = {
             'amount': float(request.form['amount']),
@@ -3234,6 +3228,7 @@ def add_autre_paiement():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
+
 @app.route('/api/autres-paiements/summary', methods=['GET'])
 def get_summary():
     try:
@@ -3596,8 +3591,6 @@ def check_terrain_availability():
         date_str = request.args.get('date')  # Format attendu: YYYY-MM-DD
         heure_debut_str = request.args.get('heure_debut')
         heure_fin_str = request.args.get('heure_fin')
-        
-      
 
         if not date_str or not heure_debut_str:
             return jsonify({'error': 'Date et heure de début requises'}), 400
@@ -3614,9 +3607,6 @@ def check_terrain_availability():
                 LocationTerrain.numero_terrain == terrain_num,
                 LocationTerrain.date_location == date_check
             ).all()
-
-          
-            for loc in locations:
 
             # Vérifier si une location chevauche l'horaire demandé
             location_conflict = any(
@@ -3679,6 +3669,7 @@ def check_terrain_availability():
     except Exception as e:
         return jsonify({'error': str(e)}), 500 
 
+
 @app.route('/api/terrains/stats')
 def get_terrain_stats():
     try:
@@ -3737,33 +3728,25 @@ def get_terrain_history():
         date_end = request.args.get('end_date')
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
-
         
-
         if not terrain_num:
             return jsonify({'error': 'Numéro de terrain requis'}), 400
 
         # Convertir les dates
         start_date = datetime.strptime(date_start, '%Y-%m-%d').date()
         end_date = datetime.strptime(date_end, '%Y-%m-%d').date()
-
-       
-
+        
         # Récupérer les locations
         locations = LocationTerrain.query.filter(
             LocationTerrain.numero_terrain == int(terrain_num),
             LocationTerrain.date_location.between(start_date, end_date)
         ).all()
 
-        for loc in locations:
-
         # Récupérer les séances
         seances = Seance.query.filter(
             Seance.terrain == int(terrain_num),
             Seance.date.between(start_date, end_date)
         ).all()
-
-        for seance in seances:
 
         # Combiner les résultats
         historique = []
@@ -3796,9 +3779,7 @@ def get_terrain_history():
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
         paginated_historique = historique[start_idx:end_idx]
-
-       
-
+        
         return jsonify({
             'historique': paginated_historique,
             'total': total,
@@ -3808,8 +3789,7 @@ def get_terrain_history():
 
     except Exception as e:
         import traceback
-        return jsonify({'error': str(e)}), 500
-
+        return jsonify({'error': str(e)}), 500 
 
 
 @app.route('/api/adherents/<groupe>')

@@ -39,7 +39,6 @@
 </head>
 
 <body>
-    <div class="container-xxl position-relative d-flex p-0" >
         
 
         <!-- Sidebar Start -->
@@ -62,129 +61,127 @@
             </nav>
             <!-- Navbar End -->
 
-                <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
+    <div class="row align-items-center justify-content-center" style="min-height: 100vh;">
+        <div class="col-12 col-sm-8">
+            <div class="p-4 bg-white shadow rounded">
+
+                <h3 class="text text-center mb-4">Modifier Adhérent</h3>
                 
-                    <div class="col-12 col-sm-8 ">
-                        
-                            
-                            <div class="d-flex align-items-center justify-content-between mb-3">
-                                <a href="{{ url_for('admin') }}">
-                                    <h3 class="text-primary text-center">TCHS.</h3>
-                                </a>
+                <form method="post" action="{{ url_for('modifier_adherent', id=adherent.adherent_id) }}">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="floatingInputNom" name="nom" placeholder="Nom" value="{{ adherent.nom }}" required>
+                                <label for="floatingInputNom">Nom</label>
                             </div>
-                            <form method="post" action="{{ url_for('modifier_adherent', id=adherent.adherent_id) }}">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <div class="form-floating mb-3">
-                                            <input type="text" class="form-control" id="floatingInputNom" name="nom" placeholder="Nom" value="{{ adherent.nom }}" required>
-                                            <label for="floatingInputNom">Nom</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-floating mb-3">
-                                            <input type="text" class="form-control" id="floatingInputPrenom" name="prenom" placeholder="Prénom" value="{{ adherent.prenom }}" required>
-                                            <label for="floatingInputPrenom">Prénom</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-floating mb-3">
-                                            <input type="date" class="form-control" id="floatingInputDateNaissance" name="date_naissance" placeholder="Date de Naissance" value="{{ adherent.date_naissance }}" required>
-                                            <label for="floatingInputDateNaissance">Date de Naissance</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-floating mb-3">
-                                            <input type="text" class="form-control" id="floatingInputTel1" name="tel1" placeholder="Téléphone 1" value="{{ adherent.tel1 }}">
-                                            <label for="floatingInputTel1">Téléphone 1</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-floating mb-3">
-                                            <input type="text" class="form-control" id="floatingInputTel2" name="tel2" placeholder="Téléphone 2" value="{{ adherent.tel2 }}">
-                                            <label for="floatingInputTel2">Téléphone 2</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-floating mb-3">
-                                            <select id="type_abonnement" name="type_abonnement" class="form-control" required>
-                                                <option value="" disabled>Type d'abonnement</option>
-                                                <option value="Loisir" {% if adherent.type_abonnement == 'Loisir' %}selected{% endif %}>Loisir</option>
-                                                <option value="Ecole" {% if adherent.type_abonnement == 'Ecole' %}selected{% endif %}>Ecole</option>
-                                                <option value="Compétitif" {% if adherent.type_abonnement == 'Compétitif' %}selected{% endif %}>Compétitif</option>
-                                                <option value="Pré-Compétitif" {% if adherent.type_abonnement == 'Pré-Compétitif' %}selected{% endif %}>Pré-Compétitif</option>
-                                                <option value="Ecole d'été" {% if adherent.type_abonnement == "Ecole d'été" %}selected{% endif %}>Ecole d'été</option>
-                                                <option value="Adulte" {% if adherent.type_abonnement == 'Adulte' %}selected{% endif %}>Adulte</option>
-                                                <option value="N/D" {% if adherent.type_abonnement == 'N/D' %}selected{% endif %}>N/D</option>
-                                            </select>
-                                            <label for="type_abonnement">Type d'abonnement</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-floating mb-3">
-                                            <select id="ancien_abonne" name="ancien_abonnee" class="form-control" required>
-                                                <option value="" disabled>Ancien Abonné</option>
-                                                <option value="Oui" {% if adherent.ancien_abonnee == 'Oui' %}selected{% endif %}>Oui</option>
-                                                <option value="Non" {% if adherent.ancien_abonnee == 'Non' %}selected{% endif %}>Non</option>
-                                            </select>
-                                            <label for="ancien_abonne">Ancien Abonné</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-floating mb-3">
-                                            <select class="form-select" id="floatingInputGroupe" name="groupe">
-                                                <option value="">Sélectionner un groupe</option>
-                                                {% for nom in nom_groupes %}
-                                                    <option value="{{ nom }}">{{ nom }}</option>
-                                                {% endfor %}
-                                            </select>
-                                            <label for="floatingInputGroupe">Groupe</label>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-6">
-                                        <div class="form-floating mb-3">
-                                            <select id="entraineur" name="entraineur" class="form-control" required>
-                                                <option value="" disabled>Entraîneur</option>
-                                                {% for e in entraineurs %}
-                                                <option value="{{ e.nom }} {{ e.prenom }}" {% if adherent.entraineur == e.nom + ' ' + e.prenom %}selected{% endif %}>{{ e.nom }} {{ e.prenom }}</option>
-                                                {% endfor %}
-                                            </select>
-                                            <label for="entraineur">Entraîneur</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-floating mb-3">
-                                            <input type="email" class="form-control" id="floatingInputEmail" name="email" placeholder="Email" value="{{ adherent.email }}">
-                                            <label for="floatingInputEmail">Email</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-floating mb-3">
-                                            <select id="sexe" name="sexe" class="form-control" required>
-                                                <option value="" disabled>Sexe</option>
-                                                <option value="M" {% if adherent.sexe == 'M' %}selected{% endif %}>Homme</option>
-                                                <option value="F" {% if adherent.sexe == 'F' %}selected{% endif %}>Femme</option>
-                                            </select>
-                                            <label for="sexe">Sexe</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-floating mb-3">
-                                            <select id="status" name="status" class="form-control" required>
-                                                <option value="" disabled>Status</option>
-                                                <option value="Actif" {% if adherent.status == 'Actif' %}selected{% endif %}>Actif</option>
-                                                <option value="Non-Actif" {% if adherent.status == 'Non-Actif' %}selected{% endif %}>Non-Actif</option>
-                                            </select>
-                                            <label for="status">Status</label>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button type="submit" class="btn btn-primary py-3 w-100 mb-4">Confirmer</button>
-                            </form>
-                            
-                    
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="floatingInputPrenom" name="prenom" placeholder="Prénom" value="{{ adherent.prenom }}" required>
+                                <label for="floatingInputPrenom">Prénom</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <input type="date" class="form-control" id="floatingInputDateNaissance" name="date_naissance" placeholder="Date de Naissance" value="{{ adherent.date_naissance }}" required>
+                                <label for="floatingInputDateNaissance">Date de Naissance</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="floatingInputTel1" name="tel1" placeholder="Téléphone 1" value="{{ adherent.tel1 }}">
+                                <label for="floatingInputTel1">Téléphone 1</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="floatingInputTel2" name="tel2" placeholder="Téléphone 2" value="{{ adherent.tel2 }}">
+                                <label for="floatingInputTel2">Téléphone 2</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <select id="type_abonnement" name="type_abonnement" class="form-control" required>
+                                    <option value="" disabled>Type d'abonnement</option>
+                                    <option value="Loisir" {% if adherent.type_abonnement == 'Loisir' %}selected{% endif %}>Loisir</option>
+                                    <option value="Ecole" {% if adherent.type_abonnement == 'Ecole' %}selected{% endif %}>Ecole</option>
+                                    <option value="Compétitif" {% if adherent.type_abonnement == 'Compétitif' %}selected{% endif %}>Compétitif</option>
+                                    <option value="Pré-Compétitif" {% if adherent.type_abonnement == 'Pré-Compétitif' %}selected{% endif %}>Pré-Compétitif</option>
+                                    <option value="Ecole d'été" {% if adherent.type_abonnement == "Ecole d'été" %}selected{% endif %}>Ecole d'été</option>
+                                    <option value="Adulte" {% if adherent.type_abonnement == 'Adulte' %}selected{% endif %}>Adulte</option>
+                                    <option value="N/D" {% if adherent.type_abonnement == 'N/D' %}selected{% endif %}>N/D</option>
+                                </select>
+                                <label for="type_abonnement">Type d'abonnement</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <select id="ancien_abonne" name="ancien_abonnee" class="form-control" required>
+                                    <option value="" disabled>Ancien Abonné</option>
+                                    <option value="Oui" {% if adherent.ancien_abonnee == 'Oui' %}selected{% endif %}>Oui</option>
+                                    <option value="Non" {% if adherent.ancien_abonnee == 'Non' %}selected{% endif %}>Non</option>
+                                </select>
+                                <label for="ancien_abonne">Ancien Abonné</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <select class="form-select" id="floatingInputGroupe" name="groupe">
+                                    <option value="">Sélectionner un groupe</option>
+                                    {% for nom in nom_groupes %}
+                                        <option value="{{ nom }}">{{ nom }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label for="floatingInputGroupe">Groupe</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <select id="entraineur" name="entraineur" class="form-control" required>
+                                    <option value="" disabled>Entraîneur</option>
+                                    {% for e in entraineurs %}
+                                    <option value="{{ e.nom }} {{ e.prenom }}" {% if adherent.entraineur == e.nom + ' ' + e.prenom %}selected{% endif %}>{{ e.nom }} {{ e.prenom }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label for="entraineur">Entraîneur</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <input type="email" class="form-control" id="floatingInputEmail" name="email" placeholder="Email" value="{{ adherent.email }}">
+                                <label for="floatingInputEmail">Email</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <select id="sexe" name="sexe" class="form-control" required>
+                                    <option value="" disabled>Sexe</option>
+                                    <option value="M" {% if adherent.sexe == 'M' %}selected{% endif %}>Homme</option>
+                                    <option value="F" {% if adherent.sexe == 'F' %}selected{% endif %}>Femme</option>
+                                </select>
+                                <label for="sexe">Sexe</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <select id="status" name="status" class="form-control" required>
+                                    <option value="" disabled>Status</option>
+                                    <option value="Actif" {% if adherent.status == 'Actif' %}selected{% endif %}>Actif</option>
+                                    <option value="Non-Actif" {% if adherent.status == 'Non-Actif' %}selected{% endif %}>Non-Actif</option>
+                                </select>
+                                <label for="status">Status</label>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                    <button type="submit" class="btn btn-primary py-3 w-100">Confirmer</button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+
 
 
             <!-- Footer Start -->
@@ -203,7 +200,7 @@
                 </div>
             </div>
             <!-- Footer End -->
-        </div>
+        
         <!-- Content End -->
 
 

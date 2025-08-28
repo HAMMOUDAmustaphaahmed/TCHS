@@ -53,50 +53,49 @@
                 
             </nav>
             <!-- Navbar End -->
-    <div class="container-xxl position-relative  d-flex p-0" >
         
 
 
         <!-- Sign In Start -->
-        <div class="container-fluid" style="background-image: url(https://www.clubautomation.com/wp-content/uploads/2024/02/blog_28.jpeg);">
-            <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
-                <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
-                    <div class=" rounded p-4 p-sm-5 my-4 mx-3">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <a href="{{ url_for('admin') }}">
-                                <h3 class="text-primary text-center">TCHS.</h3>
-                            </a>
-                            
-                            
-                        </div>
-                        <form method="post" action="{{ url_for('ajouter_utilisateur') }}">    
-                            
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="utilisateur" placeholder="Nom d'utilisateur" required>
-                                <label for="floatingInput">Utilisateur</label>
-                            </div>
-                            <div class="form-floating mb-4">
-                                <input type="password" class="form-control" name="password" placeholder="Password" required>
-                                <label for="floatingPassword">Mot de Passe</label>
-                            </div>
-                            <div class="form-floating mb-4">
-                                <select class="form-control" name="role" required>
-                                    <option value="admin">Admin</option>
-                                    <option value="directeur_technique">Directeur Technique</option>
-                                    <option value="cassier">Cassier</option>
-                                    <option value="finance">Agent Administratif</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="btn btn-primary py-3 w-100 mb-4">Ajouter l'Utilisateur</button>
-                        </form>
+    <div class="row align-items-center justify-content-center" style="min-height: 100vh; background-image: url('https://www.clubautomation.com/wp-content/uploads/2024/02/blog_28.jpeg');">
+        <div class="col-12 col-sm-8  ">
+            <div class="p-4 bg-white shadow rounded">
+
+                <h3 class="text text-center mb-4">Nouveau Utilisateur</h3>
+                
+                <form method="post" action="{{ url_for('ajouter_utilisateur') }}">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="floatingInputUser" name="utilisateur" placeholder="Nom d'utilisateur" required>
+                        <label for="floatingInputUser">Utilisateur</label>
                     </div>
-                </div>
-                        
+                    
+                    <div class="form-floating mb-3">
+                        <input type="password" class="form-control" id="floatingInputPassword" name="password" placeholder="Mot de Passe" required>
+                        <label for="floatingInputPassword">Mot de Passe</label>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <select class="form-control" id="floatingInputRole" name="role" required>
+                            <option value="" disabled selected>Sélectionner un rôle</option>
+                            <option value="admin">Admin</option>
+                            <option value="directeur_technique">Directeur Technique</option>
+                            <option value="cassier">Caissier</option>
+                            <option value="finance">Agent Administratif</option>
+                        </select>
+                        <label for="floatingInputRole">Rôle</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary py-3 w-100">Ajouter l'Utilisateur</button>
+                </form>
+
             </div>
         </div>
+    </div>
+
+
         
         <!-- Sign In End -->
-    </div>
+    
 </div>
 
 

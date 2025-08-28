@@ -33,13 +33,12 @@
 
 <body>
     {% include 'sidebar.html' %}
-        <div class="container-fluid bg-light">
-            <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
-                <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
+        <div class="content">
+            <div class="row  align-items-center justify-content-center" style="min-height: 100vh;">
+                <div class="col-12 col-sm-8 ">
                     <div class="p-4 bg-white shadow rounded">
-                        <a href="{{ url_for('admin') }}">
-                            <h3 class="text-primary text-center">TCHS.</h3>
-                        </a>
+                        
+                            <h3 class="text">Modifier Entraineur</h3>
                         <form method="post" action="{{ url_for('modifier_entraineur', id=entraineur.id_entraineur) }}">
                             <div class="form-floating mb-3">
                                 <input type="text" class="form-control" id="nom" name="nom" placeholder="Nom" value="{{ entraineur.nom }}" required>

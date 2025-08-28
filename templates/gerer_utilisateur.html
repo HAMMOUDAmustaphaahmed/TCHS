@@ -72,36 +72,35 @@
                 <div class="col-12 col-sm-8">
                     <div>
                         <div class="d-flex align-items-center justify-content-between mb-3">
-                            <a href="{{ url_for('admin') }}">
-                                <h3 class="text-primary text-center">TCHS.</h3>
-                            </a>
+                            
                         </div>
                         <form class="d-none d-md-flex">
                             <input id="searchInput" class="form-control border-1" type="search" placeholder="Rechercher un utilisateur" onkeyup="rechercherUtilisateur()">
                         </form>
-                        <div class="table-responsive">
-                            <table id="UtilisateursTable" class="table text-start align-middle table-bordered table-hover mb-0 sortable">
-                                <thead>
-                                    <tr class="text-dark">
-                                        <th onclick="sortTable(0)">Utilisateur<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                        <th onclick="sortTable(1)">Rôle<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                        <th scope="col">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for utilisateur in utilisateurs %}
-                                    <tr>
-                                        <td>{{ utilisateur.utilisateur }}</td>
-                                        <td>{{ utilisateur.role }}</td>
-                                        <td>
-                                            <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_utilisateur', id=utilisateur.id) }}">Modifier</a>
-                                            <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_utilisateur', id=utilisateur.id) }}">Supprimer</a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                        <div class="table-responsive" style=" overflow-y: auto;">
+    <table id="UtilisateursTable" class="table text-start align-middle table-bordered table-hover mb-0 sortable" 
+           style="background: linear-gradient(135deg, #d4d6d5e3 0%, #ffffff 100%);">
+        <thead>
+            <tr class="text-dark" style="position: sticky; top: 0; background: linear-gradient(135deg, #d4d6d5e3 0%, #ffffff 100%);; z-index: 10;">
+                <th onclick="sortTable(0)">Utilisateur<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(1)">Rôle<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for utilisateur in utilisateurs %}
+            <tr>
+                <td>{{ utilisateur.utilisateur }}</td>
+                <td>{{ utilisateur.role }}</td>
+                <td>
+                    <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_utilisateur', id=utilisateur.id) }}">Modifier</a>
+                    <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_utilisateur', id=utilisateur.id) }}">Supprimer</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
                     </div>
                 </div>
             </div>

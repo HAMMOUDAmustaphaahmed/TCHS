@@ -262,56 +262,56 @@ document.addEventListener('DOMContentLoaded', function() {
                             <form class="d-none d-md-flex ">
                                 <input id="searchInput" class="form-control border-1" type="search" placeholder="Rechercher un adhérent" onkeyup="rechercherAdherent()">
                             </form>
-                            <div class="table-responsive">
-                                <table id="AdherentsTable" class="table text-start align-middle table-bordered table-hover mb-0 sortable">
-                                    <thead>
-                                        <tr class="text-dark">
-                                            <th onclick="sortTable(0)">Status<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                            <th onclick="sortTable(1)">Matricule<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                            <th onclick="sortTable(2)">Nom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                            <th onclick="sortTable(3)">Prénom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                            <th onclick="sortTable(4)">Date de Naissance<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                            <th onclick="sortTable(5)">Sexe<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                            <th onclick="sortTable(6)">Téléphone 1<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                            <th onclick="sortTable(7)">Téléphone 2<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                            <th onclick="sortTable(8)">Type d'abonnement<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                            <th onclick="sortTable(9)">Date d'Inscription<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                            <th onclick="sortTable(10)">Groupe<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                            <th onclick="sortTable(11)">Entraîneur<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                            <th onclick="sortTable(12)">Payé<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                            <th scope="col">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    
-                                    <tbody>
-                                        {% for adherent in adherents %}
-                                        <tr>
-                                            <td> {% if adherent.status == 'Actif' %} 
-                                                <span class="status-actif"></span> 
-                                                {% else %} <span class="status-non-actif"></span> 
-                                                {% endif %} 
-                                            </td>
-                                            <td>{{ adherent.matricule }}</td>
-                                            <td>{{ adherent.nom }}</td>
-                                            <td>{{ adherent.prenom }}</td>
-                                            <td>{{ adherent.date_naissance }}</td>
-                                            <td>{{ adherent.sexe }}</td>
-                                            <td>{{ adherent.tel1 }}</td>
-                                            <td>{{ adherent.tel2 }}</td>
-                                            <td>{{ adherent.type_abonnement }}</td>
-                                            <td>{{ adherent.date_inscription }}</td>
-                                            <td>{{ adherent.groupe }}</td>
-                                            <td>{{ adherent.entraineur }}</td>
-                                            <td>{{ adherent.paye }}</td>
-                                            <td>
-                                                <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_adherent', id=adherent.adherent_id) }}">Modifier</a>
-                                                <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_adherent', id=adherent.adherent_id) }}">Supprimer</a>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
+                            <div class="table-responsive" style=" overflow-y: auto;">
+    <table id="AdherentsTable" class="table text-start align-middle table-bordered table-hover mb-0 sortable" style="background: linear-gradient(135deg, #d4d6d5e3 0%, #ffffff 100%);">
+        <thead>
+            <tr class="text-dark" style="position: sticky; top: 0; background: linear-gradient(135deg, #d4d6d5e3 0%, #ffffff 100%); z-index: 10;">
+                <th onclick="sortTable(0)">Status<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(1)">Matricule<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(2)">Nom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(3)">Prénom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(4)">Date de Naissance<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(5)">Sexe<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(6)">Téléphone 1<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(7)">Téléphone 2<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(8)">Type d'abonnement<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(9)">Date d'Inscription<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(10)">Groupe<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(11)">Entraîneur<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(12)">Payé<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        
+        <tbody>
+            {% for adherent in adherents %}
+            <tr>
+                <td> {% if adherent.status == 'Actif' %} 
+                    <span class="status-actif"></span> 
+                    {% else %} <span class="status-non-actif"></span> 
+                    {% endif %} 
+                </td>
+                <td>{{ adherent.matricule }}</td>
+                <td>{{ adherent.nom }}</td>
+                <td>{{ adherent.prenom }}</td>
+                <td>{{ adherent.date_naissance }}</td>
+                <td>{{ adherent.sexe }}</td>
+                <td>{{ adherent.tel1 }}</td>
+                <td>{{ adherent.tel2 }}</td>
+                <td>{{ adherent.type_abonnement }}</td>
+                <td>{{ adherent.date_inscription }}</td>
+                <td>{{ adherent.groupe }}</td>
+                <td>{{ adherent.entraineur }}</td>
+                <td>{{ adherent.paye }}</td>
+                <td>
+                    <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_adherent', id=adherent.adherent_id) }}">Modifier</a>
+                    <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_adherent', id=adherent.adherent_id) }}">Supprimer</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
                             
                         </div>
                     

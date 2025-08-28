@@ -33,55 +33,53 @@
 
 <body>
     {% include 'sidebar.html' %}
-    <div class="container-xxl position-relative bg-white d-flex p-0">
+   
         <!-- Sign In Start -->
-        <div class="container-fluid bg-light" >
-            <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
-                <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
-                    <div class="">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <a href="{{ url_for('admin') }}">
-                                <h3 class="text-primary text-center">TCHS.</h3>
-                            </a>
-                        </div>
-                        <form method="post" action="{{ url_for('modifier_utilisateur', id=utilisateur.id) }}">
-                            <div class="row">
-                                <div class="col-6">
-                                    <div class="form-floating mb-3">
-                                        <input type="text" class="form-control" id="floatingInputUtilisateur" name="utilisateur" placeholder="Utilisateur" value="{{ utilisateur.utilisateur }}" required>
-                                        <label for="floatingInputUtilisateur">Utilisateur</label>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="form-floating mb-3">
-                                        <input type="password" class="form-control" id="floatingInputPassword" name="password" placeholder="" required>
-                                        <label for="floatingInputPassword">Password</label>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="form-floating mb-3">
-                                        <select id="role" name="role" class="form-control" required>
-                                            <option value="" disabled>Role</option>
-                                            <option value="admin" {% if utilisateur.role == 'admin' %}selected{% endif %}>admin</option>
-                                            <option value="directeur_technique" {% if utilisateur.role == 'directeur_technique' %}selected{% endif %}>Directeur Technique</option>
-                                            <option value="entraineur" {% if utilisateur.role == 'entraineur' %}selected{% endif %}>Entraineur</option>
-                                            <option value="finance" {% if utilisateur.role == 'finance' %}selected{% endif %}>Agent Administratif</option>
-                                            
-                                        </select>
-                                        <label for="role">Role</label>
-                                    </div>
-                                </div>
+        <div class="content">
+    <div class="row align-items-center justify-content-center" style="min-height: 100vh; background-image: url('https://www.clubautomation.com/wp-content/uploads/2024/02/blog_28.jpeg');">
+        <div class="col-12 col-sm-8 col-md-6 col-lg-5 ">
+            <div class="p-4 bg-white shadow rounded">
+
+                <h3 class="text text-center mb-4">Modifier Utilisateur</h3>
+                
+                <form method="post" action="{{ url_for('modifier_utilisateur', id=utilisateur.id) }}">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="floatingInputUtilisateur" name="utilisateur" placeholder="Utilisateur" value="{{ utilisateur.utilisateur }}" required>
+                                <label for="floatingInputUtilisateur">Utilisateur</label>
                             </div>
-                            <button type="submit" class="btn btn-primary py-3 w-100 mb-4">Confirmer</button>
-                        </form>
-                        
-                        
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating mb-3">
+                                <input type="password" class="form-control" id="floatingInputPassword" name="password" placeholder="Mot de passe" required>
+                                <label for="floatingInputPassword">Mot de Passe</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-floating mb-3">
+                                <select id="role" name="role" class="form-control" required>
+                                    <option value="" disabled>Rôle</option>
+                                    <option value="admin" {% if utilisateur.role == 'admin' %}selected{% endif %}>Admin</option>
+                                    <option value="directeur_technique" {% if utilisateur.role == 'directeur_technique' %}selected{% endif %}>Directeur Technique</option>
+                                    <option value="entraineur" {% if utilisateur.role == 'entraineur' %}selected{% endif %}>Entraîneur</option>
+                                    <option value="finance" {% if utilisateur.role == 'finance' %}selected{% endif %}>Agent Administratif</option>
+                                </select>
+                                <label for="role">Rôle</label>
+                            </div>
+                        </div>
                     </div>
-                </div>
+
+                    <button type="submit" class="btn btn-primary py-3 w-100">Confirmer</button>
+                </form>
+
             </div>
         </div>
-        <!-- Sign In End -->
     </div>
+</div>
+
+        <!-- Sign In End -->
+    
 
     <!-- JavaScript Libraries -->
     <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>

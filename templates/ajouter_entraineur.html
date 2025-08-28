@@ -58,71 +58,143 @@
 
 
         <!-- Sign In Start -->
-        <div class="container-fluid">     
-           <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
-                <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
-                    <div class=" rounded p-4 p-sm-5 my-4 mx-3">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <a href="{{ url_for('admin') }}">
-                                <h3 class="text-primary text-center">TCHS.</h3>
-                            </a>
-                            
-                            
-                        </div>
-                        <form method="post" action="{{ url_for('ajouter_entraineur') }}">    
-                            
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" name="nom" placeholder="Nom" required>
-                                <label for="floatingInput">Nom<span class="text-danger">*</span></label>
-                            </div>
-                            <div class="form-floating mb-4">
-                                <input type="text" class="form-control" name="prenom" placeholder="Prénom" required>
-                                <label for="floatingInput">Prénom<span class="text-danger">*</span></label>
-                            </div>
-                            <div class="form mb-4">
-                            <label for="sexe">Sexe<span class="text-danger">*</span></label>
+         <div class="container-fluid">     
+        <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
+            <div class="col-12 col-lg-8 col-xl-6">
+                <div class="form-container rounded p-4 p-sm-5 my-4 mx-3">
+                    <div class="d-flex align-items-center justify-content-center mb-4">
+                        <h2>Nouveau Entraineur</h2>
+                    </div>
+                    
+                    <form method="post" action="{{ url_for('ajouter_entraineur') }}">    
+                        <div class="row">
+                            <!-- Colonne de gauche -->
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" name="nom" id="nom" placeholder="Nom" required>
+                                    <label for="nom">Nom<span class="text-danger">*</span></label>
+                                </div>
+                                
+                                <div class="form mb-3">
+                                    <label for="sexe" class="form-label">Sexe<span class="text-danger">*</span></label>
                                     <select id="sexe" name="sexe" class="form-control" required>
-                                        <option value="" disabled selected></option>
+                                        <option value="" disabled selected>Sélectionner...</option>
                                         <option value="M">Homme</option>
                                         <option value="F">Femme</option>
                                     </select>
                                 </div>
-                                <div class="form-floating mb-4">
-                                    <input type="text" class="form-control" name="tel" placeholder="Téléphone" required>
-                                    <label for="floatingInput">Téléphone<span class="text-danger">*</span></label>
+                                
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" name="addresse" id="addresse" placeholder="Adresse" required>
+                                    <label for="addresse">Adresse<span class="text-danger">*</span></label>
                                 </div>
-                                <div class="form-floating mb-4">
-                                    <input type="text" class="form-control" name="addresse" placeholder="Addresse" required>
-                                    <label for="floatingInput">Adresse<span class="text-danger">*</span></label>
+                                
+                                <div class="form mb-3">
+                                    <label for="type_abonnement" class="form-label">Catégorie<span class="text-danger">*</span></label>
+                                    <select id="type_abonnement" name="type_abonnement" class="form-control" required>
+                                        <option value="" disabled selected>Sélectionner...</option>
+                                        <option value="Adjoint">Adjoint</option>
+                                        <option value="Directeur Technique">Directeur Technique</option>
+                                        <option value="Polyvalent">Polyvalent</option>
+                                        <option value="Loisir">Loisir</option>
+                                        <option value="Ecole">Ecole</option>
+                                        <option value="Compétitif">Compétitif</option>
+                                        <option value="Pré-Compétitif">Pré-Compétitif</option>
+                                        <option value="Ecole d'été">Ecole d'été</option>
+                                        <option value="Adulte">Adulte</option>
+                                        <option value="N/D">N/D</option>
+                                    </select>
                                 </div>
-                                <div class="form-floating mb-4">
-                                    <input type="text" class="form-control" name="compte_bancaire" placeholder="Compte Bancaire" required>
-                                    <label for="floatingInput">Compte Bancaire<span class="text-danger">*</span></label>
-                                </div>
-                            <div class="form mb-4">
-                                <label for="Catégorie">Catégorie<span class="text-danger">*</span></label>
-                                        <select id="type_abonnement" name="type_abonnement" class="form-control">
-                                            <option value="" disabled selected></option>
-                                            <option value="Adjoint">Adjoint</option>
-                                            <option value="Directeur Technique">Directeur Technique</option>
-                                            <option value="Polyvalent">Polyvalent</option>
-                                            <option value="Loisir">Loisir</option>
-                                            <option value="Ecole">Ecole</option>
-                                            <option value="Compétitif">Compétitif</option>
-                                            <option value="Pré-Compétitif">Pré-Compétitif</option>
-                                            <option value="Ecole d'été">Ecole d'été</option>
-                                            <option value="Adulte">Adulte</option>
-                                            <option value="N/D">N/D</option>
-                                        </select>
                             </div>
-                            <button type="submit" class="btn btn-primary py-3 w-100 mb-4">Ajouter l'Entraineur</button>
-                        </form>
-                    </div>
-                </div>
+                            
+                            <!-- Colonne de droite -->
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" name="prenom" id="prenom" placeholder="Prénom" required>
+                                    <label for="prenom">Prénom<span class="text-danger">*</span></label>
+                                </div>
+                                
+                                <div class="form-floating mb-3">
+                                    <input type="tel" class="form-control" name="tel" id="tel" placeholder="Téléphone" required>
+                                    <label for="tel">Téléphone<span class="text-danger">*</span></label>
+                                </div>
+                                
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" name="compte_bancaire" id="compte_bancaire" placeholder="Compte Bancaire" required>
+                                    <label for="compte_bancaire">Compte Bancaire<span class="text-danger">*</span></label>
+                                </div>
+                            </div>
+                        </div>
                         
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary py-3 w-100">
+                                    Ajouter l'Entraineur
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
+    </div>
+        <style>
+        body {
+            background: linear-gradient(135deg, #009CFF 0%, #009CFF 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
         
+        .form-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #e0e6ed;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #009CFF;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #009CFF 0%, #009CFF 100%);
+            border: none;
+            border-radius: 8px;
+            transition: transform 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .text-danger {
+            color: #dc3545 !important;
+        }
+        
+        h2 {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .form-floating label {
+            color: #6c757d;
+        }
+        
+        select.form-control {
+            padding: 12px;
+            height: calc(3.5rem + 2px);
+        }
+    </style>
         <!-- Sign In End -->
     
     </div>

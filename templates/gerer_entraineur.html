@@ -79,61 +79,57 @@
                         <form class="d-none d-md-flex">
                             <input id="searchInput" class="form-control border-1" type="search" placeholder="Rechercher un entraineur" onkeyup="rechercherEntraineur()">
                         </form>
-                        <div class="table-responsive">
-                            <table id="UtilisateursTable" class="table text-start align-middle table-bordered table-hover mb-0 sortable">
-                                <thead>
-                                    <tr class="text-dark">
-                                        <th onclick="sortTable(0)">Status<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                        <th onclick="sortTable(1)">Nom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                        <th onclick="sortTable(2)">Prénom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                        <th onclick="sortTable(3)">Sexe<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                        <th onclick="sortTable(4)">Catégorie<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                                        
-                                        <th scope="col">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <style>
-                                        /* Custom Styles for Status Indicator */
-                                        .status-actif {
-                                            height: 15px;
-                                            width: 15px;
-                                            background-color: green;
-                                            border-radius: 50%;
-                                            display: inline-block;
-                                        }
+                        <div class="table-responsive" style=" overflow-y: auto;">
+    <table id="UtilisateursTable" class="table text-start align-middle table-bordered table-hover mb-0 sortable" style="background: linear-gradient(135deg, #d4d6d5e3 0%, #ffffff 100%);">
+        <thead>
+            <tr class="text-dark" style="position: sticky; top: 0;  z-index: 10;">
+                <th onclick="sortTable(0)">Status<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(1)">Nom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(2)">Prénom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(3)">Sexe<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(4)">Catégorie<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <style>
+                /* Custom Styles for Status Indicator */
+                .status-actif {
+                    height: 15px;
+                    width: 15px;
+                    background-color: green;
+                    border-radius: 50%;
+                    display: inline-block;
+                }
 
-                                        .status-non-actif {
-                                            height: 15px;
-                                            width: 15px;
-                                            background-color: red;
-                                            border-radius: 50%;
-                                            display: inline-block;
-                                        }
-
-                                    </style>
-                                    {% for entraineur in entraineurs %}
-                                    <tr>
-                                        <td> {% if entraineur.status == 'Actif' %} 
-                                            <span class="status-actif"></span> 
-                                            {% else %} <span class="status-non-actif"></span> 
-                                            {% endif %} 
-                                        </td>
-                                        <td>{{ entraineur.nom }}</td>
-                                        <td>{{ entraineur.prenom }}</td>
-                                        <td>{{ entraineur.sexe }}</td>
-                                        <td>{{ entraineur.type_abonnement }}</td>
-                                        
-                                        
-                                        <td>
-                                            <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_entraineur', id=entraineur.id_entraineur) }}">Modifier</a>
-                                            <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_entraineur', id=entraineur.id_entraineur) }}">Supprimer</a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                .status-non-actif {
+                    height: 15px;
+                    width: 15px;
+                    background-color: red;
+                    border-radius: 50%;
+                    display: inline-block;
+                }
+            </style>
+            {% for entraineur in entraineurs %}
+            <tr>
+                <td> {% if entraineur.status == 'Actif' %}
+                     <span class="status-actif"></span>
+                     {% else %} <span class="status-non-actif"></span>
+                     {% endif %}
+                </td>
+                <td>{{ entraineur.nom }}</td>
+                <td>{{ entraineur.prenom }}</td>
+                <td>{{ entraineur.sexe }}</td>
+                <td>{{ entraineur.type_abonnement }}</td>
+                <td>
+                    <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_entraineur', id=entraineur.id_entraineur) }}">Modifier</a>
+                    <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_entraineur', id=entraineur.id_entraineur) }}">Supprimer</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
                     </div>
                 
             </div>
