@@ -88,13 +88,12 @@ def get_adherents_data():
         if all_adherents:
             first_adherent = all_adherents[0]
             available_columns = [column.name for column in first_adherent.__table__.columns]
-            print(f"Colonnes disponibles: {available_columns}")
+            
         
         # Créer la liste des adhérents avec leurs informations
         adherents_list = []
         for a in all_adherents:
-            # Debug: afficher les valeurs brutes
-            print(f"Adherent ID {getattr(a, 'id', 'N/A')}: type_abonnement='{getattr(a, 'type_abonnement', 'N/A')}', groupe='{getattr(a, 'groupe', 'N/A')}'")
+            
             
             # Récupération et nettoyage du type d'abonnement
             type_abonnement = getattr(a, 'type_abonnement', None)
@@ -166,7 +165,6 @@ def get_adherents_data():
         })
         
     except Exception as e:
-        print(f"Erreur dans get_adherents_data: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
@@ -382,11 +380,9 @@ def locations_terrains():
 
             # Validation des heures
             if heure_debut < time(8,0) or heure_fin > time(20,0):
-                print("Les heures doivent être entre 08:00 et 20:00", "danger")
                 return redirect(url_for('locations_terrains'))
 
             if heure_debut >= heure_fin:
-                print("L'heure de fin doit être après l'heure de début", "danger")
                 return redirect(url_for('locations_terrains'))
 
             # Vérification des conflits avec les séances
@@ -410,7 +406,6 @@ def locations_terrains():
             ).first()
 
             if conflit_seances or conflit_locations:
-                print("Conflit de réservation pour ce créneau", "danger")
                 return redirect(url_for('locations_terrains'))
 
             nouvelle_location = LocationTerrain(
@@ -424,11 +419,9 @@ def locations_terrains():
 
             db.session.add(nouvelle_location)
             db.session.commit()
-            print("Réservation enregistrée avec succès", "success")
 
         except Exception as e:
             db.session.rollback()
-            print(f"Erreur lors de la réservation : {str(e)}", "danger")
 
         return redirect(url_for('locations_terrains'))
 
@@ -1136,8 +1129,7 @@ def changer_mot_de_passe():
     data = request.get_json()
     nouveau_mot_de_passe = data.get('nouveau_mot_de_passe')
     confirmation_mot_de_passe = data.get('confirmation_mot_de_passe')
-    print(nouveau_mot_de_passe)
-    print(confirmation_mot_de_passe)
+   
 
     # Vérification des champs
     if not nouveau_mot_de_passe or not confirmation_mot_de_passe:
@@ -1148,14 +1140,12 @@ def changer_mot_de_passe():
 
     # Rechercher l'utilisateur par username
     user = User.query.filter_by(utilisateur=username).first()
-    print(user)
 
     if not user:
         return jsonify({"error": "Utilisateur introuvable."}), 404
 
     # Hachage du nouveau mot de passe
     hashed_password = hashlib.sha256(nouveau_mot_de_passe.encode()).hexdigest()
-    print(hashed_password)
 
     # Mettre à jour le mot de passe de l'utilisateur
     user.password = hashed_password
@@ -1657,14 +1647,7 @@ def ajouter_entraineur():
                 compte_bancaire=request.form.get('compte_bancaire'),
                 status='Actif',
             )
-            # Ajout de l'entraîneur dans la base de données
-            print('nouveau entraineur')
-            print(nouveau_entraineur)
-            
-            # Création de l'utilisateur
-            print('nouveau user')
-            print(nouveau_entraineur.nom)
-            print(nouveau_entraineur.prenom)
+           
 
             # Mot de passe par défaut pour l'entraîneur
             password = 'entraineur'
@@ -1674,14 +1657,12 @@ def ajouter_entraineur():
             user_prenom=user_prenom.replace(" ", "").lower()
             user = str(user_nom) + '.' + str(user_prenom)
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
-            print(f"Mot de passe haché : {hashed_password}")
 
             # Assignation du rôle
             role = 'entraineur'
 
             # Création de l'utilisateur associé à l'entraîneur
             new_utilisateur = User(utilisateur=user, password=hashed_password, role=role)
-            print(f"Utilisateur créé : {new_utilisateur}")
 
             # Ajout de l'utilisateur et de l'entraîneur à la base de données
             db.session.add(new_utilisateur)
@@ -1697,7 +1678,6 @@ def ajouter_entraineur():
         except Exception as e:
             db.session.rollback()  # Annule les modifications en cas d'erreur
             flash(f"Erreur lors de l'ajout de l'entraîneur ou de l'utilisateur : {str(e)}", 'danger')
-            print(f"Erreur : {str(e)}")
 
     return render_template('ajouter_entraineur.html')
 
@@ -2219,7 +2199,6 @@ def statistiques():
 
     mois = [result.date_format for result in collectes]
     montants_mois = [float(result.montant_total) for result in collectes]
-    print("Payment types:", types_paiement)
     return render_template(
         'statistiques.html',
         types_paiement=types_paiement,
@@ -2500,7 +2479,6 @@ def get_all_reservations():
 
     except Exception as e:
         import traceback
-        print(traceback.format_exc())
         return jsonify({"error": str(e)}), 400
 
 @app.route('/api/update_reservation_status', methods=['POST'])
@@ -2637,7 +2615,6 @@ def generer_bon_paiement(matricule_adherent, montant_paye, type_paiement, code_s
     # Récupérer les infos de l'adhérent depuis la base de données
     adherent = Adherent.query.filter_by(matricule=matricule_adherent).first()
     if not adherent:
-        print(f"Erreur : Aucun adhérent trouvé avec le matricule {matricule_adherent}")
         return
 
     nom_complet = f"{adherent.prenom} {adherent.nom}"
@@ -2703,7 +2680,6 @@ def generer_bon_paiement(matricule_adherent, montant_paye, type_paiement, code_s
         pix.save(png_filename)
         pdf_document.close()
     except Exception as e:
-        print(f"Erreur lors de la conversion en PNG : {str(e)}")
 
     return pdf_filename, png_filename
 
@@ -2758,10 +2734,7 @@ def get_totals_simple():
         .first()
     )
 
-    # Afficher les totaux
-    print(f"Total Montant: {results.total_montant:.2f}")
-    print(f"Total Montant Payé: {results.total_montant_paye:.2f}")
-    print(f"Total Montant Restant: {results.total_montant_reste:.2f}")
+    
 
 
 
@@ -2909,8 +2882,7 @@ def creer_tournoi():
     try:
         # Validation des données
         if int(data['qualifies_par_groupe']) > int(data['joueurs_par_groupe']):
-            print(int(data['qualifies_par_groupe']))
-            print(int(data['joueurs_par_groupe']))
+           
             return jsonify({'error': 'Le nombre de qualifiés ne peut pas dépasser le nombre de joueurs par groupe'}), 400
         
         nouveau_tournoi = Tournois(
@@ -3222,9 +3194,7 @@ def get_autres_paiements():
 @app.route('/api/autres-paiements', methods=['POST'])
 def add_autre_paiement():
     try:
-        print("Received form data:", request.form)
-        print("Received files:", request.files)
-
+        
         # Create data dictionary from form data
         data = {
             'amount': float(request.form['amount']),
@@ -3262,7 +3232,6 @@ def add_autre_paiement():
         return jsonify(new_transaction.to_dict()), 201
 
     except Exception as e:
-        print("Error adding transaction:", str(e))
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
 @app.route('/api/autres-paiements/summary', methods=['GET'])
@@ -3353,7 +3322,6 @@ def get_document(transaction_id, filename):
             
         return send_from_directory(folder_path, filename, as_attachment=True)
     except Exception as e:
-        print(f"Error serving document: {str(e)}")
         return jsonify({'error': 'Error serving document'}), 500
 
 
@@ -3540,7 +3508,6 @@ def get_paiement_summary():
             } for payment in daily_payments]
         })
     except Exception as e:
-        print(f"Error in get_paiement_summary: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/situation-paiement/transactions')
@@ -3610,7 +3577,6 @@ def get_paiement_transactions():
             } for t in transactions]
         })
     except Exception as e:
-        print(f"Error in get_paiement_transactions: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 
@@ -3631,10 +3597,7 @@ def check_terrain_availability():
         heure_debut_str = request.args.get('heure_debut')
         heure_fin_str = request.args.get('heure_fin')
         
-        print("Données reçues de l'utilisateur:")
-        print(f"date_str: {date_str}")
-        print(f"heure_debut_str: {heure_debut_str}")
-        print(f"heure_fin_str: {heure_fin_str}")
+      
 
         if not date_str or not heure_debut_str:
             return jsonify({'error': 'Date et heure de début requises'}), 400
@@ -3652,10 +3615,8 @@ def check_terrain_availability():
                 LocationTerrain.date_location == date_check
             ).all()
 
-            print(f"\nTerrain {terrain_num} - Date vérifiée: {date_check}")
-            print(f"Locations trouvées: {len(locations)}")
+          
             for loc in locations:
-                print(f"Location: date={loc.date_location}, {loc.heure_debut}-{loc.heure_fin}, {loc.locateur}")
 
             # Vérifier si une location chevauche l'horaire demandé
             location_conflict = any(
@@ -3716,7 +3677,6 @@ def check_terrain_availability():
 
         return jsonify(terrains_status)
     except Exception as e:
-        print(f"Erreur dans check_terrain_availability: {str(e)}")
         return jsonify({'error': str(e)}), 500 
 
 @app.route('/api/terrains/stats')
@@ -3778,10 +3738,7 @@ def get_terrain_history():
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
 
-        print(f"\nRequête historique reçue:")
-        print(f"Terrain: {terrain_num}")
-        print(f"Date début: {date_start}")
-        print(f"Date fin: {date_end}")
+        
 
         if not terrain_num:
             return jsonify({'error': 'Numéro de terrain requis'}), 400
@@ -3790,9 +3747,7 @@ def get_terrain_history():
         start_date = datetime.strptime(date_start, '%Y-%m-%d').date()
         end_date = datetime.strptime(date_end, '%Y-%m-%d').date()
 
-        print(f"Dates après conversion:")
-        print(f"Start: {start_date}")
-        print(f"End: {end_date}")
+       
 
         # Récupérer les locations
         locations = LocationTerrain.query.filter(
@@ -3800,9 +3755,7 @@ def get_terrain_history():
             LocationTerrain.date_location.between(start_date, end_date)
         ).all()
 
-        print(f"Locations trouvées: {len(locations)}")
         for loc in locations:
-            print(f"Location: {loc.date_location}, {loc.heure_debut}-{loc.heure_fin}, {loc.locateur}")
 
         # Récupérer les séances
         seances = Seance.query.filter(
@@ -3810,9 +3763,7 @@ def get_terrain_history():
             Seance.date.between(start_date, end_date)
         ).all()
 
-        print(f"Séances trouvées: {len(seances)}")
         for seance in seances:
-            print(f"Séance: {seance.date}, {seance.heure_debut}-{seance.heure_fin}, {seance.groupe}")
 
         # Combiner les résultats
         historique = []
@@ -3846,8 +3797,7 @@ def get_terrain_history():
         end_idx = start_idx + per_page
         paginated_historique = historique[start_idx:end_idx]
 
-        print(f"Nombre total d'entrées: {total}")
-        print(f"Entrées paginées: {len(paginated_historique)}")
+       
 
         return jsonify({
             'historique': paginated_historique,
@@ -3857,9 +3807,7 @@ def get_terrain_history():
         })
 
     except Exception as e:
-        print(f"Erreur dans get_terrain_history: {str(e)}")
         import traceback
-        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -4583,8 +4531,6 @@ def search_presences():
         })
         
     except Exception as e:
-        print("Erreur backend:", e)
-        traceback.print_exc()  # 👈 voir l'erreur réelle dans la console Flask
         return jsonify({
             'status': 'error',
             'message': f'Erreur lors de la recherche: {str(e)}'
