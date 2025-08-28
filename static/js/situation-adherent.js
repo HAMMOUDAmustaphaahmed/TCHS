@@ -1,17 +1,15 @@
 // situation-adherent.js
 class SituationAdherent {
     constructor() {
-        this.initializeSearchBox();
         this.currentAdherent = null;
+        this.initializeSearchBox();
         this.setupEventListeners();
     }
 
     initializeSearchBox() {
         $("#search-adherent").autocomplete({
             source: (request, response) => {
-                $.getJSON("/api/search-adherent", {
-                    term: request.term
-                }, (data) => {
+                $.getJSON("/api/search-adherent", { term: request.term }, (data) => {
                     response(data.map(item => ({
                         label: item.label,
                         value: item.matricule
@@ -28,16 +26,12 @@ class SituationAdherent {
     }
 
     setupEventListeners() {
-        // Close modal handler
-        $(".close-modal").click(() => {
-            $("#payment-modal").hide();
-        });
+        // Fermer le modal paiement
+        $(".close-modal").click(() => $("#payment-modal").hide());
 
-        // Close modal when clicking outside
+        // Fermer modal en cliquant à l’extérieur
         $(window).click((event) => {
-            if ($(event.target).hasClass('modal')) {
-                $(event.target).hide();
-            }
+            if ($(event.target).hasClass('modal')) $(event.target).hide();
         });
     }
 
@@ -45,117 +39,93 @@ class SituationAdherent {
         try {
             const response = await fetch(`/api/situation-adherent/${matricule}`);
             const data = await response.json();
-            
             if (!response.ok) throw new Error(data.error || 'Erreur lors du chargement');
-            
+
             this.currentAdherent = data;
             this.updateUI(data);
             $("#situation-content").fadeIn();
-            
         } catch (error) {
-            console.error('Error:', error);
-            alert('Erreur lors du chargement des données');
+            console.error('Erreur:', error);
+            alert('Erreur lors du chargement des données.');
         }
     }
 
     updateUI(data) {
-        // Update personal information
-        $("#matricule").text(data.adherent.matricule);
-        $("#nom").text(data.adherent.nom);
-        $("#prenom").text(data.adherent.prenom);
-        $("#date-naissance").text(new Date(data.adherent.date_naissance).toLocaleDateString());
-        $("#telephone").text(data.adherent.tel1 || '-');
-        $("#email").text(data.adherent.email);
+        const a = data.adherent;
+        const p = data.paiements;
+        const presences = data.presences;
+        const prochaine = data.prochaine_seance;
 
-        // Update subscription information
-        $("#type-abonnement").text(data.adherent.type_abonnement || '-');
-        $("#groupe").text(data.adherent.groupe || '-');
-        $("#entraineur").text(data.adherent.entraineur || '-');
-        $("#status").text(data.adherent.status)
+        // --- Infos personnelles ---
+        $("#matricule").text(a.matricule);
+        $("#nom").text(a.nom);
+        $("#prenom").text(a.prenom);
+        $("#date-naissance").text(new Date(a.date_naissance).toLocaleDateString());
+        $("#telephone").text(a.tel1 || "-");
+        $("#email").text(a.email || "-");
+
+        // --- Abonnement ---
+        $("#type-abonnement").text(a.type_abonnement || "-");
+        $("#groupe").text(a.groupe || "-");
+        $("#entraineur").text(a.entraineur || "-");
+        $("#status")
+            .text(a.status)
             .removeClass()
-            .addClass(data.adherent.status === 'Actif' ? 'text-success' : 'text-danger');
+            .addClass(a.status === 'Actif' ? 'text-success' : 'text-danger');
 
-        // Update payment information
-        $("#total-a-payer").text(`${data.paiements.total_a_payer.toFixed(2)} €`);
-        $("#total-paye").text(`${data.paiements.total_paye.toFixed(2)} €`);
-        $("#total-remise").text(`${data.paiements.total_remise.toFixed(2)} %`);
-        $("#reste-a-payer").text(`${data.paiements.reste_a_payer.toFixed(2)} €`)
+        // --- Paiement ---
+        $("#total-a-payer").text(p.total_a_payer.toFixed(2) + " €");
+        $("#total-paye").text(p.total_paye.toFixed(2) + " €");
+        $("#total-remise").text(p.total_remise.toFixed(2) + " %");
+        $("#reste-a-payer")
+            .text(p.reste_a_payer.toFixed(2) + " €")
             .removeClass()
-            .addClass(data.paiements.reste_a_payer > 0 ? 'text-danger' : 'text-success');
+            .addClass(p.reste_a_payer > 0 ? 'text-danger' : 'text-success');
 
-        // Update presence information
-        $("#total-presences").text(data.presences.total);
-        $("#presences").text(data.presences.present);
-        $("#absences").text(data.presences.absent);
+        // --- Présences ---
+        $("#total-presences").text(presences.total);
+        $("#presences").text(presences.present);
+        $("#absences").text(presences.absent);
 
-        // Update next session information
-        if (data.prochaine_seance) {
-            $("#prochaine-date").text(new Date(data.prochaine_seance.date).toLocaleDateString());
-            $("#prochaine-heure").text(data.prochaine_seance.heure);
-            $("#prochaine-groupe").text(data.prochaine_seance.groupe);
-        } else {
-            $("#prochaine-date, #prochaine-heure, #prochaine-groupe").text('-');
-        }
+        // --- Prochaine séance ---
+        $("#prochaine-date").text(prochaine?.date ? new Date(prochaine.date).toLocaleDateString() : "-");
+        $("#prochaine-heure").text(prochaine?.heure || "-");
+        $("#prochaine-groupe").text(prochaine?.groupe || "-");
     }
 
     showPaymentHistory() {
         if (!this.currentAdherent) return;
-
         const historique = this.currentAdherent.paiements.historique;
         const container = $(".payment-history-list");
-        
-        container.empty();
-        
-        historique.forEach(payment => {
+
+        container.empty(); // Important pour ne pas dupliquer
+
+        historique.forEach(p => {
             container.append(`
                 <div class="payment-item">
-                    <div class="payment-detail">
-                        <strong>Date:</strong> ${new Date(payment.date).toLocaleDateString()}
-                    </div>
-                    <div class="payment-detail">
-                        <strong>Montant:</strong> ${payment.montant.toFixed(2)} €
-                    </div>
-                    <div class="payment-detail">
-                        <strong>Payé:</strong> ${payment.montant_paye.toFixed(2)} €
-                    </div>
-                    <div class="payment-detail">
-                        <strong>Type:</strong> ${payment.type_reglement || '-'}
-                    </div>
-                    ${payment.numero_cheque ? `
-                        <div class="payment-detail">
-                            <strong>N° Chèque:</strong> ${payment.numero_cheque}
-                        </div>
-                    ` : ''}
-                    ${payment.banque ? `
-                        <div class="payment-detail">
-                            <strong>Banque:</strong> ${payment.banque}
-                        </div>
-                    ` : ''}
-                    <div class="payment-detail">
-                        <strong>N° Bon:</strong> ${payment.numero_bon}
-                    </div>
-                    <div class="payment-detail">
-                        <strong>N° Carnet:</strong> ${payment.numero_carnet}
-                    </div>
-                    ${payment.remise > 0 ? `
-                        <div class="payment-detail">
-                            <strong>Remise:</strong> ${payment.remise.toFixed(2)} €
-                        </div>
-                    ` : ''}
+                    <div class="payment-detail"><strong>Date:</strong> ${new Date(p.date).toLocaleDateString()}</div>
+                    <div class="payment-detail"><strong>Montant:</strong> ${p.montant.toFixed(2)} €</div>
+                    <div class="payment-detail"><strong>Payé:</strong> ${p.montant_paye.toFixed(2)} €</div>
+                    <div class="payment-detail"><strong>Type:</strong> ${p.type_reglement || '-'}</div>
+                    ${p.numero_cheque ? `<div class="payment-detail"><strong>N° Chèque:</strong> ${p.numero_cheque}</div>` : ''}
+                    ${p.banque ? `<div class="payment-detail"><strong>Banque:</strong> ${p.banque}</div>` : ''}
+                    <div class="payment-detail"><strong>N° Bon:</strong> ${p.numero_bon}</div>
+                    <div class="payment-detail"><strong>N° Carnet:</strong> ${p.numero_carnet}</div>
+                    ${p.remise > 0 ? `<div class="payment-detail"><strong>Remise:</strong> ${p.remise.toFixed(2)} €</div>` : ''}
                 </div>
             `);
         });
 
-        $("#payment-modal").show();
+        $("#payment-modal").fadeIn();
     }
 }
 
-// Initialize the application
+// --- Initialisation ---
 document.addEventListener('DOMContentLoaded', () => {
     window.situationAdherent = new SituationAdherent();
 });
 
-// Global function for the payment history modal
+// Fonction globale pour modal historique
 function showPaymentHistory() {
     window.situationAdherent.showPaymentHistory();
 }

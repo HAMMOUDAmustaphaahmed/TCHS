@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Bootstrap & Template Styles -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+    <div class="content">
+
+        <!-- Navbar Start -->
+        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+            <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                <h2 class="text-primary mb-0"></h2>
+            </a>
+            <a href="#" class="sidebar-toggler flex-shrink-0">
+                <i class="fa fa-bars"></i>
+            </a>
+        </nav>
+        <!-- Navbar End -->
+
+        <div class="container-fluid mt-4">
+            <h1 class="mb-4">Situation Financière Totale des Adhérents</h1>
+<!-- Totaux généraux redesign -->
+<div class="totaux-generaux mt-4 d-flex flex-wrap gap-3">
+    <div class="card totaux-card bg-primary text-white flex-fill">
+        <div class="card-body d-flex align-items-center">
+            <i class="fas fa-wallet fa-2x me-3"></i>
+            <div>
+                <h6 class="card-title">Total à payer</h6>
+                <h4 id="total-a-payer-general">0 €</h4>
+            </div>
+        </div>
+    </div>
+    <div class="card totaux-card bg-success text-white flex-fill">
+        <div class="card-body d-flex align-items-center">
+            <i class="fas fa-money-bill-wave fa-2x me-3"></i>
+            <div>
+                <h6 class="card-title">Total payé</h6>
+                <h4 id="total-paye-general">0 €</h4>
+            </div>
+        </div>
+    </div>
+    <div class="card totaux-card bg-warning text-dark flex-fill">
+        <div class="card-body d-flex align-items-center">
+            <i class="fas fa-percent fa-2x me-3"></i>
+            <div>
+                <h6 class="card-title">Total remise</h6>
+                <h4 id="total-remise-general">0 %</h4>
+            </div>
+        </div>
+    </div>
+    <div class="card totaux-card bg-danger text-white flex-fill">
+        <div class="card-body d-flex align-items-center">
+            <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+            <div>
+                <h6 class="card-title">Reste à payer</h6>
+                <h4 id="reste-a-payer-general">0 €</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .totaux-generaux {
+        margin-top: 30px;
+    }
+    .totaux-card {
+        min-width: 220px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .totaux-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+    .totaux-card h4 {
+        margin: 0;
+        font-weight: 700;
+    }
+    .totaux-card h6 {
+        margin: 0;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    @media (max-width: 768px) {
+        .totaux-generaux {
+            flex-direction: column;
+        }
+    }
+</style>
+
+            <!-- Filtre par saison -->
+            <div class="mb-3">
+                <label for="filter-saison" class="form-label">Filtrer par saison :</label>
+                <select id="filter-saison" class="form-select">
+                    <option value="">Toutes les saisons</option>
+                </select>
+            </div>
+
+            <!-- Barre de recherche -->
+            <div class="mb-3">
+                <input type="text" id="search-adherent-total" class="form-control" placeholder="Rechercher par nom, prénom ou matricule...">
+            </div>
+
+            <!-- Boutons export / impression -->
+            <div class="mb-3 d-flex gap-2">
+                <button id="export-xlsx" class="btn btn-success"><i class="fas fa-file-excel"></i> Exporter XLSX</button>
+                <button id="print-table" class="btn btn-primary"><i class="fas fa-print"></i> Imprimer</button>
+            </div>
+
+            <!-- Spinner de chargement -->
+            <div id="spinner" style="display:none;" class="mb-2">Chargement des données...</div>
+
+            <!-- Tableau -->
+            <div class="table-responsive">
+                <table class="table table-striped table-bordered" id="table-situation-total" style="background: linear-gradient(135deg, #d4d6d5e3 0%, #ffffff 100%);" >
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Matricule</th>
+                            <th>Nom</th>
+                            <th>Prénom</th>
+                            <th>Total à payer (€)</th>
+                            <th>Total payé (€)</th>
+                            <th>Remise (%)</th>
+                            <th>Reste à payer (€)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- Totaux généraux -->
+            
+        </div>
+
+    </div>
+
+    <!-- Librairies JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Script principal -->
+<script>
+    $(document).ready(function () {
+        const tableBody = $('#table-situation-total tbody');
+        const spinner = $('#spinner');
+
+        async function loadSituationTotale() {
+            spinner.show();
+            try {
+                const saison = $('#filter-saison').val();
+                const url = saison ? `/api/situation-totale?saison=${saison}` : '/api/situation-totale';
+                const response = await fetch(url);
+                const data = await response.json();
+                spinner.hide();
+
+                // Remplir le tableau
+                tableBody.empty();
+                data.situation_par_adherent.forEach(a => {
+                    const resteClass = (!a.aucun_paiement && a.reste_a_payer > 0) ? 'text-danger fw-bold' : '';
+
+                    // Si aucun paiement, afficher 'Aucun paiement'
+                    const totalAPayer = a.aucun_paiement ? 'Aucun paiement' : (a.total_a_payer || 0).toFixed(2);
+                    const totalPaye = a.aucun_paiement ? 'Aucun paiement' : (a.total_paye || 0).toFixed(2);
+                    const totalRemise = a.aucun_paiement ? 'Aucun paiement' : (a.total_remise || 0).toFixed(2);
+                    const reste = a.aucun_paiement ? 'Aucun paiement' : (a.reste_a_payer || 0).toFixed(2);
+
+                    tableBody.append(`
+                        <tr>
+                            <td>${a.matricule}</td>
+                            <td>${a.nom}</td>
+                            <td>${a.prenom}</td>
+                            <td>${totalAPayer}</td>
+                            <td>${totalPaye}</td>
+                            <td>${totalRemise}</td>
+                            <td class="${resteClass}">${reste}</td>
+                        </tr>
+                    `);
+                });
+
+                // Mettre à jour les totaux généraux
+                $('#total-a-payer-general').text((data.totaux_generaux.total_a_payer || 0).toFixed(2));
+                $('#total-paye-general').text((data.totaux_generaux.total_paye || 0).toFixed(2));
+                $('#total-remise-general').text((data.totaux_generaux.total_remise || 0).toFixed(2));
+                $('#reste-a-payer-general').text((data.totaux_generaux.reste_a_payer || 0).toFixed(2));
+
+                // Extraire les saisons uniques pour le filtre
+                const saisons = [...new Set(data.situation_par_adherent.map(a => a.code_saison))];
+                const select = $('#filter-saison');
+                select.find('option:not(:first)').remove();
+                saisons.forEach(s => select.append(`<option value="${s}">${s}</option>`));
+
+            } catch (error) {
+                spinner.hide();
+                console.error(error);
+                alert('Erreur lors du chargement de la situation totale.');
+            }
+        }
+
+        // Filtre dynamique par saison
+        $('#filter-saison').on('change', function () {
+            loadSituationTotale();
+        });
+
+        // Filtre dynamique par recherche texte
+        $('#search-adherent-total').on('keyup', function () {
+            const value = $(this).val().toLowerCase();
+            $('#table-situation-total tbody tr').filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+            });
+        });
+
+        // Export XLSX
+        $('#export-xlsx').click(function () {
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(document.getElementById('table-situation-total'));
+            XLSX.utils.book_append_sheet(wb, ws, "SituationTotale");
+            XLSX.writeFile(wb, "situation_totale.xlsx");
+        });
+
+        // Imprimer
+        $('#print-table').click(function () {
+            const printContent = document.getElementById('table-situation-total').outerHTML;
+            const win = window.open('', '', 'width=900,height=600');
+            win.document.write('<html><head><title>Impression</title>');
+            win.document.write('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">');
+            win.document.write('</head><body>');
+            win.document.write(printContent);
+            win.document.write('</body></html>');
+            win.document.close();
+            win.print();
+        });
+
+        // Chargement initial
+        loadSituationTotale();
+    });
+</script>
+
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>

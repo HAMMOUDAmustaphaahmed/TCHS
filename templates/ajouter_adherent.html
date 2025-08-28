@@ -148,19 +148,7 @@
                     </div>
 
                     <!-- Groupe -->
-                    <div class="col-6">
-                    <div class="form mb-3">
-                        <label for="groupe">Groupe / المجموعة</label>
-                        <select id="groupe" name="groupe" class="form-control">
-                            <option value="" data-abonnement=""></option>
-                            {% for groupe in groupes %}
-                                <option value="{{ groupe.nom_groupe }}" data-abonnement="{{ groupe.type_abonnement }}">
-                                    {{ groupe.nom_groupe }} ({{ groupe.type_abonnement }})
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
+                    
 
                     <style>
                     /* Ajoutez ce CSS pour améliorer le style de la datalist */
@@ -190,6 +178,54 @@ input[list].form-control {
     height: calc(1.5em + 0.75rem + 2px);
 }
                 </style>
+<div class="col-6">
+    <div class="form mb-3">
+        <label for="groupe">Groupe / المجموعة</label>
+        <select id="groupe" name="groupe" class="form-control">
+            <option value="" data-cotisation="">-- Sélectionner un groupe --</option>
+            {% for g in groupes %}
+                <option value="{{ g.nom_groupe }}" data-cotisation="{{ cotisations.get(g.nom_groupe, 0) }}">
+                    {{ g.nom_groupe }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="col-6">
+    <div class="form mb-3">
+        <label for="cotisation">Cotisation / الاشتراك</label>
+        <input type="text" id="cotisation" class="form-control text-danger" readonly>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#groupe').on('change', function() {
+        const selectedOption = $(this).find('option:selected');
+        const cotisation = selectedOption.data('cotisation') || 0;
+        $('#cotisation').val(parseFloat(cotisation).toFixed(2));
+    });
+});
+</script>
+
+
+<div class="col-6">
+    <div class="form mb-3">
+        <label for="remise">Remise (%) / الخصم</label>
+        <input type="number" step="0.01" id="remise" name="remise" class="form-control">
+    </div>
+</div>
+<script>
+    $('#groupe, #remise').on('change input', function() {
+    const selectedOption = $('#groupe').find('option:selected');
+    const cotisation = parseFloat(selectedOption.data('cotisation')) || 0;
+    const remise = parseFloat($('#remise').val()) || 0;
+    const finalCotisation = cotisation - (cotisation * remise / 100);
+    $('#cotisation').val(finalCotisation.toFixed(2));
+});
+
+</script>
 
                 <!-- Entraîneur -->
                 <div class="col-6">

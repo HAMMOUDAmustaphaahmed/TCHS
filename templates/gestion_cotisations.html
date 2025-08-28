@@ -66,41 +66,113 @@
                     <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#cotisationModal">
                         <i class="fas fa-plus"></i> Ajouter une cotisation
                     </button>
-                
+                <!-- 🔍 Barre de recherche -->
+<div class="mb-3">
+    <input type="text" id="searchInput" class="form-control" placeholder="Rechercher...">
+</div>
                     <!-- Tableau des cotisations -->
                     <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Nom</th>
-                                    <th>Montant (TND)</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for cotisation in cotisations %}
-                                <tr>
-                                    <td>{{ cotisation.nom_cotisation }}</td>
-                                    <td>{{ "%.2f"|format(cotisation.montant_cotisation) }}</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-warning" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#cotisationModal"
-                                                onclick="fillEditForm('{{ cotisation.id_cotisation }}', '{{ cotisation.nom_cotisation }}', '{{ cotisation.montant_cotisation }}')">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-danger" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#deleteModal"
-                                                onclick="setDeleteId({{ cotisation.id_cotisation }})">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+    <table id="CotisationsTable" class="table text-start align-middle table-bordered table-hover mb-0 sortable"
+           style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);">
+        <thead>
+            <tr class="text-dark" 
+                style="position: sticky; top: 0; background: linear-gradient(135deg, #f1f3f5 0%, #ffffff 100%); z-index: 10;">
+                <th onclick="sortTable(0, 'CotisationsTable')">Nom 
+                    <span class="arrow asc">&#9650;</span>
+                    <span class="arrow desc">&#9660;</span>
+                </th>
+                <th onclick="sortTable(1, 'CotisationsTable')">Montant (TND) 
+                    <span class="arrow asc">&#9650;</span>
+                    <span class="arrow desc">&#9660;</span>
+                </th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cotisation in cotisations %}
+            <tr>
+                <td>{{ cotisation.nom_cotisation }}</td>
+                <td>{{ "%.2f"|format(cotisation.montant_cotisation) }}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning shadow-sm" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#cotisationModal"
+                            onclick="fillEditForm('{{ cotisation.id_cotisation }}', '{{ cotisation.nom_cotisation }}', '{{ cotisation.montant_cotisation }}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger shadow-sm" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#deleteModal"
+                            onclick="setDeleteId({{ cotisation.id_cotisation }})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
                     </div>
+<style>
+    /* Harmonisation avec le tableau des adhérents */
+#CotisationsTable th {
+    cursor: pointer;
+    user-select: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 14px;
+    color: #343a40;
+}
+
+#CotisationsTable td {
+    vertical-align: middle;
+    font-size: 15px;
+}
+
+#CotisationsTable tr:hover {
+    background-color: #f5f7fd !important;
+    transition: background-color 0.2s ease-in-out;
+}
+
+#CotisationsTable .btn i {
+    font-size: 14px;
+}
+
+/* Tri visuel des colonnes */
+.arrow {
+    display: none;
+    margin-left: 5px;
+    font-size: 0.7rem;
+    color: #6c757d;
+}
+
+th.sorted-asc .arrow.asc,
+th.sorted-desc .arrow.desc {
+    display: inline;
+    color: #4361ee;
+    font-weight: bold;
+}
+
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function(){
+    $("#CotisationsTable").on("keyup", "#searchInput", function() {
+        let value = $(this).val().toLowerCase();
+        $("#CotisationsTable tbody tr").filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
+    });
+
+    // Ou plus simple :
+    $("#searchInput").on("keyup", function() {
+        let value = $(this).val().toLowerCase();
+        $("#CotisationsTable tbody tr").filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
+    });
+});
+</script>
+
                 </div>
                 
                 <!-- Modal Ajout/Modification -->
