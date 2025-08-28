@@ -76,10 +76,10 @@ class SituationPaiement {
     updateSummaryCards(summary) {
         if (!summary) return;
         
-        document.getElementById('total-a-payer').textContent = `${summary.total_a_payer.toLocaleString()} €`;
-        document.getElementById('total-paye').textContent = `${summary.total_paye.toLocaleString()} €`;
-        document.getElementById('total-remise').textContent = `${summary.total_remise.toLocaleString()} €`;
-        document.getElementById('reste-a-payer').textContent = `${summary.reste_a_payer.toLocaleString()} €`;
+        //document.getElementById('total-a-payer').textContent = `${summary.total_a_payer.toLocaleString()} €`;
+        document.getElementById('total-paye').textContent = `${summary.total_paye.toLocaleString()} TND`;
+        //document.getElementById('total-remise').textContent = `${summary.total_remise.toLocaleString()} TND`;
+        document.getElementById('reste-a-payer').textContent = `${summary.reste_a_payer.toLocaleString()} TND`;
     }
 
     exportToExcel() {
