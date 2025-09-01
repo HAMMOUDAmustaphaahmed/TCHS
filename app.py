@@ -197,8 +197,10 @@ def get_paiements_indicators():
         }
         
         reglement_stats = {}
+        reglement_montants = {}  # 🟢 Nouveau: montants par type de règlement
         type_abonnement_payment_stats = {}
-        montant_par_abonnement = {}  # 🟢 Nouveau dictionnaire pour les montants par type d’abonnement
+        type_abonnement_montants = {}  # 🟢 Nouveau: montants détaillés par type d'abonnement
+        montant_par_abonnement = {}
         
         for paiement_data in paiements_query:
             paiement = paiement_data[0]
@@ -226,21 +228,37 @@ def get_paiements_indicators():
             # Total global
             statistics['montant_total'] += montant_paye
             
-            # 🟢 Total par type d’abonnement
+            # Total par type d'abonnement
             montant_par_abonnement[type_abonnement] = montant_par_abonnement.get(type_abonnement, 0) + montant_paye
             
-            # Stats par type de règlement
+            # 🟢 Stats par type de règlement avec montants
             type_reglement = paiement.type_reglement or 'Non spécifié'
             reglement_stats[type_reglement] = reglement_stats.get(type_reglement, 0) + 1
+            reglement_montants[type_reglement] = reglement_montants.get(type_reglement, 0) + montant_paye
             
-            # Stats par type d'abonnement et statut
+            # 🟢 Stats par type d'abonnement et statut avec montants détaillés
             if type_abonnement not in type_abonnement_payment_stats:
                 type_abonnement_payment_stats[type_abonnement] = {
                     'complets': 0,
                     'partiels': 0,
                     'impayes': 0
                 }
+                type_abonnement_montants[type_abonnement] = {
+                    'complets': 0,
+                    'partiels': 0,
+                    'impayes': 0
+                }
+            
             type_abonnement_payment_stats[type_abonnement][status_paiement + 's'] += 1
+            
+            # Ajouter les montants selon le statut
+            if status_paiement == 'complet':
+                type_abonnement_montants[type_abonnement]['complets'] += montant_paye
+            elif status_paiement == 'partiel':
+                type_abonnement_montants[type_abonnement]['partiels'] += montant_paye
+                type_abonnement_montants[type_abonnement]['impayes'] += montant_reste
+            else:  # impaye
+                type_abonnement_montants[type_abonnement]['impayes'] += montant_total
             
             paiements_list.append({
                 'id_paiement': paiement.id_paiement,
@@ -257,37 +275,51 @@ def get_paiements_indicators():
                 'adherent_paye_status': adherent_paye_status
             })
         
+        # Paiements récents (tri par date)
         paiements_recents = sorted(
-            paiements_list, 
-            key=lambda x: x['date_paiement'] or '', 
+            [p for p in paiements_list if p['date_paiement']], 
+            key=lambda x: x['date_paiement'], 
             reverse=True
         )[:10]
         
+        # 🟢 Gestion des adhérents sans paiement
+        adherents_avec_paiement = set(p.matricule_adherent for p in db.session.query(Paiement.matricule_adherent).distinct())
         adherents_sans_paiement = Adherent.query.filter(
-            Adherent.matricule.cast(db.String).in_(
-                [p.matricule_adherent for p in db.session.query(Paiement.matricule_adherent).distinct()]
-            )
+            ~Adherent.matricule.cast(db.String).in_(adherents_avec_paiement)
         ).all()
         
         for adherent in adherents_sans_paiement:
             statistics['impayes'] += 1
             type_abo = adherent.type_abonnement or 'Non spécifié'
+            
             if type_abo not in type_abonnement_payment_stats:
                 type_abonnement_payment_stats[type_abo] = {
                     'complets': 0,
                     'partiels': 0,
                     'impayes': 0
                 }
+                type_abonnement_montants[type_abo] = {
+                    'complets': 0,
+                    'partiels': 0,
+                    'impayes': 0
+                }
+            
             type_abonnement_payment_stats[type_abo]['impayes'] += 1
+            # Vous devrez définir un montant par défaut pour les adhérents sans paiement
+            # ou récupérer le montant attendu depuis une autre source
+            montant_attendu = 100.0  # À adapter selon votre logique métier
+            type_abonnement_montants[type_abo]['impayes'] += montant_attendu
         
         return jsonify({
             'success': True,
             'paiements': paiements_list,
             'statistics': statistics,
             'reglement_stats': reglement_stats,
+            'reglement_montants': reglement_montants,  # 🟢 Nouveau
             'type_abonnement_payment_stats': type_abonnement_payment_stats,
+            'type_abonnement_montants': type_abonnement_montants,  # 🟢 Nouveau
             'paiements_recents': paiements_recents,
-            'montant_par_abonnement': montant_par_abonnement,  # 🟢 On envoie au frontend
+            'montant_par_abonnement': montant_par_abonnement,
             'total_adherents_sans_paiement': len(adherents_sans_paiement),
         })
         
@@ -296,7 +328,7 @@ def get_paiements_indicators():
             'success': False,
             'error': str(e)
         }), 500
-
+        
 from sqlalchemy import func, or_
 
 @app.route('/entraineur', methods=['GET', 'POST'])
@@ -4877,6 +4909,110 @@ def situation_totale():
         'saisons_disponibles': saisons_disponibles
     })
 
+@app.route('/rh')
+def rh():
+    return render_template("hr.html")
+
+
+@app.route('/hr_entraineur_salaire', methods=['GET', 'POST'])
+def hr_entraineur_salaire():
+    """
+    Route HR pour calculer les salaires des entraîneurs basés sur leur présence
+    Paramètres acceptés (GET ou POST):
+      - search_term : chaîne (optionnel) pour filtrer par nom/prenom
+      - date_debut : date de début (optionnel, format YYYY-MM-DD)
+      - date_fin : date de fin (optionnel, format YYYY-MM-DD)
+    """
+    search_term = (request.values.get("search_term") or "").strip()
+    date_debut = request.values.get("date_debut")
+    date_fin = request.values.get("date_fin")
+    
+    results = []
+    
+    # Query des entraîneurs
+    q = Entraineur.query
+    if search_term:
+        like = f"%{search_term}%"
+        q = q.filter(or_(
+            Entraineur.nom.ilike(like),
+            Entraineur.prenom.ilike(like)
+        ))
+    
+    entraineurs = q.order_by(Entraineur.nom, Entraineur.prenom).all()
+    
+    for entraineur in entraineurs:
+        full_name = f"{entraineur.nom} {entraineur.prenom}"
+        
+        # Query de base pour les présences
+        pres_query = Presence_Entraineur.query.filter(
+            Presence_Entraineur.entraineur_nom == full_name
+        )
+        
+        # Appliquer les filtres de date si fournis
+        if date_debut:
+            try:
+                date_debut_obj = datetime.strptime(date_debut, '%Y-%m-%d').date()
+                pres_query = pres_query.filter(Presence_Entraineur.date_seance >= date_debut_obj)
+            except ValueError:
+                pass
+                
+        if date_fin:
+            try:
+                date_fin_obj = datetime.strptime(date_fin, '%Y-%m-%d').date()
+                pres_query = pres_query.filter(Presence_Entraineur.date_seance <= date_fin_obj)
+            except ValueError:
+                pass
+        
+        pres_rows = pres_query.order_by(Presence_Entraineur.date_seance).all()
+        
+        # Calculer les heures présentes et absentes
+        heures_presentes = 0
+        heures_absentes = 0
+        
+        for pres in pres_rows:
+            # Récupérer la séance correspondante pour calculer la durée
+            seance = Seance.query.filter(
+                and_(
+                    Seance.date == pres.date_seance,
+                    Seance.heure_debut == pres.heure_debut,
+                    Seance.entraineur == full_name
+                )
+            ).first()
+            
+            if seance:
+                # Calculer la durée de la séance en heures
+                debut = datetime.combine(datetime.today(), seance.heure_debut)
+                fin = datetime.combine(datetime.today(), seance.heure_fin)
+                duree_heures = (fin - debut).total_seconds() / 3600
+                
+                if pres.est_present == 'O':
+                    heures_presentes += duree_heures
+                else:
+                    heures_absentes += duree_heures
+            else:
+                # Si pas de séance trouvée, considérer 1.5h par défaut
+                duree_heures = 1.5
+                if pres.est_present == 'O':
+                    heures_presentes += duree_heures
+                else:
+                    heures_absentes += duree_heures
+        
+        # Calculer le pourcentage d'absence
+        total_heures = heures_presentes + heures_absentes
+        pourcentage_absence = (heures_absentes / total_heures * 100) if total_heures > 0 else 0
+        
+        results.append({
+            "id": entraineur.id_entraineur,
+            "nom": entraineur.nom,
+            "prenom": entraineur.prenom,
+            "type_abonnement": entraineur.type_abonnement or "N/D",
+            "heures_presentes": round(heures_presentes, 2),
+            "heures_absentes": round(heures_absentes, 2),
+            "total_heures": round(total_heures, 2),
+            "pourcentage_absence": round(pourcentage_absence, 2)
+        })
+    
+    return jsonify(results)
 
 # Running the app
 if __name__ == '__main__':

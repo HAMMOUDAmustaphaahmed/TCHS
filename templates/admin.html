@@ -224,10 +224,11 @@
         </div>
     </div>
     <div class="col-md-4 d-flex">
-        <div class="stat-card bg-white rounded shadow-sm p-3 d-flex flex-column justify-content-between w-100 h-100">
-            <h6 class="mb-3">Paiements Récents</h6>
-            <div id="paiementsRecents" class="flex-grow-1 overflow-auto" style="max-height: 250px;"></div>
-        </div>
+        <div class="stat-card bg-white rounded shadow-sm p-3 d-flex flex-column justify-content-start w-100 h-100">
+    <h6 class="mb-3">Paiements Récents</h6>
+    <div id="paiementsRecents" class="flex-grow-1 overflow-auto" ></div>
+</div>
+
     </div>
 </div>
 <style>
@@ -255,7 +256,7 @@
 </div>
 
 <script>
-// Variables globales pour les paiements
+    // Variables globales pour les paiements
 let paiementsData = [];
 
 // Charger les données de paiement au chargement initial
@@ -274,12 +275,13 @@ async function loadPaiementsData() {
         
         if (data.success) {
             paiementsData = data.paiements;
-            updatePaiementDisplay(data.statistics, data.montant_par_abonnement); // 🟢 modifié
+            updatePaiementDisplay(data.statistics, data.montant_par_abonnement);
             updateDetailedPaiementStats(data);
         } else {
             showPaiementError(data.error);
         }
     } catch (error) {
+        console.error('Erreur lors du chargement des paiements:', error);
         showPaiementError('Erreur de connexion');
     }
 }
@@ -291,7 +293,7 @@ function updatePaiementDisplay(stats, montantParAbonnement) {
     document.getElementById('totalPaiementsImpaye').textContent = stats.impayes || 0;
     document.getElementById('totalMontantPercu').textContent = `${(stats.montant_total || 0).toLocaleString('fr-FR')}€`;
 
-    // 🟢 Mise à jour du détail par type d'abonnement
+    // Mise à jour du détail par type d'abonnement
     const container = document.getElementById('montantParAbonnement');
     container.innerHTML = '';
     if (montantParAbonnement && Object.keys(montantParAbonnement).length > 0) {
@@ -302,20 +304,25 @@ function updatePaiementDisplay(stats, montantParAbonnement) {
         container.innerHTML = '<span class="text-muted">Aucun paiement</span>';
     }
 }
+
 // Mettre à jour les statistiques détaillées
 function updateDetailedPaiementStats(data) {
+    // 🟢 Utiliser directement les données du backend
+    const reglementMontants = data.reglement_montants || {};
+    const typeAbonnementMontants = data.type_abonnement_montants || {};
+    
     // Stats par type de règlement
-    updateReglementStats(data.reglement_stats);
+    updateReglementStats(data.reglement_stats, reglementMontants);
     
     // Stats paiement par type d'abonnement
-    updatePaiementTypeAbonnementStats(data.type_abonnement_payment_stats);
+    updatePaiementTypeAbonnementStats(data.type_abonnement_payment_stats, typeAbonnementMontants);
     
     // Paiements récents
     updatePaiementsRecents(data.paiements_recents);
 }
 
 // Mettre à jour les stats par type de règlement
-function updateReglementStats(reglementStats) {
+function updateReglementStats(reglementStats, reglementMontants) {
     const container = document.getElementById('reglementStats');
     container.innerHTML = '';
     
@@ -326,19 +333,26 @@ function updateReglementStats(reglementStats) {
     
     Object.entries(reglementStats).sort((a, b) => b[1] - a[1]).forEach(([type, count]) => {
         const total = Object.values(reglementStats).reduce((sum, val) => sum + val, 0);
-        const percentage = ((count / total) * 100).toFixed(1);
+        const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+        const montant = reglementMontants[type] || 0;
         
         container.innerHTML += `
-            <div class="d-flex justify-content-between mb-2">
-                <span>${type || 'Non spécifié'}:</span>
-                <span><strong>${count}</strong> (${percentage}%)</span>
+            <div class="border-bottom pb-2 mb-2">
+                <div class="d-flex justify-content-between">
+                    <span><strong>${type || 'Non spécifié'}</strong></span>
+                    <span class="badge bg-primary">${count}</span>
+                </div>
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>${percentage}%</span>
+                    <span class="text-success fw-bold">${montant.toLocaleString('fr-FR')}€</span>
+                </div>
             </div>
         `;
     });
 }
 
 // Mettre à jour les stats paiement par type d'abonnement
-function updatePaiementTypeAbonnementStats(typeStats) {
+function updatePaiementTypeAbonnementStats(typeStats, typeMontants) {
     const container = document.getElementById('paiementTypeAbonnementStats');
     container.innerHTML = '';
     
@@ -349,14 +363,29 @@ function updatePaiementTypeAbonnementStats(typeStats) {
     
     Object.entries(typeStats).forEach(([type, stats]) => {
         const total = stats.complets + stats.partiels + stats.impayes;
+        const montants = typeMontants[type] || { complets: 0, partiels: 0, impayes: 0 };
+        const montantTotal = montants.complets + montants.partiels + montants.impayes;
+        
         if (total > 0) {
             container.innerHTML += `
-                <div class="mb-3">
-                    <strong>${type}</strong>
+                <div class="border-bottom pb-2 mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <strong>${type}</strong>
+                        <span class="badge bg-info">${montantTotal.toLocaleString('fr-FR')}€</span>
+                    </div>
                     <div class="small">
-                        <span class="text-success">✓ ${stats.complets}</span> | 
-                        <span class="text-warning">⏳ ${stats.partiels}</span> | 
-                        <span class="text-danger">✗ ${stats.impayes}</span>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-success">✓ Complets: ${stats.complets}</span>
+                            <span class="text-success">${montants.complets.toLocaleString('fr-FR')}€</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-warning">⏳ Partiels: ${stats.partiels}</span>
+                            <span class="text-warning">${montants.partiels.toLocaleString('fr-FR')}€</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-danger">✗ Impayés: ${stats.impayes}</span>
+                            <span class="text-danger">${montants.impayes.toLocaleString('fr-FR')}€</span>
+                        </div>
                     </div>
                 </div>
             `;
@@ -375,7 +404,9 @@ function updatePaiementsRecents(paiementsRecents) {
     }
     
     paiementsRecents.forEach(paiement => {
-        const dateFormatted = new Date(paiement.date_paiement).toLocaleDateString('fr-FR');
+        const dateFormatted = paiement.date_paiement ? 
+            new Date(paiement.date_paiement).toLocaleDateString('fr-FR') : 
+            'Date inconnue';
         const statusClass = paiement.montant_reste <= 0 ? 'success' : 'warning';
         const statusText = paiement.montant_reste <= 0 ? 'Complet' : 'Partiel';
         
@@ -395,15 +426,28 @@ function updatePaiementsRecents(paiementsRecents) {
 
 // Afficher une erreur pour les paiements
 function showPaiementError(error) {
+    console.error('Erreur paiements:', error);
     ['totalPaiementsComplets', 'totalPaiementsPartiels', 'totalPaiementsImpaye'].forEach(id => {
-        document.getElementById(id).textContent = '?';
+        const element = document.getElementById(id);
+        if (element) element.textContent = '?';
     });
-    document.getElementById('totalMontantPercu').textContent = 'Erreur';
+    const montantElement = document.getElementById('totalMontantPercu');
+    if (montantElement) montantElement.textContent = 'Erreur';
+    
+    const containers = ['reglementStats', 'paiementTypeAbonnementStats', 'paiementsRecents'];
+    containers.forEach(containerId => {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = `<p class="text-danger">Erreur: ${error}</p>`;
+        }
+    });
 }
 
 // Fonction pour actualiser les données de paiement
 function refreshPaymentData() {
     const button = document.querySelector('button[onclick="refreshPaymentData()"]');
+    if (!button) return;
+    
     const originalContent = button.innerHTML;
     
     button.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Chargement...';
