@@ -328,7 +328,7 @@ def get_paiements_indicators():
             'success': False,
             'error': str(e)
         }), 500
-        
+
 from sqlalchemy import func, or_
 
 @app.route('/entraineur', methods=['GET', 'POST'])
@@ -5014,6 +5014,14 @@ def hr_entraineur_salaire():
     
     return jsonify(results)
 
+
+
+
+@app.route("/game")
+def game():
+    return render_template("game.html")
+
+    
 # Running the app
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)
