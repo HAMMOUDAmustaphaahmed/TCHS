@@ -58,9 +58,18 @@
                 <h3>Autres Paiements</h3>
                 <form method="POST" id="autresPaiementsForm" >
                     <div class="mb-3">
-                        <label for="nom_paiement" class="form-label">Nom du Paiement</label>
-                        <input type="text" name="nom_paiement" class="form-control" required>
-                    </div>
+    <label for="nom_paiement" class="form-label">Nom du Paiement</label>
+    <select name="nom_paiement" class="form-control" required>
+        <option value="" disabled selected>-- Sélectionner un paiement --</option>
+        <option value="tenue">Tenue</option>
+        <option value="loyer_de_buvette">Loyer de Buvette</option>
+        <option value="sponsor">Sponsor</option>
+        <option value="location_de_court">Location de Court</option>
+        <option value="code_ijin">Code IJIN</option>
+        <option value="autre">Autre</option>
+    </select>
+</div>
+
                     <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
                         <textarea name="description" class="form-control"></textarea>

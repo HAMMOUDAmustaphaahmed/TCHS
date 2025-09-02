@@ -98,6 +98,20 @@
     .direction-indicator span.active {
       background: #2dd4bf;
     }
+    .defense-tutorial {
+      position: fixed;
+      bottom: 180px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 400px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
   </style>
 </head>
 <body>
@@ -148,6 +162,12 @@
     <span>Droite: E</span>
   </div>
 
+  <!-- Defense Tutorial -->
+  <div class="defense-tutorial" id="defenseTutorial">
+    💡 Pour défendre : Déplacez votre souris horizontalement pour positionner votre raquette<br>
+    La balle sera renvoyée automatiquement quand elle touchera votre raquette
+  </div>
+
   <!-- Helper -->
   <div id="helper">
     <div class="card">
@@ -168,7 +188,7 @@
       <span class="dot you"></span> Raquette Joueur
       <span class="dot ai"></span> Raquette IA
     </div>
-    <span class="pill">Règles : 15 → 30 → 40 → Avantage → Jeu</span>
+    <span class="pill">Règles : 0 → 15 → 30 → 40 → Jeu (avantage si 40-40)</span>
   </footer>
 </div>
 
@@ -198,6 +218,7 @@
     power: 0.2,
     powerY: 0.8, // 0 top, 1 bottom (on inverse pour l'UI)
     hitDirection: 0, // -1: gauche, 0: centre, 1: droite
+    advantage: null, // null | "you" | "ai" pour l'avantage
   };
 
   // ------------ Audio ------------
@@ -388,6 +409,7 @@
   const scoreAIEl  = document.getElementById('scoreAI');
   const scoreNote  = document.getElementById('scoreNote');
   const directionIndicator = document.getElementById('directionIndicator');
+  const defenseTutorial = document.getElementById('defenseTutorial');
 
   function pointLabel(v){
     if(v<=2) return ["0","15","30"][v]||"0";
@@ -402,13 +424,15 @@
     const pYou = state.points.you;
     const pAI  = state.points.ai;
     
-    if(pYou>=4 || pAI>=4){
-      if(Math.abs(pYou - pAI) >= 2){
-        scoreNote.textContent = "Nouveau jeu";
-      }else{
+    if (state.advantage) {
+      scoreNote.textContent = `Avantage ${state.advantage === "you" ? "Vous" : "IA"}`;
+    } else if(pYou>=3 || pAI>=3){
+      if(pYou === pAI){
+        scoreNote.textContent = "Égalité 40-40";
+      } else {
         scoreNote.textContent = `Score : Vous ${pointLabel(pYou)} — IA ${pointLabel(pAI)}`;
       }
-    }else{
+    } else {
       scoreNote.textContent = `Score : Vous ${pointLabel(pYou)} — IA ${pointLabel(pAI)}`;
     }
     
@@ -433,23 +457,45 @@
     ball.position.set(0, 0.25, state.nextServer === "you" ? PLAYER_Z-0.6 : AI_Z+0.6);
     ballVel.set(0,0,0);
     updateScoreDisplay();
+    
+    // Masquer le tutoriel de défense après 5 secondes
+    setTimeout(() => {
+      defenseTutorial.style.display = 'none';
+    }, 5000);
   }
 
   function awardPoint(winner){
     sfx.point.play();
-    state.points[winner]++;
     
-    const pYou = state.points.you;
-    const pAI  = state.points.ai;
-
-    // Gestion avantage / jeu
-    if(pYou>=4 || pAI>=4){
-      if(Math.abs(pYou - pAI) >= 2){
-        // Jeu gagné
-        if(pYou>pAI){ state.score.you++; } else { state.score.ai++; }
-        state.points.you = 0; state.points.ai = 0;
-        // Le perdant du point précédent sert
+    // Gestion de l'avantage
+    if (state.advantage) {
+      if (state.advantage === winner) {
+        // Le joueur avec l'avantage gagne le jeu
+        state.score[winner]++;
+        state.points.you = 0;
+        state.points.ai = 0;
+        state.advantage = null;
         state.nextServer = winner === "you" ? "ai" : "you";
+      } else {
+        // Retour à égalité
+        state.advantage = null;
+      }
+    } else {
+      // Points normaux
+      if (state.points.you === 3 && state.points.ai === 3) {
+        // Égalité à 40-40 -> avantage
+        state.advantage = winner;
+      } else {
+        state.points[winner]++;
+        
+        // Vérifier si un joueur a gagné le jeu
+        if (state.points[winner] >= 4 && Math.abs(state.points.you - state.points.ai) >= 2) {
+          state.score[winner]++;
+          state.points.you = 0;
+          state.points.ai = 0;
+          state.advantage = null;
+          state.nextServer = winner === "you" ? "ai" : "you";
+        }
       }
     }
 
@@ -529,6 +575,11 @@
 
     // léger tilt esthétique
     racketYou.rotation.z = THREE.MathUtils.degToRad( (racketYou.position.x/halfW)*-10 );
+    
+    // Afficher le tutoriel de défense quand la balle vient vers le joueur
+    if (state.rallying && ballVel.z > 0 && ball.position.z > 0) {
+      defenseTutorial.style.display = 'block';
+    }
   }
   renderer.domElement.addEventListener('mousemove', onMouseMove, {passive:true});
 
@@ -718,6 +769,7 @@
     state.score.you=0; state.score.ai=0;
     state.nextServer = "you";
     state.hitDirection = 0;
+    state.advantage = null;
     if(aiServeTimeout) clearTimeout(aiServeTimeout);
     resetRally();
   });
