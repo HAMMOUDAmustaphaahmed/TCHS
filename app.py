@@ -14,8 +14,13 @@ app.config['DEBUG'] = True
 app.secret_key = 'your_secret_key'  # Remplacez par une clé sécurisée
 
 # Configure the database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/tchs'  # Update with your DB URI
+app.config['SQLALCHEMY_DATABASE_URI'] = (
+    "mysql+pymysql://if0_39855789:pUVvyOyZxZ5Jp@sql310.infinityfree.com:3306/if0_39855789_tchs"
+)
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+
 
 # Initialize SQLAlchemy
 db = SQLAlchemy(app)
