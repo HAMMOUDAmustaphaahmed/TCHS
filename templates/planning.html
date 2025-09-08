@@ -531,7 +531,64 @@ vertical-align: middle;
 
 
 
+<!-- Modal Supprimer Séance -->
+<div id="deleteSessionModal" style="display:none; position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; width: 300px;">
+    <h5>Supprimer la séance</h5>
+    <p>Voulez-vous supprimer cette séance uniquement pour cette semaine ou pour toutes les semaines ?</p>
+    <div class="d-flex justify-content-between">
+        <button class="btn btn-secondary" onclick="closeDeleteSessionModal()">Annuler</button>
+        <button class="btn btn-warning" id="deleteWeekBtn">Cette semaine</button>
+        <button class="btn btn-danger" id="deleteAllBtn">Toutes les semaines</button>
+    </div>
+</div>
+<script>
+    let sessionToDelete = null;
 
+function deleteSession(sessionId) {
+    sessionToDelete = sessionId;
+    document.getElementById('deleteSessionModal').style.display = 'block';
+}
+
+function closeDeleteSessionModal() {
+    sessionToDelete = null;
+    document.getElementById('deleteSessionModal').style.display = 'none';
+}
+
+// Supprimer selon le scope choisi
+document.getElementById('deleteWeekBtn').addEventListener('click', () => {
+    confirmDelete('week');
+});
+
+document.getElementById('deleteAllBtn').addEventListener('click', () => {
+    confirmDelete('all');
+});
+
+function confirmDelete(scope) {
+    fetch('/delete_session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionToDelete, scope: scope })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+        closeDeleteSessionModal();
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Erreur lors de la suppression');
+        closeDeleteSessionModal();
+    });
+}
+
+</script>
 
         <!-- Back to Top -->
         <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>

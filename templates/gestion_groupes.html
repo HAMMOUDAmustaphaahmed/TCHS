@@ -34,6 +34,68 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+    <style>
+        /* Style pour la modal d'ajout d'adhérents */
+        .search-result-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+        
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .selected-adherent {
+            display: inline-flex;
+            align-items: center;
+            background-color: #e9ecef;
+            border-radius: 20px;
+            padding: 4px 12px;
+            margin: 4px;
+        }
+        
+        .selected-adherent span {
+            margin-right: 8px;
+        }
+        
+        .remove-adherent {
+            cursor: pointer;
+            color: #dc3545;
+            margin-left: 8px;
+        }
+        
+        #adherentSearchResults {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+        
+        #selectedAdherents {
+            min-height: 50px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 8px;
+        }
+        /* Style pour le groupe de recherche */
+        .input-group {
+            margin-bottom: 10px;
+        }
+
+        #searchButton {
+            border-radius: 0 4px 4px 0;
+        }
+
+        .search-result-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+        
 </head>
 
 <body>
@@ -75,64 +137,7 @@
             <button id="submitMotDePasse" style="margin-top: 10px;">Soumettre</button>
             <button onclick="fermerModal()" style="margin-top: 10px;">Annuler</button>
           </div>
-            <script>
-                // Fonction pour ouvrir la fenêtre modale
-            function ouvrirModal() {
-            document.getElementById('modalChangerMotDePasse').style.display = 'block';
-            }
-
-            // Fonction pour fermer la fenêtre modale
-            function fermerModal() {
-            document.getElementById('modalChangerMotDePasse').style.display = 'none';
-            }
-
-            // Attacher un événement au clic sur le lien "Mot de Passe"
-            document.getElementById('changePasswordLink').addEventListener('click', function() {
-            ouvrirModal(); // Ouvre la modale lorsque le lien est cliqué
-            });
-
-            // Soumettre le changement de mot de passe
-            document.getElementById('submitMotDePasse').addEventListener('click', function() {
-            const nouveauMotDePasse = document.getElementById('nouveauMotDePasse').value;
-            const confirmationMotDePasse = document.getElementById('confirmationMotDePasse').value;
-
-            // Vérification des mots de passe
-            if (nouveauMotDePasse !== confirmationMotDePasse) {
-                alert("Les mots de passe ne correspondent pas.");
-                return;
-            }
-
-            // Créer l'objet pour la requête
-            const data = {
-                nouveau_mot_de_passe: nouveauMotDePasse,
-                confirmation_mot_de_passe: confirmationMotDePasse
-            };
-
-            // Envoyer la requête POST pour changer le mot de passe
-            fetch('/changer_mot_de_passe', {
-                method: 'POST',
-                headers: {
-                'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                alert(data.message);
-                } else {
-                alert(data.error);
-                }
-                fermerModal(); // Fermer la fenêtre modale après soumission
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                alert('Une erreur est survenue.');
-                fermerModal(); // Fermer la fenêtre modale en cas d'erreur
-            });
-            });
-
-            </script>          
+                   
           <div class="nav-item">
             <a href="{{ url_for('equipement') }}" class="nav-link">
                 <i class="fa fa-trophy me-2"></i>Tournois
@@ -221,149 +226,152 @@
             <div class="table-responsive mt-4">
     <h5 class="text-start mb-4">Les Groupes</h5>
     <table class="table table-hover">
-        <thead>
-            <tr>
-                <th>Nom du Groupe</th>
-                <th>Entraîneur</th>
-                <th>Séances</th>
-                <th>Adhérents</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for groupe in groupes %}
-                {% if session.get('type_saison') == 'abonnement_annuel' and groupe.categorie in ['Lutin','Poussin','Benjamin','Minime','KD','Ecole','Loisir','Adulte'] %}
-                    <tr>
-                        <td>{{ groupe.nom_groupe }}</td>
-                        <td>
-                            <select class="form-select entraineur-select" data-groupe-id="{{ groupe.id_groupe }}">
-                                {% for entraineur in entraineurs %}
-                                <option value="{{ entraineur.id_entraineur }}" 
-                                    {% if entraineur.nom + ' ' + entraineur.prenom == groupe.entraineur_nom %}selected{% endif %}>
-                                    {{ entraineur.nom }} {{ entraineur.prenom }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-primary" onclick="openSessionModal({{ groupe.id_groupe }})">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-success" onclick="openAddAdherentModal({{ groupe.id_groupe }})">
-                                <i class="fas fa-settings"></i> Gestion des adhérents
-                            </button>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-danger" onclick="deleteGroup({{ groupe.id_groupe }})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                {% elif session.get('type_saison') == 'ecole_ete' and groupe.categorie == "Ecole d'été" %}
-                    <tr>
-                        <td>{{ groupe.nom_groupe }}</td>
-                        <td>
-                            <select class="form-select entraineur-select" data-groupe-id="{{ groupe.id_groupe }}">
-                                {% for entraineur in entraineurs %}
-                                <option value="{{ entraineur.id_entraineur }}" 
-                                    {% if entraineur.nom + ' ' + entraineur.prenom == groupe.entraineur_nom %}selected{% endif %}>
-                                    {{ entraineur.nom }} {{ entraineur.prenom }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-primary" onclick="openSessionModal({{ groupe.id_groupe }})">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-success" onclick="openAddAdherentModal({{ groupe.id_groupe }})">
-                                <i class="fas fa-settings"></i> Gestion des adhérents
-                            </button>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-danger" onclick="deleteGroup({{ groupe.id_groupe }})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                {% endif %}
-            {% endfor %}
-        </tbody>
-    </table>
+    <thead>
+        <tr>
+            <th>Nom du Groupe</th>
+            <th>Entraîneur</th>
+            <th>Adhérents</th> 
+            <th>Ajouter Séance</th>
+            <th>Ajouter Adhérent</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for groupe in groupes %}
+            {% if session.get('type_saison') == 'abonnement_annuel' and groupe.categorie in ['Lutin','Poussin','Benjamin','Minime','KD','Ecole','Loisir','Adulte'] %}
+                <tr>
+                    <td>{{ groupe.nom_groupe }}</td>
+                    <td>
+                        <select class="form-select entraineur-select" data-groupe-id="{{ groupe.id_groupe }}">
+                            {% for entraineur in entraineurs %}
+                            <option value="{{ entraineur.id_entraineur }}" 
+                                {% if entraineur.nom + ' ' + entraineur.prenom == groupe.entraineur_nom %}selected{% endif %}>
+                                {{ entraineur.nom }} {{ entraineur.prenom }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+    <button class="btn btn-sm btn-info" 
+            data-groupe-id="{{ groupe.id_groupe }}" 
+            onclick="openAdherentsListModal({{ groupe.id_groupe }})">
+        <i class="fas fa-users"></i> Voir
+    </button>
+</td>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".btn-info[data-groupe-id]").forEach(btn => {
+        const groupId = btn.dataset.groupeId;
+
+        fetch(`/api/get_adherents_groupe/${groupId}`)
+            .then(r => r.json())
+            .then(data => {
+                const count = data.adherents ? data.adherents.length : 0;
+                btn.innerHTML = `<i class="fas fa-users"></i> Voir (${count})`;
+            });
+    });
+});
+
+</script>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="openSessionModal({{ groupe.id_groupe }})">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="openAddAdherentModal({{ groupe.id_groupe }})">
+                            <i class="fas fa-user-plus"></i> Gestion des adhérents
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteGroup({{ groupe.id_groupe }})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            {% endif %}
+        {% endfor %}
+    </tbody>
+</table>
+
 </div>
-            <!-- Modal Ajouter un Adhérent -->
+ <!-- Modal Voir Adhérents -->
+<div id="adherentsListModal" class="modal" style="display:none;">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="fas fa-users"></i> Liste des adhérents du groupe</h5>
+                <button type="button" class="btn-close" onclick="closeAdherentsListModal()"></button>
+            </div>
+            <div class="modal-body">
+                <div id="adherentsListContainer">
+                    <!-- Liste sera chargée ici via fetch -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentViewGroupId = null; // ⚡️ variable séparée
+
+function openAdherentsListModal(groupId) {
+    currentViewGroupId = groupId;
+    document.getElementById('adherentsListContainer').innerHTML = "<p class='text-muted'>Chargement...</p>";
+    document.getElementById('adherentsListModal').style.display = 'block';
+
+    fetch(`/api/get_adherents_groupe/${groupId}`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('adherentsListContainer');
+            container.innerHTML = '';
+
+            if (!data.adherents || data.adherents.length === 0) {
+                container.innerHTML = '<div class="text-muted">Aucun adhérent dans ce groupe</div>';
+                return;
+            }
+
+            let table = `
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Matricule</th>
+                            <th>Nom</th>
+                            <th>Prénom</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            data.adherents.forEach(a => {
+                table += `
+                    <tr>
+                        <td>${a.matricule}</td>
+                        <td>${a.nom}</td>
+                        <td>${a.prenom}</td>
+                    </tr>
+                `;
+            });
+            table += `</tbody></table>`;
+            container.innerHTML = table;
+        })
+        .catch(err => {
+            console.error("Erreur lors du chargement :", err);
+            document.getElementById('adherentsListContainer').innerHTML = "<div class='text-danger'>Erreur de chargement</div>";
+        });
+}
+
+function closeAdherentsListModal() {
+    document.getElementById('adherentsListModal').style.display = 'none';
+}
+</script>
 
 
-<!-- Ajoutez ce CSS dans la section <head> -->
-    <style>
-        /* Style pour la modal d'ajout d'adhérents */
-        .search-result-item {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-            transition: background-color 0.2s;
-        }
-        
-        .search-result-item:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .selected-adherent {
-            display: inline-flex;
-            align-items: center;
-            background-color: #e9ecef;
-            border-radius: 20px;
-            padding: 4px 12px;
-            margin: 4px;
-        }
-        
-        .selected-adherent span {
-            margin-right: 8px;
-        }
-        
-        .remove-adherent {
-            cursor: pointer;
-            color: #dc3545;
-            margin-left: 8px;
-        }
-        
-        #adherentSearchResults {
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-        }
-        
-        #selectedAdherents {
-            min-height: 50px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            padding: 8px;
-        }
-        /* Style pour le groupe de recherche */
-        .input-group {
-            margin-bottom: 10px;
-        }
-
-        #searchButton {
-            border-radius: 0 4px 4px 0;
-        }
-
-        .search-result-item {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            transition: background-color 0.2s;
-        }
-
-        .search-result-item:hover {
-            background-color: #f8f9fa;
-        }
-    </style>
-        
         <!-- Modal Ajout Multiple d'Adhérents -->
 <div id="addAdherentModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 700px;">
-    <h4 class="mb-4">Gestion des adhérents</h4>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Gestion des adhérents</h4>
+        <button type="button" class="btn-close" aria-label="Close" onclick="closeAddAdherentModal()"></button>
+    </div>
     
     <div class="row">
         <!-- Colonne des membres existants -->
@@ -391,7 +399,7 @@
             <!-- Recherche -->
             <div class="mb-3">
                 <div class="input-group">
-                    <input type="text" id="adherentSearchInput" class="form-control" placeholder="Rechercher par matricule...">
+                    <input type="text" id="adherentSearchInput" class="form-control" placeholder="Rechercher par Nom ou Prénom...">
                     <button class="btn btn-outline-primary" type="button" id="searchButton">
                         <i class="fas fa-search"></i>
                     </button>
@@ -413,303 +421,77 @@
         <button class="btn btn-primary" onclick="confirmAddAdherents()">Confirmer</button>
     </div>
 </div>
-<script>
 
-let currentGroupId = null;
-let selectedAdherents = [];
-
-function openAddAdherentModal(groupId) {
-    currentGroupId = groupId;
-    selectedAdherents = [];
-    
-    // Charger les membres existants
-    fetch(`/api/get_adherents_groupe/${groupId}`)
-        .then(response => response.json())
-        .then(data => {
-            const container = document.getElementById('currentMembers');
-            container.innerHTML = '';
-            
-            if (data.adherents.length === 0) {
-                container.innerHTML = '<div class="text-muted p-2">Aucun membre dans ce groupe</div>';
-                return;
-            }
-
-            data.adherents.forEach(adherent => {
-                const div = document.createElement('div');
-                div.className = 'd-flex justify-content-between align-items-center p-2 border-bottom';
-                div.innerHTML = `
-                    <div>
-                        ${adherent.matricule} - ${adherent.nom} ${adherent.prenom}
-                    </div>
-                    <button class="btn btn-sm btn-danger" 
-                            onclick="removeFromGroup('${adherent.matricule}')">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
-                container.appendChild(div);
-            });
-        });
-
-    updateSelectedDisplay();
-    document.getElementById('adherentSearchInput').value = '';
-    document.getElementById('adherentSearchResults').innerHTML = '';
-    document.getElementById('addAdherentModal').style.display = 'block';
-}
-
-// Nouvelle fonction pour retirer un adhérent
-function removeFromGroup(matricule) {
-    if (!confirm("Retirer cet adhérent du groupe ?")) return;
-
-    fetch(`/retirer_adherent_groupe/${currentGroupId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ matricule })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            alert(data.error);
-        } else {
-            openAddAdherentModal(currentGroupId); // Recharger la liste
-        }
-    });
-}
-
-function closeAddAdherentModal() {
-    document.getElementById('addAdherentModal').style.display = 'none';
-    document.getElementById('adherentSearchInput').value = '';
-    document.getElementById('adherentSearchResults').innerHTML = '';
-}
-
-// Gestion de la recherche
-// Supprimer l'événement 'input' et utiliser le bouton
-document.getElementById('searchButton').addEventListener('click', function() {
-    const searchTerm = document.getElementById('adherentSearchInput').value.trim();
-    
-    if (searchTerm.length < 1) {
-        alert("Veuillez entrer un matricule");
-        return;
-    }
-
-    fetch(`/api/search_adherent/${encodeURIComponent(searchTerm)}`)
-        .then(response => response.json())
-        .then(data => {
-            const resultsDiv = document.getElementById('adherentSearchResults');
-            resultsDiv.innerHTML = '';
-            
-            if (data.adherents.length === 0) {
-                resultsDiv.innerHTML = '<div class="text-muted p-2">Aucun résultat trouvé</div>';
-                return;
-            }
-
-            data.adherents.forEach(adherent => {
-                if (!selectedAdherents.find(a => a.matricule === adherent.matricule)) {
-                    const div = document.createElement('div');
-                    div.className = 'search-result-item';
-                    div.innerHTML = `
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                ${adherent.matricule} - ${adherent.nom} ${adherent.prenom}
-                            </div>
-                            <button class="btn btn-sm btn-success" 
-                                onclick="addToSelected(${JSON.stringify(adherent).replace(/"/g, '&quot;')})">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    `;
-                    resultsDiv.appendChild(div);
-                }
-            });
-        });
-});
-
-// Optionnel : permettre la recherche avec Entrée
-document.getElementById('adherentSearchInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        document.getElementById('searchButton').click();
-    }
-});
-function addToSelected(adherent) {
-    if (!selectedAdherents.some(a => a.matricule === adherent.matricule)) {
-        selectedAdherents.push(adherent);
-        updateSelectedDisplay();
-    }
-    document.getElementById('adherentSearchInput').value = '';
-    document.getElementById('adherentSearchResults').innerHTML = '';
-}
-
-function removeFromSelected(matricule) {
-    selectedAdherents = selectedAdherents.filter(a => a.matricule !== matricule);
-    updateSelectedDisplay();
-}
-
-function updateSelectedDisplay() {
-    const container = document.getElementById('selectedAdherents');
-    container.innerHTML = '';
-    
-    selectedAdherents.forEach(adherent => {
-        const div = document.createElement('div');
-        div.className = 'selected-adherent mb-2';
-        div.innerHTML = `
-            <span>${adherent.matricule} - ${adherent.nom} ${adherent.prenom}</span>
-            <button class="btn btn-sm btn-danger" onclick="removeFromSelected('${adherent.matricule}')">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        container.appendChild(div);
-    });
-}
-
-function confirmAddAdherents() {
-    if (selectedAdherents.length === 0) {
-        alert('Veuillez sélectionner au moins un adhérent');
-        return;
-    }
-
-    const matricules = selectedAdherents.map(a => a.matricule);
-    
-    fetch(`/ajouter_adherents_groupe/${currentGroupId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ matricules })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            alert(data.error);
-        } else {
-            alert(`${data.added_count} adhérent(s) ajouté(s) avec succès`);
-            closeAddAdherentModal();
-            location.reload();
-        }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        alert('Une erreur est survenue');
-    });
-}
-</script>
-<style>
-#currentMembers table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-#currentMembers th,
-#currentMembers td {
-    padding: 8px;
-    border: 1px solid #dee2e6;
-    font-size: 0.9em;
-}
-
-#currentMembers th {
-    background-color: #f8f9fa;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-
-.remove-member-btn {
-    padding: 2px 6px;
-    font-size: 0.8em;
-}
-</style>
     </div>
     
-    <script>
-    function showGroupForm() {
-        document.getElementById("groupForm").style.display = "block";
-    }
-    
-    function confirmGroupAdd() {
-        const category = document.getElementById("groupCategory").value;
-        console.log(category)
-        const number = document.getElementById("groupNumber").value;
-        console.log(number)
-        const letter = document.getElementById("groupLetter").value.toUpperCase();
-        console.log(letter)
-        const entraineurId = document.getElementById("groupEntraineur").value;
-        console.log(entraineurId)
-    
-        if (!category || !number || !letter || !entraineurId) {
-            alert("Veuillez remplir tous les champs");
-            return;
-        }
-    
-        const groupName = `${category}-${number}-${letter}`;
-        console.log(groupName)
-        console.log(entraineurId)
-    
-        fetch('/ajouter_groupe', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                groupName: groupName,
-                entraineurId: entraineurId
-            })
-        })
-        .then(response => {
-            if (response.ok) {
-                location.reload();
-            } else {
-                alert("Erreur lors de la création du groupe");
-            }
-        });
-    }
-    
-    function deleteGroup(groupId) {
-    if (confirm("Supprimer ce groupe et toutes ses séances ?")) {
-        fetch(`/supprimer_groupe/${groupId}`, { 
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                location.reload();
-            } else {
-                response.json().then(data => alert(data.error));
-            }
-        })
-        .catch(error => console.error('Erreur:', error));
-    }
-}
-    function deleteSession(seanceId) {
-        if (confirm("Supprimer cette séance ?")) {
 
-            fetch('/directeur_technique', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `action=supprimer_seance&seance_id=${seanceId}`
-            }).then(() => location.reload());
-        }
+<!-- Modal Ajout Séance -->
+<div id="sessionModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 350px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Ajouter une séance</h4>
+        <button type="button" class="btn-close" aria-label="Close" onclick="closeSessionModal()"></button>
+    </div>
+
+    <!-- Date -->
+    <div class="mb-3">
+        <label for="sessionDate" class="form-label">Date :</label>
+        <input type="date" id="sessionDate" class="form-control" required>
+    </div>
+
+    <!-- Créneaux -->
+    <div class="mb-3">
+        <label for="sessionTime" class="form-label">Heure de début :</label>
+        <select id="sessionTime" class="form-select" required>
+            {% for creneau in creneaux %}
+            <option value="{{ creneau.start.strftime('%H:%M') }}">
+                {{ creneau.start.strftime('%H:%M') }} - {{ creneau.end.strftime('%H:%M') }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Terrain -->
+    <div class="mb-3">
+        <label for="sessionTerrain" class="form-label">Terrain :</label>
+        <select id="sessionTerrain" class="form-select">
+            {% for terrain in terrains %}
+            <option value="{{ terrain }}">Terrain {{ terrain }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Répétition hebdomadaire -->
+    <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="repeatWeekly">
+        <label class="form-check-label" for="repeatWeekly">
+            Répéter chaque semaine jusqu’à la fin de la saison (01/10 → 31/08)
+        </label>
+    </div>
+
+    <!-- Boutons -->
+    <div class="d-flex gap-2 justify-content-end">
+        <button class="btn btn-secondary" onclick="closeSessionModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="addSession()">Confirmer</button>
+    </div>
+</div>
+
+  
+        
+    <style>
+    /* Style personnalisé pour le datepicker */
+    .flatpickr-monthDropdown-months {
+        font-size: 14px;
     }
-    
-    // Gestion changement entraîneur
-    document.querySelectorAll('.entraineur-select').forEach(select => {
-        select.addEventListener('change', function() {
-            const groupeId = this.dataset.groupeId;
-            const entraineurId = this.value;
-            
-            fetch('/directeur_technique', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `action=changer_entraineur&groupe_id=${groupeId}&entraineur_id=${entraineurId}`
-            }).then(() => location.reload());
-        });
-    });
-    </script>
+    .flatpickr-weekday {
+        color: #666;
+    }
+    .flatpickr-day {
+        border-radius: 3px;
+    }
+    </style>
+
+
+
     
     <style>
     .time-slot {
@@ -740,155 +522,31 @@ function confirmAddAdherents() {
     </style>
 
 
-
-
-<!-- Modal Ajout Séance -->
-<div id="sessionModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 300px;">
-    <h4>Ajouter une séance</h4>
-    <div class="mb-3">
-        <label for="sessionDate" class="form-label">Date :</label>
-        <input type="date" 
-               id="sessionDate" 
-               class="form-control"
-               required>
-    </div>
-    <div class="mb-3">
-        <label for="sessionTime" class="form-label">Heure de début :</label>
-        <select id="sessionTime" class="form-select" required>
-            {% for creneau in creneaux %}
-            <option value="{{ creneau.start.strftime('%H:%M') }}">
-                {{ creneau.start.strftime('%H:%M') }} - {{ creneau.end.strftime('%H:%M') }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="mb-3">
-        <label for="sessionTerrain" class="form-label">Terrain :</label>
-        <select id="sessionTerrain" class="form-select">
-            {% for terrain in terrains %}
-            <option value="{{ terrain }}">Terrain {{ terrain }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div class="d-flex gap-2 justify-content-end">
-        <button class="btn btn-secondary" onclick="closeSessionModal()">Annuler</button>
-        <button class="btn btn-primary" onclick="addSession()">Confirmer</button>
-    </div>
-</div>
-<script>
-    // Configuration du datepicker avec conversion de format
-    const frenchDatepicker = flatpickr("#sessionDate", {
-        locale: "fr",
-        dateFormat: "Y-m-d", // Format ISO pour le backend
-        altInput: true,
-        altFormat: "d/m/Y", // Format d'affichage pour l'utilisateur
-        minDate: "today",
-        disableMobile: true
-    });
-    
-    // Fonction modifiée pour ajouter une séance
-    function addSession() {
-        const date = document.getElementById('sessionDate').value;
-        const heure_debut = document.getElementById('sessionTime').value;
-        const terrain = document.getElementById('sessionTerrain').value;
-        const currentGroupId = getCurrentGroupId(); // Assurez-vous que cette fonction existe
-    
-        const data = {
-            date: date, // Maintenant au format YYYY-MM-DD
-            heure_debut: heure_debut,
-            terrain: parseInt(terrain),
-            groupe_id: currentGroupId
-        };
-    
-        fetch('/ajouter_seance', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                // Afficher l'erreur
-                alert(data.error);
-            } else {
-                // Succès
-                closeSessionModal();
-                // Rafraîchir le calendrier ou afficher un message de succès
-                window.location.reload();
-            }
-        })
-        .catch(error => {
-            console.error('Erreur:', error);
-            alert('Une erreur est survenue lors de l\'ajout de la séance');
-        });
-    }
-    </script>
-    
-    <style>
-    /* Style personnalisé pour le datepicker */
-    .flatpickr-monthDropdown-months {
-        font-size: 14px;
-    }
-    .flatpickr-weekday {
-        color: #666;
-    }
-    .flatpickr-day {
-        border-radius: 3px;
-    }
-    </style>
-<script>
-    
-
-    function openSessionModal(groupId) {
-    currentGroupId = groupId;
-    document.getElementById('sessionModal').style.display = 'block';
+<style>
+#currentMembers table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-function closeSessionModal() {
-    document.getElementById('sessionModal').style.display = 'none';
+#currentMembers th,
+#currentMembers td {
+    padding: 8px;
+    border: 1px solid #dee2e6;
+    font-size: 0.9em;
 }
 
-function addSession() {
-    const date = document.getElementById('sessionDate').value;
-    const time = document.getElementById('sessionTime').value;
-    const terrain = document.getElementById('sessionTerrain').value;
-
-    if (!date || !time || !terrain) {
-        alert('Veuillez remplir tous les champs');
-        return;
-    }
-
-    fetch('/ajouter_seance', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            groupe_id: currentGroupId,
-            date: date,
-            heure_debut: time,
-            terrain: terrain
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.message) {
-            alert(data.message);
-            location.reload();
-        } else {
-            alert(data.error);
-        }
-        closeSessionModal();
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        alert('Une erreur est survenue');
-        closeSessionModal();
-    });
+#currentMembers th {
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
-</script>
+
+.remove-member-btn {
+    padding: 2px 6px;
+    font-size: 0.8em;
+}
+</style>
 
 
 
@@ -918,7 +576,7 @@ function addSession() {
 
 <!-- Template Javascript -->
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-
+<script src="{{ url_for('static', filename='js/gestion_groupes.js') }}"></script>
 </body>
 
 </html>

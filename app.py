@@ -331,6 +331,7 @@ def get_paiements_indicators():
 
 from sqlalchemy import func, or_
 
+
 @app.route('/entraineur', methods=['GET', 'POST'])
 def entraineur():
     if 'user_id' not in session or session.get('role') != 'entraineur':
@@ -352,8 +353,8 @@ def entraineur():
     if not entraineur:
         flash("Entraîneur introuvable.", "danger")
         return redirect(url_for('login'))
-
-   # Gestion de la navigation
+    nom_complet_entraineur=nom+" "+prenom
+    # Gestion de la navigation
     week_offset = request.args.get('week_offset', 0, type=int)
     day_offset = request.args.get('day_offset', 0, type=int)
     today = datetime.today()
@@ -361,8 +362,8 @@ def entraineur():
     day_offset = max(0, min(6, day_offset))  # Bloque entre 0 (lundi) et 6 (dimanche)
     current_day = start_of_week + timedelta(days=day_offset)
 
-    # Récupérer les séances pour l'entraîneur actuel
-    seances = Seance.query.filter_by(entraineur=f"{nom} {prenom}").all()
+    # Récupérer TOUTES les séances pour la journée courante
+    seances_tous = Seance.query.filter(Seance.date == current_day.date()).all()
 
     # Création des créneaux horaires
     creneaux = [
@@ -376,18 +377,24 @@ def entraineur():
         {'start': time(18, 30), 'end': time(20, 0)}
     ]
 
+    # Préparer une structure de données pour faciliter l'accès aux séances
+    seances_par_terrain_et_heure = {}
+    for seance in seances_tous:
+        terrain = seance.terrain
+        heure_debut = seance.heure_debut.strftime('%H:%M')
+        key = f"{terrain}_{heure_debut}"
+        seances_par_terrain_et_heure[key] = seance
+
     return render_template(
         'entraineur.html',
         current_day=current_day,
         week_offset=week_offset,
         day_offset=day_offset,
         entraineur=entraineur,
-        seances=seances,
-        creneaux=creneaux
+        seances_par_terrain_et_heure=seances_par_terrain_et_heure,
+        creneaux=creneaux,
+        nom_complet_entraineur=f"{nom} {prenom}"
     )
-
-
-from sqlalchemy import and_, or_
 
 
 @app.route('/locations_terrains', methods=['GET', 'POST'])
@@ -770,79 +777,61 @@ def ajouter_seance():
         return redirect(url_for('login'))
     
     data = request.get_json()
-    
-    # Récupérer les données
     groupe = Groupe.query.get(data['groupe_id'])
     if not groupe:
         return jsonify({"error": "Groupe introuvable"}), 404
 
     try:
-        # Gestion plus robuste des formats de date
+        # Récupération de la date
         date_str = data['date']
         try:
-            # Essayer d'abord le format ISO
             date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
         except ValueError:
-            try:
-                # Essayer le format français si le format ISO échoue
-                date_obj = datetime.strptime(date_str, '%d/%m/%Y').date()
-            except ValueError:
-                return jsonify({"error": "Format de date invalide. Utilisez YYYY-MM-DD ou DD/MM/YYYY"}), 400
+            date_obj = datetime.strptime(date_str, '%d/%m/%Y').date()
 
-        # Conversion de l'heure
-        try:
-            heure_debut = datetime.strptime(data['heure_debut'], '%H:%M').time()
-        except ValueError:
-            return jsonify({"error": "Format d'heure invalide. Utilisez HH:MM"}), 400
-
-        # Vérification des créneaux valides
-        creneaux_valides = [
-            time(8, 0), time(9, 30), time(11, 0), time(12, 30),
-            time(14, 0), time(15, 30), time(17, 0), time(18, 30)
-        ]
-        
-        if heure_debut not in creneaux_valides:
-            return jsonify({"error": "Créneau horaire non valide"}), 400
-
+        # Heure début
+        heure_debut = datetime.strptime(data['heure_debut'], '%H:%M').time()
         heure_fin = (datetime.combine(date_obj, heure_debut) + timedelta(minutes=90)).time()
 
-        # Vérification des conflits
-        conflits = Seance.query.filter(
-            (
-                (Seance.terrain == data['terrain']) |
-                (Seance.entraineur == groupe.entraineur_nom) |
-                (Seance.groupe == groupe.nom_groupe)
-            ),
-            Seance.date == date_obj,
-            (
-                (Seance.heure_debut <= heure_debut) & (Seance.heure_fin > heure_debut) |
-                (Seance.heure_debut < heure_fin) & (Seance.heure_fin >= heure_fin)
+        # Option répétition
+        repeat_weekly = data.get('repeat_weekly', False)
+
+        # Définir la période saison (01/10 → 31/08)
+        saison_debut = date(date_obj.year, 10, 1)
+        saison_fin = date(date_obj.year + 1, 8, 31)
+
+        # Vérifier si la séance doit être répétée
+        dates_a_inserer = [date_obj]
+        if repeat_weekly:
+            current_date = date_obj + timedelta(weeks=1)
+            while current_date <= saison_fin:
+                dates_a_inserer.append(current_date)
+                current_date += timedelta(weeks=1)
+
+        # Boucle d’insertion
+        for d in dates_a_inserer:
+            conflits = Seance.query.filter(
+                Seance.date == d,
+                Seance.terrain == data['terrain'],
+                Seance.heure_debut < heure_fin,
+                Seance.heure_fin > heure_debut
+            ).first()
+
+            if conflits:
+                return jsonify({"error": f"Conflit détecté pour la date {d}"}), 400
+
+            nouvelle_seance = Seance(
+                date=d,
+                heure_debut=heure_debut,
+                heure_fin=heure_fin,
+                groupe=groupe.nom_groupe,
+                entraineur=groupe.entraineur_nom,
+                terrain=data['terrain']
             )
-        ).first()
+            db.session.add(nouvelle_seance)
 
-        if conflits:
-            messages = []
-            if conflits.terrain == data['terrain']:
-                messages.append("Conflit de planning sur ce terrain")
-            if conflits.entraineur == groupe.entraineur_nom:
-                messages.append("L'entraîneur a déjà une séance à ce créneau")
-            if conflits.groupe == groupe.nom_groupe:
-                messages.append("Le groupe a déjà une séance à ce créneau")
-            
-            return jsonify({"error": " | ".join(messages)}), 400
-
-        # Création de la séance
-        nouvelle_seance = Seance(
-            date=date_obj,
-            heure_debut=heure_debut,
-            groupe=groupe.nom_groupe,
-            entraineur=groupe.entraineur_nom,
-            terrain=data['terrain']
-        )
-        
-        db.session.add(nouvelle_seance)
         db.session.commit()
-        return jsonify({"message": "Séance ajoutée avec succès"}), 200
+        return jsonify({"message": f"{len(dates_a_inserer)} séance(s) ajoutée(s) avec succès"}), 200
 
     except Exception as e:
         db.session.rollback()
@@ -940,6 +929,40 @@ def edit_session():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/delete_session', methods=['POST'])
+def delete_session():
+    if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
+        return jsonify({"error": "Accès non autorisé"}), 403
+
+    data = request.get_json()
+    session_id = data.get('session_id')
+    scope = data.get('scope', 'week')
+
+    seance = Seance.query.get(session_id)
+    if not seance:
+        return jsonify({"error": "Séance introuvable"}), 404
+
+    try:
+        if scope == 'all':
+            # Supprimer toutes les séances du même groupe, terrain, heure_debut
+            Seance.query.filter_by(
+                groupe=seance.groupe,
+                terrain=seance.terrain,
+                heure_debut=seance.heure_debut
+            ).delete()
+        else:
+            # Supprimer uniquement cette séance
+            db.session.delete(seance)
+
+        db.session.commit()
+        return jsonify({"message": "Séance supprimée avec succès"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Erreur: {str(e)}"}), 500
+
+
 
 @app.route('/retirer_adherent_groupe/<int:groupe_id>', methods=['POST'])
 def retirer_adherent_groupe(groupe_id):
@@ -1544,11 +1567,10 @@ def ajouter_adherent():
     if 'user_id' not in session or session.get('role') != 'admin':
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
+    
     groupes = Groupe.query.all()
     cotisations = {c.nom_cotisation: c.montant_cotisation for c in Cotisation.query.all()}
-
     entraineurs = Entraineur.query.all()
-    groupes = Groupe.query.all()  # Récupérer tous les groupes pour le formulaire
     
     # Générer le code saison par défaut
     code_saison_defaut = generer_code_saison()
@@ -1563,6 +1585,14 @@ def ajouter_adherent():
         dernier_adherent = Adherent.query.order_by(Adherent.matricule.desc()).first()
         matricule = dernier_adherent.matricule + 1 if dernier_adherent else 1
         
+        # Handle empty values for remise and cotisation
+        remise_str = request.form.get('remise', '0')
+        cotisation_str = request.form.get('cotisation', '0')
+        
+        # Convert to float, default to 0 if empty
+        remise = float(remise_str) if remise_str != '' else 0.0
+        cotisation = float(cotisation_str) if cotisation_str != '' else 0.0
+        
         # Ajouter un nouvel adhérent
         nouveau_adherent = Adherent(
             nom=request.form['Nom'],
@@ -1571,18 +1601,18 @@ def ajouter_adherent():
             date_inscription=request.form['date_inscription'],
             sexe=request.form['sexe'],
             tel1=request.form['tel1'],
-            tel2=request.form['tel2'],
+            tel2=request.form.get('tel2'),
             type_abonnement=type_abonnement,
             ancien_abonne=request.form['ancien_abonne'],
             matricule=matricule,
             groupe=nom_groupe,
             entraineur=entraineur_nom,
-            email=request.form['email'],
-            code_saison=code_saison,  # Nouveau champ
+            email=request.form.get('email'),
+            code_saison=code_saison,
             paye='N',
             status='Actif',
-            cotisation=float(request.form.get('cotisation', 0)),
-            remise=float(request.form.get('remise', 0)),
+            cotisation=cotisation,
+            remise=remise,
         )
 
         try:
@@ -1593,14 +1623,13 @@ def ajouter_adherent():
             return redirect(url_for('admin'))
         except Exception as e:
             db.session.rollback()
-            flash(f"Erreur lors de l\'ajout : {str(e)}", 'danger')
+            flash(f"Erreur lors de l'ajout : {str(e)}", 'danger')
 
     return render_template('ajouter_adherent.html', 
                          entraineurs=entraineurs, 
                          groupes=groupes,
                          code_saison_defaut=code_saison_defaut,
-                         cotisations=cotisations,)
-
+                         cotisations=cotisations)
 @app.route('/gerer_adherent', methods=['POST','GET'])
 def gerer_adherent():
     if 'user_id' not in session or session.get('role') != 'admin':
@@ -2367,17 +2396,14 @@ class Seance(db.Model):
     terrain = db.Column(db.Integer, nullable=False)
     adherents_matricules = db.Column(db.Text,nullable=True)
 
-    def __init__(self, date, heure_debut, groupe, entraineur, terrain):
+    def __init__(self, date, heure_debut, groupe, entraineur, terrain, heure_fin=None):
         self.date = date
         self.heure_debut = heure_debut
-        
-        # Ligne corrigée ▼
-        start = datetime.combine(date.today(), heure_debut)  # Utilisez 'date.today()'
-        
-        self.heure_fin = (start + timedelta(minutes=90)).time()
+        self.heure_fin = heure_fin or (datetime.combine(date, heure_debut) + timedelta(minutes=90)).time()
         self.groupe = groupe
         self.entraineur = entraineur
         self.terrain = terrain
+
     
 class Reservation(db.Model):
     __tablename__ = 'reservations'
