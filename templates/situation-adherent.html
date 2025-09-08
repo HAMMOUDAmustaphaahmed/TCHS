@@ -93,25 +93,64 @@
     </div>
 
     <!-- Paiement -->
-    <div class="col-lg-6 col-md-12">
-        <div class="card info-card payment-info h-100 shadow-sm">
+    <div class="col-lg-12 col-md-12">
+        <div class="card info-card payment-info shadow-sm">
             <div class="card-header d-flex align-items-center">
                 <i class="fas fa-money-bill-wave me-2"></i>
                 <h5 class="mb-0">Situation Financière</h5>
             </div>
             <div class="card-body">
-                <div class="info-row d-flex justify-content-between"><span class="label">Total à payer:</span> <span id="total-a-payer" class="value"></span></div>
-                <div class="info-row d-flex justify-content-between"><span class="label">Total payé:</span> <span id="total-paye" class="value"></span></div>
-                <div class="info-row d-flex justify-content-between"><span class="label">Remise:</span> <span id="total-remise" class="value"></span></div>
-                <div class="info-row d-flex justify-content-between"><span class="label">Reste à payer:</span> <span id="reste-a-payer" class="value"></span></div>
-                
+                <!-- Résumé financier -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="info-row d-flex justify-content-between"><span class="label">Cotisation:</span> <span id="cotisation" class="value"></span></div>
+                        <div class="info-row d-flex justify-content-between"><span class="label">Code Saison:</span> <span id="code-saison" class="value"></span></div>
+                        <div class="info-row d-flex justify-content-between"><span class="label">Date d'inscription:</span> <span id="date-inscription" class="value"></span></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-row d-flex justify-content-between"><span class="label">Remise:</span> <span id="total-remise" class="value"></span></div>
+                        <div class="info-row d-flex justify-content-between"><span class="label">Montant après remise:</span> <span id="total-a-payer" class="value"></span></div>
+                        <div class="info-row d-flex justify-content-between text-success"><span class="label fw-bold">Reste à payer:</span> <span id="reste-a-payer" class="value fw-bold"></span></div>
+                    </div>
+                </div>
+
+                <!-- Tableau des paiements -->
+                <div class="payment-history">
+                    <h6 class="mb-3"><i class="fas fa-history me-2"></i>Historique des Paiements</h6>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Saison</th>
+                                    <th>N° Carnet</th>
+                                    <th>N° Bon</th>
+                                    <th>Montant Payé</th>
+                                    <th>Type de Règlement</th>
+                                    <th>N° Chèque</th>
+                                    <th>Banque</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payment-history-table">
+                                <!-- Les données seront ajoutées par JavaScript -->
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-success">
+                                    <td colspan="4" class="text-end fw-bold">Total payé:</td>
+                                    <td class="fw-bold" id="total-paye-footer">0.00 TND</td>
+                                    <td colspan="3"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Présence -->
-    <div class="col-lg-6 col-md-12">
-        <div class="card info-card presence-info h-100 shadow-sm">
+    <div class="col-lg-12 col-md-12">
+        <div class="card info-card presence-info shadow-sm">
             <div class="card-header d-flex align-items-center">
                 <i class="fas fa-calendar-check me-2"></i>
                 <h5 class="mb-0">Présences</h5>
@@ -172,6 +211,74 @@
     margin: 0 5px;
 }
 
+.payment-history {
+    margin-top: 20px;
+    border-top: 2px solid #f8f9fa;
+    padding-top: 20px;
+}
+
+.payment-history h6 {
+    color: #495057;
+    font-weight: 600;
+}
+
+.table th {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.table-hover > tbody > tr:hover > td {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.payment-method-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.payment-espece {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.payment-cheque {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.payment-virement {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.payment-carte {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+#reste-a-payer.zero {
+    color: #28a745 !important;
+}
+
+#reste-a-payer.positive {
+    color: #dc3545 !important;
+}
+
 </style>
                 </div>
             </div>
@@ -204,26 +311,395 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
     <!-- Script général template -->
-    <script>
-        $("#search-adherent").autocomplete({
-    source: (request, response) => {
-        $.getJSON("/api/search-adherent", {
-            term: request.term
-        }, (data) => {
-            response(data.map(item => ({
-                label: item.label,
-                value: item.matricule
-            })));
-        });
-    },
-    minLength: 2,
-    select: (event, ui) => {
-        event.preventDefault();
-        $("#search-adherent").val(ui.item.label);
-        this.loadAdherentSituation(ui.item.value);
+   <!-- Script protégé contre les erreurs externes -->
+<script>
+// Protection contre les erreurs d'autres scripts
+(function($) {
+    'use strict';
+    
+    // Vérification que jQuery est bien chargé
+    if (typeof $ === 'undefined') {
+        console.error('jQuery n\'est pas chargé !');
+        return;
     }
-});
-
-    </script>
+    
+    console.log('Script situation-adherent initialisé avec jQuery', $.fn.jquery);
+    
+    // Attendre que le DOM soit complètement chargé
+    $(document).ready(function() {
+        console.log('=== INITIALISATION SCRIPT SITUATION ADHERENT ===');
+        
+        try {
+            // Initialisation de l'autocomplete avec protection d'erreur
+            if ($("#search-adherent").length > 0) {
+                console.log('Initialisation autocomplete...');
+                
+                $("#search-adherent").autocomplete({
+                    source: function(request, response) {
+                        console.log('Recherche autocomplete pour:', request.term);
+                        
+                        $.getJSON("/api/search-adherent", {
+                            term: request.term
+                        })
+                        .done(function(data) {
+                            console.log('Résultats autocomplete reçus:', data);
+                            response(data.map(item => ({
+                                label: item.label,
+                                value: item.matricule
+                            })));
+                        })
+                        .fail(function(xhr, status, error) {
+                            console.error('Erreur autocomplete:', error);
+                            response([]);
+                        });
+                    },
+                    minLength: 2,
+                    select: function(event, ui) {
+                        console.log('Sélection autocomplete:', ui.item);
+                        event.preventDefault();
+                        $("#search-adherent").val(ui.item.label);
+                        
+                        // Petit délai pour s'assurer que l'affichage est mis à jour
+                        setTimeout(function() {
+                            loadAdherentSituation(ui.item.value);
+                        }, 100);
+                        
+                        return false;
+                    }
+                });
+                
+                console.log('✓ Autocomplete initialisé');
+            } else {
+                console.error('✗ Élément #search-adherent non trouvé');
+            }
+            
+        } catch (error) {
+            console.error('Erreur lors de l\'initialisation de l\'autocomplete:', error);
+        }
+        
+        // Vérifications initiales
+        console.log('=== VÉRIFICATIONS INITIALES ===');
+        console.log('jQuery version:', $.fn.jquery);
+        console.log('Élément search-adherent présent:', $('#search-adherent').length > 0);
+        console.log('Élément situation-content présent:', $('#situation-content').length > 0);
+        console.log('État initial situation-content visible:', $('#situation-content').is(':visible'));
+        
+        // Test de tous les éléments critiques
+        const criticalElements = [
+            '#matricule', '#nom', '#prenom', '#date-naissance', '#telephone', '#email',
+            '#type-abonnement', '#groupe', '#entraineur', '#status', '#cotisation',
+            '#code-saison', '#date-inscription', '#total-remise', '#total-a-payer',
+            '#reste-a-payer', '#payment-history-table', '#total-paye-footer',
+            '#total-presences', '#presences', '#absences', '#prochaine-date',
+            '#prochaine-heure', '#prochaine-groupe'
+        ];
+        
+        const missingElements = criticalElements.filter(selector => $(selector).length === 0);
+        if (missingElements.length > 0) {
+            console.warn('Éléments manquants:', missingElements);
+        } else {
+            console.log('✓ Tous les éléments critiques sont présents');
+        }
+    });
+    
+    // Function to load adherent situation - version protégée
+    window.loadAdherentSituation = function(matricule) {
+        console.log('=== DÉBUT CHARGEMENT ADHÉRENT ===');
+        console.log('Matricule:', matricule);
+        
+        // Afficher un indicateur de chargement
+        const searchInput = $('#search-adherent');
+        const originalPlaceholder = searchInput.attr('placeholder');
+        searchInput.attr('placeholder', 'Chargement...');
+        
+        $.ajax({
+            url: `/api/situation-adherent/${matricule}`,
+            method: 'GET',
+            dataType: 'json',
+            timeout: 10000, // Timeout de 10 secondes
+            success: function(data) {
+                try {
+                    console.log('=== DONNÉES REÇUES ===');
+                    console.log('Réponse complète:', JSON.stringify(data, null, 2));
+                    
+                    // Restaurer le placeholder
+                    searchInput.attr('placeholder', originalPlaceholder);
+                    
+                    // Vérification des données
+                    if (!data || typeof data !== 'object') {
+                        throw new Error('Données invalides reçues du serveur');
+                    }
+                    
+                    console.log('=== REMPLISSAGE INFORMATIONS PERSONNELLES ===');
+                    if (data.adherent) {
+                        fillPersonalInfo(data.adherent);
+                    } else {
+                        console.error('Données adherent manquantes');
+                    }
+                    
+                    console.log('=== REMPLISSAGE INFORMATIONS FINANCIÈRES ===');
+                    if (data.paiements) {
+                        fillFinancialInfo(data.paiements);
+                        fillPaymentHistory(data.paiements);
+                    } else {
+                        console.error('Données paiements manquantes');
+                    }
+                    
+                    console.log('=== REMPLISSAGE PRÉSENCES ===');
+                    if (data.presences) {
+                        fillPresenceInfo(data.presences);
+                    } else {
+                        console.error('Données présences manquantes');
+                    }
+                    
+                    console.log('=== PROCHAINE SÉANCE ===');
+                    fillNextSession(data.prochaine_seance);
+                    
+                    console.log('=== AFFICHAGE FINAL ===');
+                    showContent();
+                    
+                } catch (error) {
+                    console.error('Erreur lors du traitement des données:', error);
+                    alert('Erreur lors du traitement des données: ' + error.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log('=== ERREUR AJAX ===');
+                console.error('Status HTTP:', xhr.status);
+                console.error('Response:', xhr.responseText);
+                console.error('Error:', error);
+                
+                // Restaurer le placeholder
+                searchInput.attr('placeholder', originalPlaceholder);
+                
+                let errorMessage = 'Erreur de connexion';
+                if (xhr.status === 404) {
+                    errorMessage = 'Adhérent non trouvé';
+                } else if (xhr.status >= 500) {
+                    errorMessage = 'Erreur serveur';
+                } else if (status === 'timeout') {
+                    errorMessage = 'Délai d\'attente dépassé';
+                }
+                
+                alert(errorMessage + '. Veuillez réessayer.');
+            }
+        });
+    };
+    
+    // Fonction pour remplir les informations personnelles
+    function fillPersonalInfo(adherent) {
+        const fields = {
+            '#matricule': adherent.matricule,
+            '#nom': adherent.nom,
+            '#prenom': adherent.prenom,
+            '#date-naissance': adherent.date_naissance,
+            '#telephone': adherent.telephone,
+            '#email': adherent.email,
+            '#type-abonnement': adherent.type_abonnement,
+            '#groupe': adherent.groupe,
+            '#entraineur': adherent.entraineur,
+            '#status': adherent.status,
+            '#date-inscription': adherent.date_inscription
+        };
+        
+        fillFields(fields, 'Informations personnelles');
+    }
+    
+    // Fonction pour remplir les informations financières
+    function fillFinancialInfo(paiements) {
+        const fields = {
+            '#cotisation': (paiements.cotisation || 0) + ' TND',
+            '#code-saison': paiements.code_saison,
+            '#total-a-payer': (paiements.total_a_payer || 0) + ' TND',
+            '#reste-a-payer': (paiements.reste_a_payer || 0) + ' TND'
+        };
+        
+        fillFields(fields, 'Informations financières');
+        
+        // Gestion de la remise
+        const remisePourcentage = paiements.total_remise || 0;
+        const remiseMontant = paiements.remise_montant || 0;
+        const remiseText = `${remisePourcentage}% (-${remiseMontant.toFixed(1)} TND)`;
+        
+        const remiseElement = $('#total-remise');
+        if (remiseElement.length > 0) {
+            remiseElement.text(remiseText);
+            console.log('✓ Remise remplie:', remiseText);
+        }
+        
+        // Coloration du reste à payer
+        const resteAPayer = paiements.reste_a_payer || 0;
+        const resteElement = $('#reste-a-payer');
+        if (resteElement.length > 0) {
+            resteElement.removeClass('zero positive');
+            if (resteAPayer == 0) {
+                resteElement.addClass('zero');
+            } else {
+                resteElement.addClass('positive');
+            }
+            console.log('✓ Coloration appliquée pour reste:', resteAPayer);
+        }
+    }
+    
+    // Fonction pour remplir l'historique des paiements
+    function fillPaymentHistory(paiements) {
+        const tableBody = $('#payment-history-table');
+        if (tableBody.length === 0) {
+            console.error('✗ Tableau paiements non trouvé');
+            return;
+        }
+        
+        tableBody.empty();
+        
+        if (paiements.historique && Array.isArray(paiements.historique) && paiements.historique.length > 0) {
+            console.log(`Affichage de ${paiements.historique.length} paiements`);
+            
+            paiements.historique.forEach((paiement, index) => {
+                const typeReglement = (paiement.type_reglement || 'espece').toLowerCase();
+                const paymentMethodClass = `payment-${typeReglement.replace(/[^a-z0-9]/g, '')}`;
+                
+                const row = $(`
+                    <tr>
+                        <td>${paiement.date || '-'}</td>
+                        <td>${paiement.code_saison || 'N/D'}</td>
+                        <td>${paiement.numero_carnet || '-'}</td>
+                        <td>${paiement.numero_bon || '-'}</td>
+                        <td class="fw-bold">${(paiement.montant_paye || 0).toFixed(2)} TND</td>
+                        <td><span class="payment-method-badge ${paymentMethodClass}">${paiement.type_reglement || 'N/D'}</span></td>
+                        <td>${paiement.numero_cheque || '-'}</td>
+                        <td>${paiement.banque || '-'}</td>
+                    </tr>
+                `);
+                
+                tableBody.append(row);
+                console.log(`✓ Ligne ${index + 1} ajoutée:`, paiement.montant_paye, 'TND');
+            });
+            
+        } else {
+            tableBody.append('<tr><td colspan="8" class="text-center text-muted">Aucun paiement enregistré</td></tr>');
+            console.log('Aucun historique de paiements');
+        }
+        
+        // Total footer
+        const totalPaye = paiements.total_paye || 0;
+        const totalFooter = $('#total-paye-footer');
+        if (totalFooter.length > 0) {
+            totalFooter.text(totalPaye.toFixed(2) + ' TND');
+            console.log('✓ Total footer mis à jour:', totalPaye);
+        }
+    }
+    
+    // Fonction pour remplir les présences
+    function fillPresenceInfo(presences) {
+        const fields = {
+            '#total-presences': presences.total || 0,
+            '#presences': presences.present || 0,
+            '#absences': presences.absent || 0
+        };
+        
+        fillFields(fields, 'Présences');
+    }
+    
+    // Fonction pour remplir la prochaine séance
+    function fillNextSession(prochaineSeance) {
+        let fields;
+        
+        if (prochaineSeance) {
+            fields = {
+                '#prochaine-date': prochaineSeance.date,
+                '#prochaine-heure': prochaineSeance.heure,
+                '#prochaine-groupe': prochaineSeance.groupe
+            };
+            console.log('Prochaine séance trouvée');
+        } else {
+            fields = {
+                '#prochaine-date': 'Aucune',
+                '#prochaine-heure': '-',
+                '#prochaine-groupe': '-'
+            };
+            console.log('Aucune prochaine séance');
+        }
+        
+        fillFields(fields, 'Prochaine séance');
+    }
+    
+    // Fonction utilitaire pour remplir les champs
+    function fillFields(fields, section) {
+        console.log(`Remplissage section: ${section}`);
+        
+        Object.entries(fields).forEach(([selector, value]) => {
+            const element = $(selector);
+            // Amélioration: gérer les valeurs 0, null, undefined et chaînes vides
+            let displayValue;
+            
+            if (value === null || value === undefined) {
+                displayValue = '-';
+            } else if (value === 0) {
+                displayValue = '0'; // Afficher 0 au lieu de '-' pour les nombres
+            } else if (value === '') {
+                displayValue = '-';
+            } else {
+                displayValue = value;
+            }
+            
+            if (element.length > 0) {
+                element.text(displayValue);
+                console.log(`✓ ${selector}: "${displayValue}"`);
+            } else {
+                console.error(`✗ Élément non trouvé: ${selector}`);
+            }
+        });
+    }
+    
+    // Fonction pour afficher le contenu
+    function showContent() {
+        const content = $('#situation-content');
+        
+        if (content.length > 0) {
+            console.log('État avant affichage:', {
+                exists: true,
+                visible: content.is(':visible'),
+                display: content.css('display'),
+                visibility: content.css('visibility')
+            });
+            
+            // Forcer l'affichage avec plusieurs méthodes
+            content.show().css({
+                'display': 'block',
+                'visibility': 'visible',
+                'opacity': '1'
+            });
+            
+            // Vérifier après
+            setTimeout(() => {
+                console.log('État après affichage:', {
+                    visible: content.is(':visible'),
+                    display: content.css('display'),
+                    visibility: content.css('visibility')
+                });
+                
+                if (!content.is(':visible')) {
+                    console.error('⚠️ Le contenu n\'est toujours pas visible !');
+                    // Essayer de trouver ce qui cache le contenu
+                    console.log('Classes CSS:', content.attr('class'));
+                    console.log('Styles inline:', content.attr('style'));
+                    console.log('Parent visible:', content.parent().is(':visible'));
+                } else {
+                    console.log('✅ Contenu correctement affiché !');
+                }
+            }, 100);
+            
+        } else {
+            console.error('✗ Élément #situation-content non trouvé');
+        }
+    }
+    
+    // Test de fonction pour déboguer
+    window.testLoadAdherent = function() {
+        console.log('Test de chargement avec matricule 5...');
+        loadAdherentSituation(5);
+    };
+    
+})(jQuery);</script>
 </body>
 </html>

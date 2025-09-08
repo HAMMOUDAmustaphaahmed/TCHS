@@ -14,13 +14,8 @@ app.config['DEBUG'] = True
 app.secret_key = 'your_secret_key'  # Remplacez par une clé sécurisée
 
 # Configure the database
-app.config['SQLALCHEMY_DATABASE_URI'] = (
-    "mysql+pymysql://if0_39855789:pUVvyOyZxZ5Jp@sql310.infinityfree.com:3306/if0_39855789_tchs"
-)
-
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/tchs'  # Update with your DB URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-
 
 # Initialize SQLAlchemy
 db = SQLAlchemy(app)
@@ -3349,7 +3344,6 @@ from flask import jsonify, render_template, request
 from sqlalchemy import or_
 from datetime import datetime, timedelta
 import pytz
-
 @app.route('/situation-adherent')
 def show_situation_adherent():
     return render_template('situation-adherent.html')
@@ -3359,7 +3353,7 @@ def search_adherent():
     search_term = request.args.get('term', '')
     if not search_term:
         return jsonify([])
-
+    
     adherents = Adherent.query.filter(
         or_(
             Adherent.matricule.cast(db.String).like(f'%{search_term}%'),
@@ -3367,7 +3361,7 @@ def search_adherent():
             Adherent.prenom.ilike(f'%{search_term}%')
         )
     ).limit(10).all()
-
+    
     return jsonify([{
         'id': a.adherent_id,
         'matricule': a.matricule,
@@ -3379,44 +3373,84 @@ def search_adherent():
 @app.route('/api/situation-adherent/<int:matricule>')
 def get_situation_adherent(matricule):
     adherent = Adherent.query.filter_by(matricule=matricule).first_or_404()
+    
+    # Récupérer tous les paiements
+    paiements = Paiement.query.filter_by(matricule_adherent=str(matricule)).order_by(Paiement.date_paiement).all()
+    
+    # Calculer les totaux à partir du modèle Paiement
+    if paiements:
+        # Prendre les données du dernier paiement pour les infos générales
+        dernier_paiement = paiements[-1]
+        cotisation = dernier_paiement.cotisation or 0
+        remise_pourcentage = dernier_paiement.remise or 0
+        code_saison = dernier_paiement.code_saison or 'N/D'
+        
+        # Calculer les montants
+        remise_montant = cotisation * (remise_pourcentage / 100)
+        total_a_payer = cotisation - remise_montant
+        total_paye = sum(p.montant_paye for p in paiements if p.montant_paye)
+        reste_a_payer = round(max(0.0, total_a_payer - total_paye), 2)
+    else:
+        # Valeurs par défaut si aucun paiement
+        cotisation = adherent.cotisation or 0
+        remise_pourcentage = adherent.remise or 0
+        code_saison = getattr(adherent, 'code_saison', 'N/D')
+        
+        remise_montant = cotisation * (remise_pourcentage / 100)
+        total_a_payer = cotisation - remise_montant
+        total_paye = 0
+        reste_a_payer = total_a_payer
 
-    paiements = Paiement.query.filter_by(matricule_adherent=str(matricule)).all()
-    total_paye = sum(p.montant_paye for p in paiements)
-    total_a_payer = max(0.0, (adherent.cotisation or 0) - (adherent.cotisation or 0) * (adherent.remise or 0)/100)
-    total_remise = adherent.remise or 0
-    reste_a_payer = round(max(0.0, total_a_payer - total_paye), 2)
-
-    # Présences
+    # Présences (gardez votre logique existante)
     presences = Presence.query.filter_by(adherent_matricule=str(matricule)).all()
     nombre_presences = sum(1 for p in presences if p.est_present == 'O')
 
-    # Prochaine séance
+    # Prochaine séance (gardez votre logique existante)
     now = datetime.now(pytz.timezone('Europe/Paris'))
     prochaine_seance = Presence.query.filter(
         Presence.adherent_matricule == str(matricule),
         Presence.date_seance >= now.date()
     ).order_by(Presence.date_seance, Presence.heure_debut).first()
 
-    historique_paiements = [{
-        'date': p.date_paiement.strftime('%Y-%m-%d'),
-        'montant': p.montant,
-        'montant_paye': p.montant_paye,
-        'type_reglement': p.type_reglement,
-        'numero_cheque': p.numero_cheque,
-        'banque': p.banque,
-        'numero_bon': p.numero_bon,
-        'numero_carnet': p.numero_carnet,
-        'remise': p.remise
-    } for p in paiements]
+    # Historique des paiements avec tous les champs du modèle - CORRECTION ICI
+    historique_paiements = []
+    for p in paiements:
+        # Gérer les valeurs NULL de la base de données
+        paiement_data = {
+            'date': p.date_paiement.strftime('%d/%m/%Y') if p.date_paiement else 'N/D',
+            'code_saison': p.code_saison if p.code_saison else 'N/D',
+            'numero_carnet': str(p.numero_carnet) if p.numero_carnet else '-',
+            'numero_bon': str(p.numero_bon) if p.numero_bon else '-',
+            'montant_paye': float(p.montant_paye) if p.montant_paye else 0.0,
+            'type_reglement': p.type_reglement if p.type_reglement and p.type_reglement != 'NULL' else 'Espèce',
+            'numero_cheque': p.numero_cheque if p.numero_cheque and p.numero_cheque != 'NULL' else '-',
+            'banque': p.banque if p.banque and p.banque != 'NULL' else '-'
+        }
+        historique_paiements.append(paiement_data)
+    
+    print(f"DEBUG: Nombre de paiements trouvés: {len(historique_paiements)}")  # Debug
+    print(f"DEBUG: Premier paiement: {historique_paiements[0] if historique_paiements else 'Aucun'}")  # Debug
+
+    # Données de l'adhérent enrichies
+    adherent_data = adherent.to_dict()
+    adherent_data.update({
+        'cotisation': cotisation,
+        'remise': remise_pourcentage,
+        'code_saison': code_saison,
+        'date_inscription': adherent_data.get('date_inscription', 'N/D')
+    })
 
     return jsonify({
-        'adherent': adherent.to_dict(),
+        'adherent': adherent_data,
         'paiements': {
-            'total_paye': total_paye,
-            'total_a_payer': total_a_payer,
-            'total_remise': total_remise,
+            'total_paye': round(total_paye, 2),
+            'total_a_payer': round(total_a_payer, 2),
+            'total_remise': remise_pourcentage,
+            'remise_montant': round(remise_montant, 2),
             'reste_a_payer': reste_a_payer,
-            'historique': historique_paiements
+            'cotisation': cotisation,
+            'code_saison': code_saison,
+            'historique': historique_paiements  # Les données sont maintenant correctement formatées
         },
         'presences': {
             'total': len(presences),
@@ -3424,14 +3458,11 @@ def get_situation_adherent(matricule):
             'absent': len(presences) - nombre_presences
         },
         'prochaine_seance': {
-            'date': prochaine_seance.date_seance.strftime('%Y-%m-%d') if prochaine_seance else None,
+            'date': prochaine_seance.date_seance.strftime('%d/%m/%Y') if prochaine_seance else None,
             'heure': prochaine_seance.heure_debut.strftime('%H:%M') if prochaine_seance else None,
             'groupe': prochaine_seance.groupe_nom if prochaine_seance else None
         } if prochaine_seance else None
     })
-
-
-
 from flask import jsonify, render_template, request
 from sqlalchemy import func
 from datetime import datetime, timedelta
