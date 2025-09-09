@@ -1622,6 +1622,7 @@ def ajouter_adherent():
                          groupes=groupes,
                          code_saison_defaut=code_saison_defaut,
                          cotisations=cotisations)
+
 @app.route('/gerer_adherent', methods=['POST','GET'])
 def gerer_adherent():
     if 'user_id' not in session or session.get('role') != 'admin':
@@ -1862,48 +1863,46 @@ def repondre(id):
 
 
 
-
-
 from datetime import datetime
 from flask import render_template, request, redirect, url_for, flash, session
+
 @app.route('/paiement', methods=['GET', 'POST'])
 def paiement():
     if 'user_id' not in session or session.get('role') != 'admin':
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
 
-    # --------- Préparations / valeurs par défaut ----------
     current_year = datetime.now().year
     adherent = None
     paiements = []
-    cotisation = 0.0
+    cotisation = 0.0          # Montant après remise
+    montant_brut = 0.0        # Montant original
     remise = 0.0
-    remise_montant = 0.0
     reste_a_payer = 0.0
     numero_carnet = 1
     numero_bon = 1
     code_saison = ""
 
-    # Récupération du type (GET) pour filtrer la liste des cotisations si besoin
+    # Récupération du type de saison (GET)
     saison_type_query = request.args.get('type')
     if saison_type_query not in ('annuel', 'ete'):
         saison_type_query = 'autres'
     saison_type = saison_type_query
 
+    # Liste des cotisations selon type
     cotisations = Cotisation.query.all()
     if saison_type == 'ete':
         cotisations = [c for c in cotisations if "été" in (c.nom_cotisation or "").lower()]
     elif saison_type == 'annuel':
         cotisations = [c for c in cotisations if "été" not in (c.nom_cotisation or "").lower()]
 
-    # --------- Soumission du formulaire ----------
+    # Gestion du POST
     if request.method == 'POST':
         matricule = request.form.get('matricule', '').strip()
         adherent = Adherent.query.filter_by(matricule=matricule).first()
 
         form_saison_type = request.form.get('saison_type')
         form_annee_saison = request.form.get('annee_saison')
-
         if form_saison_type in ('annuel', 'ete'):
             saison_type = form_saison_type
 
@@ -1918,25 +1917,24 @@ def paiement():
             paiements = Paiement.query.filter_by(matricule_adherent=matricule)\
                                       .order_by(Paiement.id_paiement.asc()).all()
 
-            # Gestion de la cotisation et remise
             if paiements:
-                # Si des paiements existent, utiliser les valeurs existantes
+                # Cotisation déjà définie par un paiement précédent
                 cotisation = float(paiements[0].cotisation or 0)
                 remise = float(paiements[0].remise or 0)
+                montant_brut = round(cotisation / (1 - remise / 100), 2) if remise else cotisation
             else:
-                # Si c'est le premier paiement, gérer la sélection de cotisation
+                # Premier paiement → récupérer du formulaire
                 cotisation_select = request.form.get('cotisation_select')
-                cotisation_montant = request.form.get('cotisation_montant')
                 remise_input = request.form.get('remise_input')
-                
-                if cotisation_select and cotisation_montant:
-                    # Une cotisation a été sélectionnée
+
+                if cotisation_select:
                     cotisation_obj = Cotisation.query.get(cotisation_select)
                     if cotisation_obj:
-                        cotisation = float(cotisation_obj.montant_cotisation)
+                        montant_brut = float(cotisation_obj.montant_cotisation)  # montant initial
                         remise = float(remise_input) if remise_input else 0.0
-                        
-                        # Mettre à jour l'adhérent avec la nouvelle cotisation et remise
+                        cotisation = round(montant_brut * (1 - remise / 100), 2)  # montant après remise
+
+                        # Mettre à jour l'adhérent
                         adherent.cotisation = cotisation
                         adherent.remise = remise
                         db.session.commit()
@@ -1944,13 +1942,17 @@ def paiement():
                         flash("Cotisation sélectionnée invalide.", "danger")
                         return redirect(url_for('paiement', type=saison_type))
                 else:
-                    # Utiliser les valeurs existantes de l'adhérent
                     cotisation = float(adherent.cotisation or 0)
                     remise = float(adherent.remise or 0)
+                    montant_brut = round(cotisation / (1 - remise / 100), 2) if remise else cotisation
 
-            remise_montant = cotisation * (remise / 100.0)
-            paiement_total = max(0.0, cotisation - remise_montant)
+            # Calcul du reste à payer
+            dernier_total = Paiement.query.filter_by(matricule_adherent=matricule)\
+                                          .order_by(Paiement.id_paiement.desc()).first()
+            deja_paye = float(dernier_total.total_montant_paye or 0) if dernier_total else 0.0
+            reste_a_payer = round(max(0.0, cotisation - deja_paye), 2)
 
+            # Gestion carnet/bon
             dernier_paiement = Paiement.query.order_by(Paiement.id_paiement.desc()).first()
             if dernier_paiement:
                 numero_carnet = int(dernier_paiement.numero_carnet or 1)
@@ -1959,18 +1961,12 @@ def paiement():
                     numero_carnet += 1
                     numero_bon = 1
 
-            dernier_total = Paiement.query.filter_by(matricule_adherent=matricule)\
-                                          .order_by(Paiement.id_paiement.desc()).first()
-            deja_paye = float(dernier_total.total_montant_paye or 0) if dernier_total else 0.0
-            reste_a_payer = round(max(0.0, paiement_total - deja_paye), 2)
-
-            # Traitement du paiement si montant saisi
+            # Traitement du paiement
             if request.form.get('montant_paye'):
-                # Vérifier qu'une cotisation est définie
                 if cotisation <= 0:
                     flash("Veuillez d'abord sélectionner une cotisation.", "warning")
                     return redirect(url_for('paiement', type=saison_type))
-                
+
                 try:
                     montant_paye = float(request.form.get('montant_paye', 0) or 0)
                 except ValueError:
@@ -1985,11 +1981,11 @@ def paiement():
                 banque = request.form.get('banque') if type_reglement == 'chèque' else None
 
                 total_montant_paye_cumul = round(deja_paye + montant_paye, 2)
-                montant_restant = round(max(0.0, paiement_total - total_montant_paye_cumul), 2)
+                montant_restant = round(max(0.0, cotisation - total_montant_paye_cumul), 2)
 
                 nouveau_paiement = Paiement(
                     matricule_adherent=matricule,
-                    montant=paiement_total,
+                    montant=cotisation,
                     montant_paye=montant_paye,
                     total_montant_paye=total_montant_paye_cumul,
                     montant_reste=montant_restant,
@@ -2006,9 +2002,9 @@ def paiement():
                 db.session.add(nouveau_paiement)
                 db.session.commit()
 
-                # --- Vérification paiement complet POST ---
+                # Si paiement complet
                 if round(total_montant_paye_cumul, 2) >= round(cotisation, 2):
-                    adherent.paye = 'O'  # <- correct Enum value
+                    adherent.paye = 'O'
                     reste_a_payer = 0.0
                     db.session.commit()
 
@@ -2027,58 +2023,22 @@ def paiement():
                 paiements = Paiement.query.filter_by(matricule_adherent=matricule)\
                                           .order_by(Paiement.id_paiement.asc()).all()
                 flash("Paiement enregistré avec succès.", "success")
+
             elif not paiements and not request.form.get('cotisation_select'):
                 flash("Veuillez d'abord sélectionner une cotisation.", "warning")
         else:
             flash("Adhérent non trouvé.", "danger")
 
-    # --------- Calculs finaux pour l'affichage ----------
+    # Calcul final pour affichage
     total_montant_paye = sum(float(p.montant_paye or 0) for p in paiements)
-    if adherent:
-        # Recalculer les valeurs pour l'affichage
-        if paiements:
-            cotisation = float(paiements[0].cotisation or 0)
-            remise = float(paiements[0].remise or 0)
-        else:
-            cotisation = float(adherent.cotisation or 0)
-            remise = float(adherent.remise or 0)
-        
-        remise_montant = cotisation * (remise / 100.0)
-        paiement_total = max(0.0, cotisation - remise_montant)
-        
-        dernier_total = Paiement.query.filter_by(matricule_adherent=adherent.matricule)\
-                                      .order_by(Paiement.id_paiement.desc()).first()
-        deja_paye = float(dernier_total.total_montant_paye or 0) if dernier_total else 0.0
-        reste_a_payer = round(max(0.0, paiement_total - deja_paye), 2)
-
-        # --- Vérification paiement complet GET ---
-        if round(deja_paye, 2) >= round(cotisation, 2):
-            if adherent.paye != 'O':
-                adherent.paye = 'O'
-                reste_a_payer = 0.0
-                db.session.commit()
-
-    # Calcul des numéros de carnet/bon pour l'affichage
-    dernier_paiement = Paiement.query.order_by(Paiement.id_paiement.desc()).first()
-    if dernier_paiement:
-        numero_carnet = int(dernier_paiement.numero_carnet or 1)
-        numero_bon = int(dernier_paiement.numero_bon or 0) + 1
-        if numero_bon > 50:
-            numero_carnet += 1
-            numero_bon = 1
-
-    if not code_saison:
-        saison_type = saison_type if saison_type in ('annuel', 'ete') else 'annuel'
-        prefix = 'E' if saison_type == 'ete' else 'S'
-        code_saison = f"{prefix}{current_year}"
 
     return render_template(
         'paiement.html',
         adherent=adherent,
         paiements=paiements,
         cotisation=cotisation,
+        montant_brut=montant_brut,
         remise=remise,
-        remise_montant=remise_montant,
         reste_a_payer=reste_a_payer,
         total_montant_paye=total_montant_paye,
         numero_carnet=numero_carnet,

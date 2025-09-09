@@ -49,317 +49,236 @@
             </a>
         </nav>
         <!-- Navbar End -->
-
-        <div class="container-xxl position-relative bg-white d-flex p-0">
-            <!-- Sign In Start -->
-            <div class="container mt-5">
-                {% if saison_type == 'ete' %}
-                    <h1 class="mb-4">Gestion des Paiements Ecole d'été</h1>
-                {% elif saison_type == 'annuel' %}
-                    <h1 class="mb-4">Gestion des Paiements Abonnements Annuels</h1>
-                {% else %}
-                    <h1 class="mb-4">Gestion des autres Paiements</h1>
-                {% endif %}
-                
-                <!-- Formulaire de recherche d'adhérent -->
-                <form method="POST" class="mb-4" id="searchForm">
-                    <div class="input-group">
-                        <input 
-                            type="text" 
-                            name="matricule" 
-                            id="matriculeInput"
-                            class="form-control" 
-                            placeholder="Matricule de l'adhérent" 
-                            required>
-                        <button type="submit" class="btn btn-primary">Rechercher</button>
-                    </div>
-                </form>
-
-                <script>
-                // Ajouter un event listener pour la touche "Entrée"
-                document.getElementById('matriculeInput').addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        document.getElementById('searchForm').submit();
-                    }
-                });
-
-                document.getElementById('searchForm').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    this.submit();
-                });
-                </script>
+<div class="container-xxl position-relative bg-white d-flex p-0">
+    <!-- Paiement Start -->
+    <div class="container mt-5">
+        {% if saison_type == 'ete' %}
+            <h1 class="mb-4">Gestion des Paiements École d'Été</h1>
+        {% elif saison_type == 'annuel' %}
+            <h1 class="mb-4">Gestion des Paiements Abonnements Annuels</h1>
+        {% else %}
+            <h1 class="mb-4">Gestion des autres Paiements</h1>
+        {% endif %}
         
-                {% if adherent %}
-                    {% if (saison_type == "annuel" and ("été" not in adherent.type_abonnement|lower)) 
-                          or (saison_type == "ete" and "été" in adherent.type_abonnement|lower) %}
+        <!-- Formulaire de recherche d'adhérent -->
+        <form method="POST" class="mb-4" id="searchForm">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    name="matricule" 
+                    id="matriculeInput"
+                    class="form-control" 
+                    placeholder="Matricule de l'adhérent" 
+                    required>
+                <button type="submit" class="btn btn-primary">Rechercher</button>
+            </div>
+        </form>
 
-                        <!-- Informations sur l'adhérent -->
-                        <div class="card shadow-sm border-0 rounded-3 mb-4">
-                            <div class="card-body p-4">
-                                <!-- Titre avec icône -->
-                                <h5 class="card-title d-flex align-items-center mb-3">
-                                    <i class="bi bi-person-circle text-primary me-2 fs-3 shadow-sm p-1 rounded-circle bg-light"></i>
-                                    <span class="fw-bold">
-                                        {{ adherent.nom }} {{ adherent.prenom }}
-                                    </span>
-                                    <span class="badge bg-gradient bg-info text-dark ms-3 shadow-sm">
-                                        Matricule : {{ adherent.matricule }}
-                                    </span>
-                                </h5>
+        <script>
+            // Soumission avec Entrée
+            document.getElementById('matriculeInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    document.getElementById('searchForm').submit();
+                }
+            });
+        </script>
 
-                                <!-- Infos principales sous forme de liste élégante -->
-                                <ul class="list-unstyled mb-3">
-                                    <li class="mb-2">
-                                        <i class="bi bi-card-checklist text-info me-2"></i>
-                                        <strong>Type d'abonnement :</strong> {{ adherent.type_abonnement }}
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="bi bi-calendar-check text-success me-2"></i>
-                                        <strong>Date d'inscription :</strong> {{ adherent.date_inscription.strftime('%d/%m/%Y') }}
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="bi bi-cash text-warning me-2"></i>
-                                        <strong>Cotisation :</strong> {{ cotisation }} TND
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="bi bi-hash text-secondary me-2"></i>
-                                        <strong>Code Saison :</strong> {{ code_saison }}
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="bi bi-percent text-primary me-2"></i>
-                                        <strong>Remise :</strong> {{ remise }}%
-                                        <span class="badge bg-light text-dark ms-2">-{{ remise_montant }} TND</span>
-                                    </li>
-                                    <li class="mb-2">
-                                        <i class="bi bi-calculator text-dark me-2"></i>
-                                        <strong>Montant après remise :</strong> {{ cotisation-remise_montant }} TND
-                                    </li>
-                                </ul>
+        {% if adherent %}
+            {% if (saison_type == "annuel" and ("été" not in adherent.type_abonnement|lower)) 
+                  or (saison_type == "ete" and "été" in adherent.type_abonnement|lower) %}
 
-                                <!-- Statut du paiement -->
-                                <div class="alert {% if reste_a_payer == 0 %}alert-success{% else %}alert-danger{% endif %} d-flex align-items-center mb-0" role="alert">
-                                    <i class="bi {% if reste_a_payer == 0 %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %} me-2"></i>
-                                    <div>
-                                        <strong>Reste à payer :</strong> {{ "%.2f"|format(reste_a_payer) }} TND
-                                    </div>
+                <!-- Infos adhérent -->
+                <div class="card shadow-sm border-0 rounded-3 mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title d-flex align-items-center mb-3">
+                            <i class="bi bi-person-circle text-primary me-2 fs-3 shadow-sm p-1 rounded-circle bg-light"></i>
+                            <span class="fw-bold">{{ adherent.nom }} {{ adherent.prenom }}</span>
+                            <span class="badge bg-gradient bg-info text-dark ms-3 shadow-sm">
+                                Matricule : {{ adherent.matricule }}
+                            </span>
+                        </h5>
+
+                        <ul class="list-unstyled mb-3">
+                            <li class="mb-2"><i class="bi bi-card-checklist text-info me-2"></i>
+                                <strong>Type d'abonnement :</strong> {{ adherent.type_abonnement }}</li>
+                            <li class="mb-2"><i class="bi bi-calendar-check text-success me-2"></i>
+                                <strong>Date d'inscription :</strong> {{ adherent.date_inscription.strftime('%d/%m/%Y') }}</li>
+                            <li class="mb-2"><i class="bi bi-cash text-warning me-2"></i>
+                                <strong>Cotisation :</strong> {{ cotisation }} TND</li>
+                            <li class="mb-2"><i class="bi bi-hash text-secondary me-2"></i>
+                                <strong>Code Saison :</strong> {{ code_saison }}</li>
+                            <li class="mb-2"><i class="bi bi-percent text-primary me-2"></i>
+                                <strong>Remise :</strong> {{ remise }}%
+                                <span class="badge bg-light text-dark ms-2">-{{ remise_montant }} TND</span>
+                            </li>
+                        </ul>
+
+                        <div class="alert {% if reste_a_payer == 0 %}alert-success{% else %}alert-danger{% endif %} d-flex align-items-center mb-0" role="alert">
+                            <i class="bi {% if reste_a_payer == 0 %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %} me-2"></i>
+                            <div><strong>Reste à payer :</strong> {{ "%.2f"|format(cotisation-total_montant_paye) }} TND</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Situation de paiement -->
+                {% if paiements %}
+                <h3>Situation de Paiement</h3>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Saison</th>
+                            <th>Numéro Carnet</th>
+                            <th>Numéro Bon</th>
+                            <th>Montant Payé</th>
+                            <th>Type de Règlement</th>
+                            <th>Numéro Chèque</th>
+                            <th>Banque</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for paiement in paiements %}
+                        <tr>
+                            <td>{{ paiement.date_paiement.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ paiement.code_saison }}</td>
+                            <td>{{ paiement.numero_carnet }}</td>
+                            <td>{{ paiement.numero_bon }}</td>
+                            <td>{{ paiement.montant_paye }} TND</td>
+                            <td>{{ paiement.type_reglement }}</td>
+                            <td>{{ paiement.numero_cheque or '-' }}</td>
+                            <td>{{ paiement.banque or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4"></td>
+                            <td><strong>Total : {{ total_montant_paye }} TND</strong></td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                {% endif %}
+
+                <!-- Formulaire paiement -->
+                <h3 class="mt-4">{% if not adherent.cotisation %}Définir la Cotisation et {% endif %}Ajouter un Paiement</h3>
+                <form method="POST" id="paiementForm">
+                    <input type="hidden" name="matricule" value="{{ adherent.matricule }}">
+
+                    {% if not adherent.cotisation %}
+                    <div class="card border-warning mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Définition de la Cotisation</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="cotisation_select" class="form-label">Choisir une Cotisation *</label>
+                                    <select name="cotisation_select" id="cotisation_select" class="form-select" required>
+                                        <option value="">-- Sélectionner --</option>
+                                        {% for cot in cotisations %}
+                                        <option value="{{ cot.id_cotisation }}" data-montant="{{ cot.montant_cotisation }}">
+                                            {{ cot.nom_cotisation }} - {{ cot.montant_cotisation }} TND
+                                        </option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="cotisation_montant" class="form-label">Montant</label>
+                                    <input type="number" step="0.01" name="cotisation_montant" id="cotisation_montant" class="form-control" readonly>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="remise_input" class="form-label">Remise (%)</label>
+                                    <input type="number" step="0.01" name="remise_input" id="remise_input" class="form-control" min="0" max="100" value="0">
+                                </div>
+                            </div>
+                            <div class="alert alert-info">
+                                <strong>Montant après remise :</strong> <span id="montant_final">0.00</span> TND
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Situation de paiement -->
-                        {% if paiements %}
-                        <h3>Situation de Paiement</h3>
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Saison</th>
-                                    <th>Numero Carnet</th>
-                                    <th>Numero Bon</th>
-                                    <th>Montant Payé</th>
-                                    <th>Type de Règlement</th>
-                                    <th>Numéro de Chèque</th>
-                                    <th>Banque</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for paiement in paiements %}
-                                <tr>
-                                    <td>{{ paiement.date_paiement.strftime('%d/%m/%Y') }}</td>
-                                    <td>{{ paiement.code_saison }}</td>
-                                    <td>{{ paiement.numero_carnet }}</td>
-                                    <td>{{ paiement.numero_bon }}</td>
-                                    <td>{{ paiement.montant_paye }} TND</td>
-                                    <td>{{ paiement.type_reglement }}</td>
-                                    <td>{{ paiement.numero_cheque or '-' }}</td>
-                                    <td>{{ paiement.banque or '-' }}</td>
-                                </tr>
-                                {% endfor %}
-                                <tfoot>
-                                    <tr>
-                                        <td colspan="4"></td>
-                                        <td><strong>Total : {{ total_montant_paye }} TND</strong></td>
-                                        <td colspan="3"></td>
-                                    </tr>
-                                </tfoot>
-                            </tbody>
-                        </table>
-                        {% endif %}
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const cotisationSelect = document.getElementById('cotisation_select');
+                            const cotisationMontant = document.getElementById('cotisation_montant');
+                            const remiseInput = document.getElementById('remise_input');
+                            const montantFinal = document.getElementById('montant_final');
 
-                        <!-- Formulaire d'enregistrement de paiement -->
-                        <h3 class="mt-4">{% if not paiements %}Définir la Cotisation et{% endif %} Ajouter un Paiement</h3>
-                        <form method="POST" id="paiementForm">
-                            <input type="hidden" name="matricule" value="{{ adherent.matricule }}">
-                            
-                            {% if not paiements %}
-                            <!-- Section de définition de cotisation si pas de paiements existants -->
-                            <div class="card border-warning mb-4">
-                                <div class="card-header bg-warning text-dark">
-                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                    <strong>Définition de la Cotisation</strong>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="cotisation_select" class="form-label">
-                                                    <i class="bi bi-card-checklist me-1"></i>Choisir une Cotisation *
-                                                </label>
-                                                <select name="cotisation_select" id="cotisation_select" class="form-select" required>
-                                                    <option value="">-- Sélectionner une cotisation --</option>
-                                                    {% for cot in cotisations %}
-                                                    <option value="{{ cot.id_cotisation }}" 
-                                                            data-montant="{{ cot.montant_cotisation }}"
-                                                            {% if adherent.cotisation and adherent.cotisation == cot.montant_cotisation %}selected{% endif %}>
-                                                        {{ cot.nom_cotisation }} - {{ cot.montant_cotisation }} TND
-                                                    </option>
-                                                    {% endfor %}
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="mb-3">
-                                                <label for="cotisation_montant" class="form-label">
-                                                    <i class="bi bi-cash me-1"></i>Montant
-                                                </label>
-                                                <input type="number" step="0.01" name="cotisation_montant" 
-                                                       id="cotisation_montant" class="form-control"
-                                                       value="{{ adherent.cotisation or '' }}" readonly>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="mb-3">
-                                                <label for="remise_input" class="form-label">
-                                                    <i class="bi bi-percent me-1"></i>Remise (%)
-                                                </label>
-                                                <input type="number" step="0.01" name="remise_input" 
-                                                       id="remise_input" class="form-control" min="0" max="100"
-                                                       value="{{ adherent.remise or 0 }}" placeholder="0">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="alert alert-info">
-                                                <i class="bi bi-calculator me-2"></i>
-                                                <strong>Montant après remise :</strong> 
-                                                <span id="montant_final">{{ (cotisation - remise_montant) if cotisation else '0.00' }}</span> TND
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <script>
-                            document.addEventListener('DOMContentLoaded', function() {
-                                const cotisationSelect = document.getElementById('cotisation_select');
-                                const cotisationMontant = document.getElementById('cotisation_montant');
-                                const remiseInput = document.getElementById('remise_input');
-                                const montantFinal = document.getElementById('montant_final');
-                                
-                                function calculerMontantFinal() {
-                                    const montant = parseFloat(cotisationMontant.value) || 0;
-                                    const remise = parseFloat(remiseInput.value) || 0;
-                                    const remiseMontant = montant * (remise / 100);
-                                    const final = Math.max(0, montant - remiseMontant);
-                                    montantFinal.textContent = final.toFixed(2);
-                                }
-                                
-                                cotisationSelect.addEventListener('change', function() {
-                                    const selectedOption = this.options[this.selectedIndex];
-                                    const montant = selectedOption.getAttribute('data-montant') || '';
-                                    cotisationMontant.value = montant;
-                                    calculerMontantFinal();
-                                });
-                                
-                                remiseInput.addEventListener('input', calculerMontantFinal);
-                                
-                                // Calcul initial
+                            function calculerMontantFinal() {
+                                const montant = parseFloat(cotisationMontant.value) || 0;
+                                const remise = parseFloat(remiseInput.value) || 0;
+                                montantFinal.textContent = Math.max(0, montant - (montant * remise / 100)).toFixed(2);
+                            }
+
+                            cotisationSelect.addEventListener('change', function() {
+                                cotisationMontant.value = this.options[this.selectedIndex].getAttribute('data-montant');
                                 calculerMontantFinal();
                             });
-                            </script>
-                            {% else %}
-                            <!-- Affichage des valeurs existantes si paiements déjà présents -->
-                            <div class="mb-3">
-                                <label for="cotisation" class="form-label">Cotisation</label>
-                                <input type="number" step="0.01" name="cotisation" class="form-control"
-                                       value="{{ cotisation }}" readonly>
-                            </div>
-                            <div class="mb-3">
-                                <label for="remise" class="form-label">Remise (%)</label>
-                                <input type="number" step="0.01" name="remise" class="form-control"
-                                       value="{{ remise }}" readonly>
-                            </div>
-                            {% endif %}
-
-                            <div class="mb-3">
-                                <label for="saison_type" class="form-label">Type de Saison</label>
-                                <select name="saison_type" id="saison_type" class="form-select" required disabled>
-                                    <option value="annuel" {% if adherent and adherent.code_saison and adherent.code_saison.startswith('S') %}selected{% endif %}>
-                                        Abonnement Annuel
-                                    </option>
-                                    <option value="ete" {% if adherent and adherent.code_saison and adherent.code_saison.startswith('E') %}selected{% endif %}>
-                                        École d'Été
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="montant_paye" class="form-label">Montant Payé</label>
-                                <input type="number" step="0.01" name="montant_paye" class="form-control" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="type_reglement" class="form-label">Type de Règlement</label>
-                                <select name="type_reglement" class="form-select" required>
-                                    <option value="espèce">Espèce</option>
-                                    <option value="chèque">Chèque</option>
-                                    <option value="virement">Virement</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="numero_cheque" class="form-label">Numéro de Chèque</label>
-                                <input type="text" name="numero_cheque" class="form-control">
-                            </div>
-                            <div class="mb-3">
-                                <label for="banque" class="form-label">Banque</label>
-                                <input type="text" name="banque" class="form-control">
-                            </div>
-                            <div class="mb-3">
-                                <label for="numero_carnet" class="form-label">Numéro de Carnet</label>
-                                <input type="number" name="numero_carnet" class="form-control" value="{{ numero_carnet }}" readonly>
-                            </div>
-                            <div class="mb-3">
-                                <label for="numero_bon" class="form-label">Numéro de Bon</label>
-                                <input type="number" name="numero_bon" class="form-control" value="{{ numero_bon }}" readonly>
-                            </div>
-                            <input type="hidden" name="saison_type" value="{{ 'annuel' if adherent.code_saison.startswith('S') else 'ete' }}">
-
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check-circle me-2"></i>
-                                {% if not paiements %}Définir Cotisation et {% endif %}Ajouter Paiement
-                            </button>
-                        </form>
-
+                            remiseInput.addEventListener('input', calculerMontantFinal);
+                            calculerMontantFinal();
+                        });
+                    </script>
                     {% else %}
-                        <!-- Cas où l'adhérent existe mais type d'abonnement ≠ saison -->
-                        <div class="alert alert-warning mt-4">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            L'adhérent <strong>{{ adherent.nom }} {{ adherent.prenom }}</strong> 
-                            n'a pas d'abonnement correspondant à la saison <strong>{{ saison_type|capitalize }}</strong>.
-                        </div>
-                    {% endif %}
-                {% else %}
-                    <!-- Cas aucun adhérent trouvé -->
-                    <div class="alert alert-danger mt-4">
-                        <i class="bi bi-person-x-fill me-2"></i>
-                        Aucun adhérent trouvé avec ce matricule.
+                    <div class="mb-3">
+                        <label class="form-label">Cotisation</label>
+                        <input type="number" step="0.01" name="cotisation" class="form-control" value="{{ cotisation }}" readonly>
                     </div>
-                {% endif %}
+                    <div class="mb-3">
+                        <label class="form-label">Remise (%)</label>
+                        <input type="number" step="0.01" name="remise" class="form-control" value="{{ remise }}" readonly>
+                    </div>
+                    {% endif %}
 
+                    <div class="mb-3">
+                        <label for="montant_paye" class="form-label">Montant Payé</label>
+                        <input type="number" step="0.01" name="montant_paye" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="type_reglement" class="form-label">Type de Règlement</label>
+                        <select name="type_reglement" class="form-select" required>
+                            <option value="espèce">Espèce</option>
+                            <option value="chèque">Chèque</option>
+                            <option value="virement">Virement</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="numero_cheque" class="form-label">Numéro de Chèque</label>
+                        <input type="text" name="numero_cheque" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="banque" class="form-label">Banque</label>
+                        <input type="text" name="banque" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="numero_carnet" class="form-label">Numéro de Carnet</label>
+                        <input type="number" name="numero_carnet" class="form-control" value="{{ numero_carnet }}" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="numero_bon" class="form-label">Numéro de Bon</label>
+                        <input type="number" name="numero_bon" class="form-control" value="{{ numero_bon }}" readonly>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">
+                        {% if not adherent.cotisation %}Définir Cotisation et {% endif %}Ajouter Paiement
+                    </button>
+                </form>
+
+            {% else %}
+            <div class="alert alert-warning mt-4">
+                L'adhérent <strong>{{ adherent.nom }} {{ adherent.prenom }}</strong> n'a pas d'abonnement correspondant à la saison <strong>{{ saison_type|capitalize }}</strong>.
             </div>
-            <!-- Sign In End -->
+            {% endif %}
+        {% else %}
+        <div class="alert alert-danger mt-4">
+            Aucun adhérent trouvé avec ce matricule.
         </div>
+        {% endif %}
+    </div>
+</div>
+
 
         <!-- Footer Start -->
         <div class="container-fluid pt-4 px-4">
