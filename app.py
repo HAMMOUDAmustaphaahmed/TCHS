@@ -1430,7 +1430,6 @@ def login():
         utilisateur = request.form.get('utilisateur')
         password = request.form.get('password')
         type_saison = request.form.get('type_saison')
-        annee_saison = request.form.get('annee_saison')
         
         user = User.query.filter_by(utilisateur=utilisateur).first()
         
@@ -1441,15 +1440,8 @@ def login():
             session['username'] = user.utilisateur
             session['role'] = user.role
             session['type_saison'] = type_saison
-            session['annee_saison'] = annee_saison
             
-            # Create session_saison
-            if type_saison == 'abonnement_annuel':
-                # For annual subscription, use the format S{year}
-                session['session_saison'] = f"S{annee_saison}"
-            else:
-                # For summer school, use the format E{year}
-                session['session_saison'] = f"E{annee_saison}"
+            
             
             flash("Connexion réussie.", "success")
             
@@ -5021,9 +5013,11 @@ def situation_totale():
         if aucun_paiement:
             print(f"⚠ Adhérent sans paiement : Matricule {a.matricule}, Nom {a.nom}, Prénom {a.prenom}")
 
-        total_a = sum(p.montant or 0 for p in a_paiements)
-        total_payé = sum(p.montant_paye or 0 for p in a_paiements)
-        total_r = sum(p.remise or 0 for p in a_paiements)
+        total_a = sum(float(p.montant or 0) for p in a_paiements)
+        total_payé = sum(float(p.montant_paye or 0) for p in a_paiements)
+        total_r = sum(float(p.remise or 0) for p in a_paiements)
+
+        reste_a_payer = total_a - total_payé
 
         situation_par_adherent.append({
             'matricule': a.matricule,
@@ -5032,7 +5026,7 @@ def situation_totale():
             'total_a_payer': total_a,
             'total_paye': total_payé,
             'total_remise': total_r,
-            'reste_a_payer': total_a - total_payé,
+            'reste_a_payer': reste_a_payer,
             'aucun_paiement': aucun_paiement,  # Indicateur pour le front
             'code_saison': a.code_saison
         })
@@ -5050,6 +5044,425 @@ def situation_totale():
         'situation_par_adherent': situation_par_adherent,
         'saisons_disponibles': saisons_disponibles
     })
+
+@app.route('/api/saisons')
+def get_saisons():
+    # Récupérer toutes les saisons distinctes depuis la base de données
+    saisons = db.session.query(Adherent.code_saison).distinct().all()
+    return jsonify([{'code': s[0]} for s in saisons if s[0]])
+
+from flask import request, jsonify
+from sqlalchemy import func, extract, and_, or_
+from datetime import datetime, timedelta
+from calendar import month_name
+import locale
+
+# Configurer la locale pour le français (optionnel)
+try:
+    locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
+except:
+    pass
+
+from flask import request, jsonify
+from sqlalchemy import func, extract, and_, or_
+from datetime import datetime, timedelta
+from calendar import month_name
+import locale
+
+# Configurer la locale pour le français (optionnel)
+try:
+    locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
+except:
+    pass
+
+@app.route('/api/financial-data')
+def get_financial_data():
+    start_date = request.args.get('startDate')
+    end_date = request.args.get('endDate')
+    saison = request.args.get('saison')
+    data_type = request.args.get('dataType', 'all')
+    
+    # Convertir les dates en objets datetime si elles sont fournies
+    try:
+        start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else None
+        end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else None
+    except ValueError:
+        return jsonify({'error': 'Format de date invalide'}), 400
+    
+    try:
+        # 1. Calculer les statistiques globales
+        stats = calculate_stats(start_date_obj, end_date_obj, saison, data_type)
+        
+        # 2. Obtenir les données mensuelles pour le graphique
+        monthly_data = get_monthly_data(start_date_obj, end_date_obj, saison)
+        
+        # 3. Calculer la répartition des revenus par type
+        revenue_by_type = get_revenue_by_type(start_date_obj, end_date_obj, saison)
+        
+        # 4. Obtenir les derniers paiements
+        recent_payments = get_recent_payments(start_date_obj, end_date_obj, saison, data_type)
+        
+        # 5. Obtenir les locations récentes
+        recent_locations = get_recent_locations(start_date_obj, end_date_obj, saison, data_type)
+        
+        data = {
+            'stats': stats,
+            'monthlyData': monthly_data,
+            'revenueByType': revenue_by_type,
+            'recentPayments': recent_payments,
+            'recentLocations': recent_locations
+        }
+        
+        return jsonify(data)
+        
+    except Exception as e:
+        print(f"Erreur dans get_financial_data: {str(e)}")  # Pour déboguer
+        return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500
+
+def calculate_stats(start_date, end_date, saison, data_type):
+    """Calculer les statistiques financières globales"""
+    try:
+        # Calculer le total des revenus (cotisations + autres paiements + locations)
+        total_revenus = 0
+        
+        if data_type in ['all', 'paiements']:
+            # Revenus des cotisations
+            cotisations_query = db.session.query(func.coalesce(func.sum(Paiement.montant_paye), 0))
+            
+            if start_date and end_date:
+                cotisations_query = cotisations_query.filter(
+                    Paiement.date_paiement >= start_date,
+                    Paiement.date_paiement <= end_date
+                )
+            
+            if saison:
+                cotisations_query = cotisations_query.filter(Paiement.code_saison == saison)
+                
+            revenus_cotisations = float(cotisations_query.scalar() or 0)
+
+            
+            # Revenus des autres paiements
+            autres_query = db.session.query(func.coalesce(func.sum(AutresPaiements.montant), 0))
+            
+            if start_date and end_date:
+                autres_query = autres_query.filter(
+                    AutresPaiements.date_paiement >= start_date,
+                    AutresPaiements.date_paiement <= end_date
+                )
+            
+            if saison:
+                autres_query = autres_query.filter(AutresPaiements.code_saison == saison)
+                
+            revenus_autres = float(autres_query.scalar() or 0)
+
+            
+            total_revenus += revenus_cotisations + revenus_autres
+        
+        if data_type in ['all', 'locations']:
+            # Revenus des locations
+            locations_query = db.session.query(func.coalesce(func.sum(LocationTerrain.montant_location), 0))
+            
+            if start_date and end_date:
+                locations_query = locations_query.filter(
+                    LocationTerrain.date_location >= start_date,
+                    LocationTerrain.date_location <= end_date
+                )
+            
+            revenus_locations = float(locations_query.scalar() or 0)
+            total_revenus =revenus_cotisations + revenus_autres + revenus_locations
+        
+        # Calculer le total des dépenses
+        total_depenses = 0
+        
+        if data_type in ['all', 'depenses']:
+            depenses_query = db.session.query(func.coalesce(func.sum(Depense.montant), 0))
+            
+            if start_date and end_date:
+                depenses_query = depenses_query.filter(
+                    Depense.date >= start_date,
+                    Depense.date <= end_date
+                )
+            
+            total_depenses = float(depenses_query.scalar() or 0)
+        
+        # Calculer le bénéfice net
+        benefice_net = total_revenus - total_depenses
+        
+        # Calculer le nombre d'adhérents actifs
+        adherents_query = db.session.query(func.count(Adherent.adherent_id)).filter(
+            Adherent.status == 'Actif'
+        )
+        
+        if saison:
+            adherents_query = adherents_query.filter(Adherent.code_saison == saison)
+            
+        adherents_actifs = adherents_query.scalar() or 0
+        
+        return {
+            'totalRevenus': float(total_revenus),
+            'totalDepenses': float(total_depenses),
+            'beneficeNet': float(benefice_net),
+            'adherentsActifs': adherents_actifs,
+            'revenusChange': 0,  # À implémenter selon vos besoins
+            'depensesChange': 0,
+            'beneficeChange': 0,
+            'adherentsChange': 0
+        }
+        
+    except Exception as e:
+        print(f"Erreur dans calculate_stats: {str(e)}")
+        raise
+
+def get_monthly_data(start_date, end_date, saison):
+    """Obtenir les données mensuelles pour le graphique d'évolution"""
+    try:
+        # Définir la plage de dates par défaut si non spécifiée
+        if not start_date or not end_date:
+            end_date = datetime.now().date()
+            start_date = end_date.replace(month=1, day=1)  # Début de l'année
+        
+        # Limiter à 24 mois maximum pour éviter les problèmes de performance
+        months_diff = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
+        if months_diff > 24:
+            start_date = end_date.replace(year=end_date.year - 2, month=end_date.month, day=1)
+        
+        # Générer les mois avec une approche plus sûre
+        labels = []
+        revenues = []
+        expenses = []
+        
+        current_date = start_date.replace(day=1)
+        
+        while current_date <= end_date:
+            # Format du label
+            month_names_fr = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
+                             'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+            month_label = month_names_fr[current_date.month - 1]
+            if current_date.year != datetime.now().year:
+                month_label += f" {current_date.year}"
+            labels.append(month_label)
+            
+            # Calculer le dernier jour du mois
+            if current_date.month == 12:
+                next_month = current_date.replace(year=current_date.year + 1, month=1)
+            else:
+                next_month = current_date.replace(month=current_date.month + 1)
+            month_end = next_month - timedelta(days=1)
+            
+            # Revenus du mois en une seule requête combinée
+            monthly_revenue = 0
+            
+            # Cotisations du mois
+            cotisations_month = db.session.query(func.coalesce(func.sum(Paiement.montant_paye), 0)).filter(
+                Paiement.date_paiement >= current_date,
+                Paiement.date_paiement <= month_end,
+                Paiement.code_saison == saison if saison else True
+            ).scalar() or 0
+            
+            # Autres paiements du mois
+            autres_month = db.session.query(func.coalesce(func.sum(AutresPaiements.montant), 0)).filter(
+                AutresPaiements.date_paiement >= current_date,
+                AutresPaiements.date_paiement <= month_end,
+                AutresPaiements.code_saison == saison if saison else True
+            ).scalar() or 0
+            
+            # Locations du mois
+            locations_month = db.session.query(func.coalesce(func.sum(LocationTerrain.montant_location), 0)).filter(
+                LocationTerrain.date_location >= current_date,
+                LocationTerrain.date_location <= month_end
+            ).scalar() or 0
+            
+            monthly_revenue = cotisations_month + autres_month + locations_month
+            revenues.append(float(monthly_revenue))
+            
+            # Dépenses du mois
+            monthly_expenses = db.session.query(func.coalesce(func.sum(Depense.montant), 0)).filter(
+                Depense.date >= current_date,
+                Depense.date <= month_end
+            ).scalar() or 0
+            
+            expenses.append(float(monthly_expenses))
+            
+            # Passer au mois suivant
+            if current_date.month == 12:
+                current_date = current_date.replace(year=current_date.year + 1, month=1)
+            else:
+                current_date = current_date.replace(month=current_date.month + 1)
+        
+        return {
+            'labels': labels,
+            'revenues': revenues,
+            'expenses': expenses
+        }
+        
+    except Exception as e:
+        print(f"Erreur dans get_monthly_data: {str(e)}")
+        # Retourner des données vides en cas d'erreur
+        return {
+            'labels': [],
+            'revenues': [],
+            'expenses': []
+        }
+
+def get_revenue_by_type(start_date, end_date, saison):
+    """Calculer la répartition des revenus par type"""
+    try:
+        # Revenus des cotisations
+        cotisations_query = db.session.query(func.coalesce(func.sum(Paiement.montant_paye), 0))
+        
+        if start_date and end_date:
+            cotisations_query = cotisations_query.filter(
+                Paiement.date_paiement >= start_date,
+                Paiement.date_paiement <= end_date
+            )
+        
+        if saison:
+            cotisations_query = cotisations_query.filter(Paiement.code_saison == saison)
+            
+        cotisations = cotisations_query.scalar() or 0
+        
+        # Revenus des autres paiements
+        autres_query = db.session.query(func.coalesce(func.sum(AutresPaiements.montant), 0))
+        
+        if start_date and end_date:
+            autres_query = autres_query.filter(
+                AutresPaiements.date_paiement >= start_date,
+                AutresPaiements.date_paiement <= end_date
+            )
+        
+        if saison:
+            autres_query = autres_query.filter(AutresPaiements.code_saison == saison)
+            
+        autres = autres_query.scalar() or 0
+        
+        # Revenus des locations
+        locations_query = db.session.query(func.coalesce(func.sum(LocationTerrain.montant_location), 0))
+        
+        if start_date and end_date:
+            locations_query = locations_query.filter(
+                LocationTerrain.date_location >= start_date,
+                LocationTerrain.date_location <= end_date
+            )
+        
+        locations = locations_query.scalar() or 0
+        
+        return {
+            'labels': ['Cotisations', 'Locations', 'Autres paiements'],
+            'values': [float(cotisations), float(locations), float(autres)]
+        }
+        
+    except Exception as e:
+        print(f"Erreur dans get_revenue_by_type: {str(e)}")
+        return {
+            'labels': ['Cotisations', 'Locations', 'Autres paiements'],
+            'values': [0, 0, 0]
+        }
+
+def get_recent_payments(start_date, end_date, saison, data_type, limit=10):
+    """Obtenir les derniers paiements"""
+    try:
+        if data_type not in ['all', 'paiements']:
+            return []
+        
+        # Base query avec jointure
+        query = db.session.query(
+            Paiement.date_paiement,
+            Paiement.matricule_adherent,
+            Paiement.montant_paye,
+            Paiement.code_saison,
+            Adherent.nom,
+            Adherent.prenom
+        ).outerjoin(
+            Adherent, Paiement.matricule_adherent == Adherent.matricule
+        ).filter(
+            Paiement.montant_paye.isnot(None),
+            Paiement.montant_paye > 0
+        )
+        
+        # Appliquer les filtres
+        if start_date and end_date:
+            query = query.filter(
+                Paiement.date_paiement >= start_date,
+                Paiement.date_paiement <= end_date
+            )
+        
+        if saison:
+            query = query.filter(Paiement.code_saison == saison)
+        
+        # Ordonner par date décroissante et limiter
+        payments = query.order_by(Paiement.date_paiement.desc()).limit(limit).all()
+        
+        result = []
+        for payment in payments:
+            adherent_name = "Inconnu"
+            if payment.nom and payment.prenom:
+                adherent_name = f"{payment.nom} {payment.prenom}"
+            elif payment.matricule_adherent:
+                adherent_name = f"Matricule {payment.matricule_adherent}"
+                
+            result.append({
+                'date': payment.date_paiement.strftime('%Y-%m-%d') if payment.date_paiement else '',
+                'adherent': adherent_name,
+                'montant': float(payment.montant_paye) if payment.montant_paye else 0,
+                'type': 'Cotisation',
+                'saison': payment.code_saison or ''
+            })
+        
+        return result
+        
+    except Exception as e:
+        print(f"Erreur dans get_recent_payments: {str(e)}")
+        return []
+
+def get_recent_locations(start_date, end_date, saison, data_type, limit=10):
+    """Obtenir les locations récentes"""
+    try:
+        if data_type not in ['all', 'locations']:
+            return []
+        
+        # Base query
+        query = db.session.query(LocationTerrain).filter(
+            LocationTerrain.montant_location.isnot(None),
+            LocationTerrain.montant_location > 0
+        )
+        
+        # Appliquer les filtres de date
+        if start_date and end_date:
+            query = query.filter(
+                LocationTerrain.date_location >= start_date,
+                LocationTerrain.date_location <= end_date
+            )
+        
+        # Ordonner par date décroissante et limiter
+        locations = query.order_by(LocationTerrain.date_location.desc()).limit(limit).all()
+        
+        result = []
+        for location in locations:
+            # Calculer la durée de manière sécurisée
+            duree = "N/A"
+            try:
+                if location.heure_debut and location.heure_fin:
+                    debut = datetime.combine(datetime.min, location.heure_debut)
+                    fin = datetime.combine(datetime.min, location.heure_fin)
+                    duree_seconds = (fin - debut).total_seconds()
+                    duree_hours = int(duree_seconds // 3600)
+                    duree = f"{duree_hours}h"
+            except:
+                duree = "N/A"
+            
+            result.append({
+                'date': location.date_location.strftime('%Y-%m-%d') if location.date_location else '',
+                'terrain': location.numero_terrain or 'N/A',
+                'locateur': location.locateur or 'Inconnu',
+                'montant': float(location.montant_location) if location.montant_location else 0,
+                'duree': duree
+            })
+        
+        return result
+        
+    except Exception as e:
+        print(f"Erreur dans get_recent_locations: {str(e)}")
+        return []
 
 @app.route('/rh')
 def rh():
