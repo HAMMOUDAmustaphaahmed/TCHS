@@ -198,7 +198,7 @@
     <h5>Créer un nouveau groupe</h5>
     <select id="groupCategory" class="form-control mt-2">
         <option value="">Catégorie</option>
-        {% if session['type_saison'] == 'abonnement_annuel' %}
+        
             <option value="Lutin">Lutin</option>
             <option value="Poussin">Poussin</option>
             <option value="Benjamin">Benjamin</option>
@@ -207,9 +207,8 @@
             <option value="Ecole">École</option>
             <option value="Loisir">Loisir</option>
             <option value="Adulte">Adulte</option>
-        {% elif session['type_saison'] == 'ecole_ete' %}
-            <option value="Ecole d'été">Ecole d'été</option>
-        {% endif %}
+        
+            <option value="Ecole_ete">Ecole d'été</option>
     </select>
     <input type="number" id="groupNumber" class="form-control mt-2" placeholder="Numéro (1-9)" min="1" max="9">
     <input type="text" id="groupLetter" class="form-control mt-2" placeholder="Lettre (A-Z)" maxlength="1">
@@ -238,7 +237,7 @@
     </thead>
     <tbody>
         {% for groupe in groupes %}
-            {% if session.get('type_saison') == 'abonnement_annuel' and groupe.categorie in ['Lutin','Poussin','Benjamin','Minime','KD','Ecole','Loisir','Adulte'] %}
+            
                 <tr>
                     <td>{{ groupe.nom_groupe }}</td>
                     <td>
@@ -289,7 +288,6 @@
                         </button>
                     </td>
                 </tr>
-            {% endif %}
         {% endfor %}
     </tbody>
 </table>

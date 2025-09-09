@@ -1926,12 +1926,35 @@ def paiement():
             paiements = Paiement.query.filter_by(matricule_adherent=matricule)\
                                       .order_by(Paiement.id_paiement.asc()).all()
 
+            # Gestion de la cotisation et remise
             if paiements:
+                # Si des paiements existent, utiliser les valeurs existantes
                 cotisation = float(paiements[0].cotisation or 0)
                 remise = float(paiements[0].remise or 0)
             else:
-                cotisation = float(adherent.cotisation or 0)
-                remise = float(adherent.remise or 0)
+                # Si c'est le premier paiement, gérer la sélection de cotisation
+                cotisation_select = request.form.get('cotisation_select')
+                cotisation_montant = request.form.get('cotisation_montant')
+                remise_input = request.form.get('remise_input')
+                
+                if cotisation_select and cotisation_montant:
+                    # Une cotisation a été sélectionnée
+                    cotisation_obj = Cotisation.query.get(cotisation_select)
+                    if cotisation_obj:
+                        cotisation = float(cotisation_obj.montant_cotisation)
+                        remise = float(remise_input) if remise_input else 0.0
+                        
+                        # Mettre à jour l'adhérent avec la nouvelle cotisation et remise
+                        adherent.cotisation = cotisation
+                        adherent.remise = remise
+                        db.session.commit()
+                    else:
+                        flash("Cotisation sélectionnée invalide.", "danger")
+                        return redirect(url_for('paiement', type=saison_type))
+                else:
+                    # Utiliser les valeurs existantes de l'adhérent
+                    cotisation = float(adherent.cotisation or 0)
+                    remise = float(adherent.remise or 0)
 
             remise_montant = cotisation * (remise / 100.0)
             paiement_total = max(0.0, cotisation - remise_montant)
@@ -1949,11 +1972,21 @@ def paiement():
             deja_paye = float(dernier_total.total_montant_paye or 0) if dernier_total else 0.0
             reste_a_payer = round(max(0.0, paiement_total - deja_paye), 2)
 
+            # Traitement du paiement si montant saisi
             if request.form.get('montant_paye'):
+                # Vérifier qu'une cotisation est définie
+                if cotisation <= 0:
+                    flash("Veuillez d'abord sélectionner une cotisation.", "warning")
+                    return redirect(url_for('paiement', type=saison_type))
+                
                 try:
                     montant_paye = float(request.form.get('montant_paye', 0) or 0)
                 except ValueError:
                     montant_paye = 0.0
+
+                if montant_paye <= 0:
+                    flash("Veuillez saisir un montant payé valide.", "warning")
+                    return redirect(url_for('paiement', type=saison_type))
 
                 type_reglement = request.form.get('type_reglement')
                 numero_cheque = request.form.get('numero_cheque') if type_reglement == 'chèque' else None
@@ -2002,26 +2035,45 @@ def paiement():
                 paiements = Paiement.query.filter_by(matricule_adherent=matricule)\
                                           .order_by(Paiement.id_paiement.asc()).all()
                 flash("Paiement enregistré avec succès.", "success")
-            else:
-                flash("Veuillez saisir un montant payé.", "warning")
+            elif not paiements and not request.form.get('cotisation_select'):
+                flash("Veuillez d'abord sélectionner une cotisation.", "warning")
         else:
             flash("Adhérent non trouvé.", "danger")
 
-    # --------- Calculs finaux pour l’affichage ----------
+    # --------- Calculs finaux pour l'affichage ----------
     total_montant_paye = sum(float(p.montant_paye or 0) for p in paiements)
     if adherent:
-        paiement_total = max(0.0, (float(adherent.cotisation or 0) - (float(adherent.cotisation or 0) * float(adherent.remise or 0) / 100)))
+        # Recalculer les valeurs pour l'affichage
+        if paiements:
+            cotisation = float(paiements[0].cotisation or 0)
+            remise = float(paiements[0].remise or 0)
+        else:
+            cotisation = float(adherent.cotisation or 0)
+            remise = float(adherent.remise or 0)
+        
+        remise_montant = cotisation * (remise / 100.0)
+        paiement_total = max(0.0, cotisation - remise_montant)
+        
         dernier_total = Paiement.query.filter_by(matricule_adherent=adherent.matricule)\
                                       .order_by(Paiement.id_paiement.desc()).first()
         deja_paye = float(dernier_total.total_montant_paye or 0) if dernier_total else 0.0
         reste_a_payer = round(max(0.0, paiement_total - deja_paye), 2)
 
         # --- Vérification paiement complet GET ---
-        if round(deja_paye, 2) >= round(float(adherent.cotisation or 0), 2):
+        if round(deja_paye, 2) >= round(cotisation, 2):
             if adherent.paye != 'O':
                 adherent.paye = 'O'
                 reste_a_payer = 0.0
                 db.session.commit()
+
+    # Calcul des numéros de carnet/bon pour l'affichage
+    dernier_paiement = Paiement.query.order_by(Paiement.id_paiement.desc()).first()
+    if dernier_paiement:
+        numero_carnet = int(dernier_paiement.numero_carnet or 1)
+        numero_bon = int(dernier_paiement.numero_bon or 0) + 1
+        if numero_bon > 50:
+            numero_carnet += 1
+            numero_bon = 1
 
     if not code_saison:
         saison_type = saison_type if saison_type in ('annuel', 'ete') else 'annuel'
@@ -4206,58 +4258,66 @@ from io import BytesIO
 
 @app.route('/export_monthly_presence', methods=['GET'])
 def export_monthly_presence():
-    # Get query parameters
     month = request.args.get('month')
     type = request.args.get('type')
 
     if not month or not type:
         return jsonify({"error": "Month and type are required."}), 400
 
-    # Parse the month into a year and a month
     year, month = map(int, month.split('-'))
 
-    # Query the database based on the type (adherent or entraineur)
     if type == 'adherent':
-        query = Presence.query.filter(
-            db.extract('year', Presence.date_seance) == year,
-            db.extract('month', Presence.date_seance) == month
+        # Récupérer toutes les séances du mois
+        seances = Seance.query.filter(
+            db.extract('year', Seance.date) == year,
+            db.extract('month', Seance.date) == month
         ).all()
 
-        # Format the data for adherents
-        data = [{
-            'Date': presence.date_seance.strftime('%Y-%m-%d'),
-            'Heure': presence.heure_debut.strftime('%H:%M'),
-            'Groupe': presence.groupe_nom,
-            'Adhérent': presence.adherent_matricule,
-            'Entraîneur': presence.entraineur_nom,
-            'Présence': 'Présent' if presence.est_present == 'O' else 'Absent'
-        } for presence in query]
+        # Récupérer tous les adhérents
+        adherents = Adherent.query.all()
+
+        data = []
+        for adherent in adherents:
+            for seance in seances:
+                # Vérifier si une présence existe pour cet adhérent à cette séance
+                presence = Presence.query.filter_by(
+                    adherent_matricule=adherent.matricule,
+                    date_seance=seance.date,
+                    heure_debut=seance.heure_debut
+                ).first()
+
+                data.append({
+                    'Date': seance.date.strftime('%Y-%m-%d'),
+                    'Heure': seance.heure_debut.strftime('%H:%M'),
+                    'Groupe': seance.groupe_nom,
+                    'Adhérent': f"{adherent.nom} {adherent.prenom}",
+                    'Entraîneur': seance.entraineur_nom,
+                    'Présence': 'Présent' if presence and presence.est_present == 'O' else 'Absent'
+                })
 
     elif type == 'entraineur':
-        query = Presence_Entraineur.query.filter(
+        presences = Presence_Entraineur.query.filter(
             db.extract('year', Presence_Entraineur.date_seance) == year,
             db.extract('month', Presence_Entraineur.date_seance) == month
         ).all()
 
-        # Format the data for entraineurs
         data = [{
-            'Date': presence.date_seance.strftime('%Y-%m-%d'),
-            'Heure': presence.heure_debut.strftime('%H:%M'),
-            'Groupe': presence.groupe_nom,
-            'Entraîneur': presence.entraineur_nom,
-            'Présence': 'Présent' if presence.est_present == 'O' else 'Absent'
-        } for presence in query]
+            'Date': p.date_seance.strftime('%Y-%m-%d'),
+            'Heure': p.heure_debut.strftime('%H:%M'),
+            'Groupe': p.groupe_nom,
+            'Entraîneur': p.entraineur_nom,
+            'Présence': 'Présent' if p.est_present == 'O' else 'Absent'
+        } for p in presences]
 
     else:
         return jsonify({"error": "Invalid type."}), 400
 
-    # Generate XLSX using pandas
+    # Export Excel
     df = pd.DataFrame(data)
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Présence Mensuelle')
 
-    # Return the XLSX file as a response
     output.seek(0)
     return send_file(
         output,
@@ -4266,7 +4326,27 @@ def export_monthly_presence():
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
+@app.route('/api/presences/adherent/<matricule>/details')
+def get_adherent_presence_details(matricule):
+    try:
+        # Récupérer toutes les présences de l'adhérent
+        presences = Presence.query.filter_by(adherent_matricule=matricule)\
+                                  .order_by(Presence.date_seance.desc()).all()
 
+        details = []
+        for presence in presences:
+            details.append({
+                "date": presence.date_seance.strftime('%Y-%m-%d'),
+                "groupe": presence.groupe_nom,
+                "entraineur": presence.entraineur_nom,
+                "heure_debut": presence.heure_debut.strftime('%H:%M'),
+                "etat": "Présent(e)" if presence.est_present == 'O' else "Absent(e)"
+            })
+
+        return jsonify({"success": True, "details": details})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 from flask import Blueprint, render_template, send_file, jsonify
