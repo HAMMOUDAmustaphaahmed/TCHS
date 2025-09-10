@@ -3370,10 +3370,12 @@ def get_document(transaction_id, filename):
 
 
 
-from flask import jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request
 from sqlalchemy import or_
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
+
+
 @app.route('/situation-adherent')
 def show_situation_adherent():
     return render_template('situation-adherent.html')
@@ -3407,46 +3409,37 @@ def get_situation_adherent(matricule):
     # Récupérer tous les paiements
     paiements = Paiement.query.filter_by(matricule_adherent=str(matricule)).order_by(Paiement.date_paiement).all()
     
-    # Calculer les totaux à partir du modèle Paiement
     if paiements:
-        # Prendre les données du dernier paiement pour les infos générales
         dernier_paiement = paiements[-1]
-        cotisation = dernier_paiement.cotisation or 0
+        cotisation_brute = dernier_paiement.cotisation or 0
         remise_pourcentage = dernier_paiement.remise or 0
         code_saison = dernier_paiement.code_saison or 'N/D'
-        
-        # Calculer les montants
-        remise_montant = cotisation * (remise_pourcentage / 100)
-        total_a_payer = cotisation - remise_montant
-        total_paye = sum(p.montant_paye for p in paiements if p.montant_paye)
-        reste_a_payer = round(max(0.0, total_a_payer - total_paye), 2)
     else:
-        # Valeurs par défaut si aucun paiement
-        cotisation = adherent.cotisation or 0
+        cotisation_brute = adherent.cotisation or 0
         remise_pourcentage = adherent.remise or 0
         code_saison = getattr(adherent, 'code_saison', 'N/D')
-        
-        remise_montant = cotisation * (remise_pourcentage / 100)
-        total_a_payer = cotisation - remise_montant
-        total_paye = 0
-        reste_a_payer = total_a_payer
 
-    # Présences (gardez votre logique existante)
+    # Calcul de la remise et du total à payer
+    remise_montant = cotisation_brute * (remise_pourcentage / 100)
+    cotisation_apres_remise = cotisation_brute - remise_montant
+    total_paye = sum(p.montant_paye for p in paiements if p.montant_paye)
+    reste_a_payer = round(max(0.0, cotisation_apres_remise - total_paye), 2)
+
+    # Présences
     presences = Presence.query.filter_by(adherent_matricule=str(matricule)).all()
     nombre_presences = sum(1 for p in presences if p.est_present == 'O')
 
-    # Prochaine séance (gardez votre logique existante)
+    # Prochaine séance
     now = datetime.now(pytz.timezone('Europe/Paris'))
     prochaine_seance = Presence.query.filter(
         Presence.adherent_matricule == str(matricule),
         Presence.date_seance >= now.date()
     ).order_by(Presence.date_seance, Presence.heure_debut).first()
 
-    # Historique des paiements avec tous les champs du modèle - CORRECTION ICI
+    # Historique des paiements
     historique_paiements = []
     for p in paiements:
-        # Gérer les valeurs NULL de la base de données
-        paiement_data = {
+        historique_paiements.append({
             'date': p.date_paiement.strftime('%d/%m/%Y') if p.date_paiement else 'N/D',
             'code_saison': p.code_saison if p.code_saison else 'N/D',
             'numero_carnet': str(p.numero_carnet) if p.numero_carnet else '-',
@@ -3455,17 +3448,14 @@ def get_situation_adherent(matricule):
             'type_reglement': p.type_reglement if p.type_reglement and p.type_reglement != 'NULL' else 'Espèce',
             'numero_cheque': p.numero_cheque if p.numero_cheque and p.numero_cheque != 'NULL' else '-',
             'banque': p.banque if p.banque and p.banque != 'NULL' else '-'
-        }
-        historique_paiements.append(paiement_data)
+        })
     
-    print(f"DEBUG: Nombre de paiements trouvés: {len(historique_paiements)}")  # Debug
-    print(f"DEBUG: Premier paiement: {historique_paiements[0] if historique_paiements else 'Aucun'}")  # Debug
-
-    # Données de l'adhérent enrichies
+    # Données de l'adhérent
     adherent_data = adherent.to_dict()
     adherent_data.update({
-        'cotisation': cotisation,
+        'cotisation': round(cotisation_apres_remise, 2),  # montant après remise
         'remise': remise_pourcentage,
+        'remise_montant': round(remise_montant, 2),
         'code_saison': code_saison,
         'date_inscription': adherent_data.get('date_inscription', 'N/D')
     })
@@ -3474,13 +3464,11 @@ def get_situation_adherent(matricule):
         'adherent': adherent_data,
         'paiements': {
             'total_paye': round(total_paye, 2),
-            'total_a_payer': round(total_a_payer, 2),
+            'total_a_payer': round(cotisation_apres_remise, 2),
             'total_remise': remise_pourcentage,
             'remise_montant': round(remise_montant, 2),
             'reste_a_payer': reste_a_payer,
-            'cotisation': cotisation,
-            'code_saison': code_saison,
-            'historique': historique_paiements  # Les données sont maintenant correctement formatées
+            'historique': historique_paiements
         },
         'presences': {
             'total': len(presences),
@@ -3493,10 +3481,6 @@ def get_situation_adherent(matricule):
             'groupe': prochaine_seance.groupe_nom if prochaine_seance else None
         } if prochaine_seance else None
     })
-from flask import jsonify, render_template, request
-from sqlalchemy import func
-from datetime import datetime, timedelta
-import pytz
 
 @app.route('/situation-paiement')
 def show_situation_paiement():
@@ -4936,8 +4920,6 @@ def create_groupe_sheet(workbook, data, header_format, present_format, absent_fo
     worksheet.set_column('A:G', 15)
 
 
-
-
 @app.route('/situation-totale')
 def situation_totale_page():
     return render_template("situation_total.html")
@@ -4945,61 +4927,89 @@ def situation_totale_page():
 @app.route('/api/situation-totale')
 def situation_totale():
     saison = request.args.get('saison')
-
+    
     # Récupérer tous les paiements
     paiements = Paiement.query.all()
-
-    total_a_payer = sum(p.montant or 0 for p in paiements)
-    total_paye = sum(p.montant_paye or 0 for p in paiements)
-    total_remise = sum(p.remise or 0 for p in paiements)
-    reste_a_payer = total_a_payer - total_paye
-
+    
+    # Pour les totaux généraux, on garde la logique de somme
+    total_a_payer_general = sum(p.montant or 0 for p in paiements)
+    total_paye_general = sum(p.montant_paye or 0 for p in paiements)
+    total_remise_general = sum(p.remise or 0 for p in paiements)
+    reste_a_payer_general = total_a_payer_general - total_paye_general
+    
     adherents = Adherent.query.all()
-
+    
     # Filtrer les adhérents par saison si demandé
     if saison:
         adherents = [a for a in adherents if a.code_saison == saison]
-
+    
     situation_par_adherent = []
-
+    
     for a in adherents:
         a_paiements = [
             p for p in paiements
             if str(p.matricule_adherent).strip() == str(a.matricule).strip()
         ]
-
+        
         # Détecter adhérents sans paiement
         aucun_paiement = len(a_paiements) == 0
         if aucun_paiement:
             print(f"⚠ Adhérent sans paiement : Matricule {a.matricule}, Nom {a.nom}, Prénom {a.prenom}")
-
-        total_a = sum(float(p.montant or 0) for p in a_paiements)
-        total_payé = sum(float(p.montant_paye or 0) for p in a_paiements)
-        total_r = sum(float(p.remise or 0) for p in a_paiements)
-
-        reste_a_payer = total_a - total_payé
-
+            
+            # Pour les adhérents sans paiement, utiliser les valeurs de l'adhérent
+            cotisation_adherent = float(a.cotisation or 0)
+            remise_adherent = float(a.remise or 0)
+            reste_adherent = cotisation_adherent  # Aucun paiement effectué
+            
+            situation_par_adherent.append({
+                'matricule': a.matricule,
+                'nom': a.nom,
+                'prenom': a.prenom,
+                'total_a_payer': cotisation_adherent,
+                'total_paye': 0,  # Aucun paiement effectué
+                'total_remise': remise_adherent,
+                'reste_a_payer': reste_adherent,
+                'aucun_paiement': aucun_paiement,
+                'code_saison': a.code_saison
+            })
+            continue
+        
+        # Logique corrigée pour chaque adhérent :
+        
+        # 1. Total à payer : depuis le DERNIER paiement seulement
+        dernier_paiement = max(a_paiements, key=lambda p: p.date_paiement or datetime.min)
+        total_a_payer_adherent = float(dernier_paiement.montant or 0)
+        
+        # 2. Remise : depuis le DERNIER paiement seulement (valeur fixe)
+        remise_adherent = float(dernier_paiement.remise or 0)
+        
+        # 3. Total payé : SOMME de tous les montants payés par cet adhérent
+        total_paye_adherent = sum(float(p.montant_paye or 0) for p in a_paiements)
+        
+        # 4. Reste à payer = Total à payer - Total payé
+        reste_a_payer_adherent = total_a_payer_adherent - total_paye_adherent
+        
         situation_par_adherent.append({
             'matricule': a.matricule,
             'nom': a.nom,
             'prenom': a.prenom,
-            'total_a_payer': total_a,
-            'total_paye': total_payé,
-            'total_remise': total_r,
-            'reste_a_payer': reste_a_payer,
-            'aucun_paiement': aucun_paiement,  # Indicateur pour le front
+            'total_a_payer': total_a_payer_adherent,
+            'total_paye': total_paye_adherent,
+            'total_remise': remise_adherent,
+            'reste_a_payer': reste_a_payer_adherent,
+            'aucun_paiement': aucun_paiement,
             'code_saison': a.code_saison
         })
-
+    
     # Extraire toutes les saisons disponibles depuis les adhérents
     saisons_disponibles = list(set(a.code_saison for a in Adherent.query.all() if a.code_saison))
-
+    
     return jsonify({
         'totaux_generaux': {
-            'total_a_payer': total_a_payer,
-            'total_paye': total_paye,
-            'total_remise': total_remise,
-            'reste_a_payer': reste_a_payer
+            'total_a_payer': total_a_payer_general,
+            'total_paye': total_paye_general,
+            'total_remise': total_remise_general,
+            'reste_a_payer': reste_a_payer_general
         },
         'situation_par_adherent': situation_par_adherent,
         'saisons_disponibles': saisons_disponibles
@@ -5010,6 +5020,7 @@ def get_saisons():
     # Récupérer toutes les saisons distinctes depuis la base de données
     saisons = db.session.query(Adherent.code_saison).distinct().all()
     return jsonify([{'code': s[0]} for s in saisons if s[0]])
+
 
 from flask import request, jsonify
 from sqlalchemy import func, extract, and_, or_

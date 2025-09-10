@@ -41,68 +41,77 @@
         <!-- Navbar End -->
 
         <div class="container-fluid mt-4">
-            <h1 class="mb-4">Situation Financière Totale des Adhérents</h1>
-<!-- Totaux généraux redesign -->
-<div class="totaux-generaux mt-4 d-flex flex-wrap gap-3">
-    <div class="card totaux-card bg-primary text-white flex-fill">
-        <div class="card-body d-flex align-items-center">
-            <i class="fas fa-wallet fa-2x me-3"></i>
-            <div>
-                <h6 class="card-title">Total à payer</h6>
-                <h4 id="total-a-payer-general">0 €</h4>
-            </div>
-        </div>
-    </div>
-    <div class="card totaux-card bg-success text-white flex-fill">
-        <div class="card-body d-flex align-items-center">
-            <i class="fas fa-money-bill-wave fa-2x me-3"></i>
-            <div>
-                <h6 class="card-title">Total payé</h6>
-                <h4 id="total-paye-general">0 €</h4>
-            </div>
-        </div>
-    </div>
-   
-    <div class="card totaux-card bg-danger text-white flex-fill">
-        <div class="card-body d-flex align-items-center">
-            <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
-            <div>
-                <h6 class="card-title">Reste à payer</h6>
-                <h4 id="reste-a-payer-general">0 €</h4>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-    .totaux-generaux {
-        margin-top: 30px;
-    }
-    .totaux-card {
-        min-width: 220px;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        transition: transform 0.3s, box-shadow 0.3s;
-    }
-    .totaux-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-    }
-    .totaux-card h4 {
-        margin: 0;
-        font-weight: 700;
-    }
-    .totaux-card h6 {
-        margin: 0;
-        font-weight: 500;
-        font-size: 0.9rem;
-    }
-    @media (max-width: 768px) {
-        .totaux-generaux {
-            flex-direction: column;
+            <h1 class="dashboard-title">Situation Financière Totale des Adhérents</h1>
+            <style>
+                .dashboard-title {
+            font-family: 'Orbitron', sans-serif;
+            color: #1976d2;
+            margin: 0;
+            font-size: 28px;
         }
-    }
-</style>
+            </style>
+
+            <!-- Totaux généraux redesign -->
+            <div class="totaux-generaux mt-4 d-flex flex-wrap gap-3">
+                <div class="card totaux-card bg-primary text-white flex-fill">
+                    <div class="card-body d-flex align-items-center">
+                        <i class="fas fa-wallet fa-2x me-3"></i>
+                        <div>
+                            <h6 class="card-title">Total à payer</h6>
+                            <h4 id="total-a-payer-general">0 TND</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="card totaux-card bg-success text-white flex-fill">
+                    <div class="card-body d-flex align-items-center">
+                        <i class="fas fa-money-bill-wave fa-2x me-3"></i>
+                        <div>
+                            <h6 class="card-title">Total payé</h6>
+                            <h4 id="total-paye-general">0 TND</h4>
+                        </div>
+                    </div>
+                </div>
+               
+                <div class="card totaux-card bg-danger text-white flex-fill">
+                    <div class="card-body d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                        <div>
+                            <h6 class="card-title">Reste à payer</h6>
+                            <h4 id="reste-a-payer-general">0 TND</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <style>
+                .totaux-generaux {
+                    margin-top: 30px;
+                }
+                .totaux-card {
+                    min-width: 220px;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                    transition: transform 0.3s, box-shadow 0.3s;
+                }
+                .totaux-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+                }
+                .totaux-card h4 {
+                    margin: 0;
+                    font-weight: 700;
+                }
+                .totaux-card h6 {
+                    margin: 0;
+                    font-weight: 500;
+                    font-size: 0.9rem;
+                }
+                @media (max-width: 768px) {
+                    .totaux-generaux {
+                        flex-direction: column;
+                    }
+                }
+            </style>
 
             <!-- Filtre par saison -->
             <div class="mb-3">
@@ -134,18 +143,15 @@
                             <th>Matricule</th>
                             <th>Nom</th>
                             <th>Prénom</th>
-                            <th>Total à payer (€)</th>
-                            <th>Total payé (€)</th>
+                            <th>Total à payer (TND)</th>
+                            <th>Total payé (TND)</th>
                             <th>Remise (%)</th>
-                            <th>Reste à payer (€)</th>
+                            <th>Reste à payer (TND)</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
             </div>
-
-            <!-- Totaux généraux -->
-            
         </div>
 
     </div>
@@ -163,102 +169,118 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <!-- Script principal -->
-<script>
-    $(document).ready(function () {
-        const tableBody = $('#table-situation-total tbody');
-        const spinner = $('#spinner');
+    <script>
+        $(document).ready(function () {
+            const tableBody = $('#table-situation-total tbody');
+            const spinner = $('#spinner');
+            let saisonsDisponibles = []; // Variable pour stocker toutes les saisons
 
-        async function loadSituationTotale() {
-            spinner.show();
-            try {
-                const saison = $('#filter-saison').val();
-                const url = saison ? `/api/situation-totale?saison=${saison}` : '/api/situation-totale';
-                const response = await fetch(url);
-                const data = await response.json();
-                spinner.hide();
-
-                // Remplir le tableau
-                tableBody.empty();
-                data.situation_par_adherent.forEach(a => {
-                    const resteClass = (!a.aucun_paiement && a.reste_a_payer > 0) ? 'text-danger fw-bold' : '';
-
-                    // Si aucun paiement, afficher 'Aucun paiement'
-                    const totalAPayer = a.aucun_paiement ? 'Aucun paiement' : (a.total_a_payer || 0).toFixed(2);
-                    const totalPaye = a.aucun_paiement ? 'Aucun paiement' : (a.total_paye || 0).toFixed(2);
-                    const totalRemise = a.aucun_paiement ? 'Aucun paiement' : (a.total_remise || 0).toFixed(2);
-                    const reste = a.aucun_paiement ? 'Aucun paiement' : (a.reste_a_payer || 0).toFixed(2);
-
-                    tableBody.append(`
-                        <tr>
-                            <td>${a.matricule}</td>
-                            <td>${a.nom}</td>
-                            <td>${a.prenom}</td>
-                            <td>${totalAPayer}</td>
-                            <td>${totalPaye}</td>
-                            <td>${totalRemise}</td>
-                            <td class="${resteClass}">${reste}</td>
-                        </tr>
-                    `);
-                });
-
-                // Mettre à jour les totaux généraux
-                $('#total-a-payer-general').text((data.totaux_generaux.total_a_payer || 0).toFixed(2));
-                $('#total-paye-general').text((data.totaux_generaux.total_paye || 0).toFixed(2));
-                $('#total-remise-general').text((data.totaux_generaux.total_remise || 0).toFixed(2));
-                $('#reste-a-payer-general').text((data.totaux_generaux.reste_a_payer || 0).toFixed(2));
-
-                // Extraire les saisons uniques pour le filtre
-                const saisons = [...new Set(data.situation_par_adherent.map(a => a.code_saison))];
-                const select = $('#filter-saison');
-                select.find('option:not(:first)').remove();
-                saisons.forEach(s => select.append(`<option value="${s}">${s}</option>`));
-
-            } catch (error) {
-                spinner.hide();
-                console.error(error);
-                alert('Erreur lors du chargement de la situation totale.');
+            // Fonction pour charger toutes les saisons disponibles
+            async function loadSaisons() {
+                try {
+                    const response = await fetch('/api/saisons');
+                    const saisons = await response.json();
+                    saisonsDisponibles = saisons.map(s => s.code);
+                    
+                    // Remplir le select avec toutes les saisons
+                    const select = $('#filter-saison');
+                    select.find('option:not(:first)').remove(); // Garder "Toutes les saisons"
+                    saisonsDisponibles.forEach(saison => {
+                        select.append(`<option value="${saison}">${saison}</option>`);
+                    });
+                } catch (error) {
+                    console.error('Erreur lors du chargement des saisons:', error);
+                }
             }
-        }
 
-        // Filtre dynamique par saison
-        $('#filter-saison').on('change', function () {
-            loadSituationTotale();
-        });
+            async function loadSituationTotale() {
+                spinner.show();
+                try {
+                    const saison = $('#filter-saison').val();
+                    const url = saison ? `/api/situation-totale?saison=${saison}` : '/api/situation-totale';
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    spinner.hide();
 
-        // Filtre dynamique par recherche texte
-        $('#search-adherent-total').on('keyup', function () {
-            const value = $(this).val().toLowerCase();
-            $('#table-situation-total tbody tr').filter(function () {
-                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                    // Remplir le tableau
+                    tableBody.empty();
+                    data.situation_par_adherent.forEach(a => {
+                        const resteClass = (!a.aucun_paiement && a.reste_a_payer > 0) ? 'text-danger fw-bold' : '';
+
+                        // Si aucun paiement, afficher 'Aucun paiement'
+                        const totalAPayer = a.aucun_paiement ? 'Aucun paiement' : (a.total_a_payer || 0).toFixed(2);
+                        const totalPaye = a.aucun_paiement ? 'Aucun paiement' : (a.total_paye || 0).toFixed(2);
+                        const totalRemise = a.aucun_paiement ? 'Aucun paiement' : (a.total_remise || 0).toFixed(2);
+                        const reste = a.aucun_paiement ? 'Aucun paiement' : (a.reste_a_payer || 0).toFixed(2);
+
+                        tableBody.append(`
+                            <tr>
+                                <td>${a.matricule}</td>
+                                <td>${a.nom}</td>
+                                <td>${a.prenom}</td>
+                                <td>${totalAPayer}</td>
+                                <td>${totalPaye}</td>
+                                <td>${totalRemise}</td>
+                                <td class="${resteClass}">${reste}</td>
+                            </tr>
+                        `);
+                    });
+
+                    // Mettre à jour les totaux généraux
+                    $('#total-a-payer-general').text((data.totaux_generaux.total_a_payer || 0).toFixed(2) + ' TND');
+                    $('#total-paye-general').text((data.totaux_generaux.total_paye || 0).toFixed(2) + ' TND');
+                    $('#reste-a-payer-general').text((data.totaux_generaux.reste_a_payer || 0).toFixed(2) + ' TND');
+
+                } catch (error) {
+                    spinner.hide();
+                    console.error(error);
+                    alert('Erreur lors du chargement de la situation totale.');
+                }
+            }
+
+            // Filtre dynamique par saison
+            $('#filter-saison').on('change', function () {
+                loadSituationTotale();
             });
+
+            // Filtre dynamique par recherche texte
+            $('#search-adherent-total').on('keyup', function () {
+                const value = $(this).val().toLowerCase();
+                $('#table-situation-total tbody tr').filter(function () {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                });
+            });
+
+            // Export XLSX
+            $('#export-xlsx').click(function () {
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.table_to_sheet(document.getElementById('table-situation-total'));
+                XLSX.utils.book_append_sheet(wb, ws, "SituationTotale");
+                XLSX.writeFile(wb, "situation_totale.xlsx");
+            });
+
+            // Imprimer
+            $('#print-table').click(function () {
+                const printContent = document.getElementById('table-situation-total').outerHTML;
+                const win = window.open('', '', 'width=900,height=600');
+                win.document.write('<html><head><title>Impression</title>');
+                win.document.write('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">');
+                win.document.write('</head><body>');
+                win.document.write(printContent);
+                win.document.write('</body></html>');
+                win.document.close();
+                win.print();
+            });
+
+            // Chargement initial
+            async function init() {
+                await loadSaisons(); // Charger d'abord toutes les saisons
+                await loadSituationTotale(); // Puis charger les données
+            }
+            
+            init();
         });
-
-        // Export XLSX
-        $('#export-xlsx').click(function () {
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.table_to_sheet(document.getElementById('table-situation-total'));
-            XLSX.utils.book_append_sheet(wb, ws, "SituationTotale");
-            XLSX.writeFile(wb, "situation_totale.xlsx");
-        });
-
-        // Imprimer
-        $('#print-table').click(function () {
-            const printContent = document.getElementById('table-situation-total').outerHTML;
-            const win = window.open('', '', 'width=900,height=600');
-            win.document.write('<html><head><title>Impression</title>');
-            win.document.write('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">');
-            win.document.write('</head><body>');
-            win.document.write(printContent);
-            win.document.write('</body></html>');
-            win.document.close();
-            win.print();
-        });
-
-        // Chargement initial
-        loadSituationTotale();
-    });
-</script>
-
+    </script>
 
     <!-- Template Javascript -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>

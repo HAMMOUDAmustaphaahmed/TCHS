@@ -76,7 +76,7 @@ class SituationPaiement {
     updateSummaryCards(summary) {
         if (!summary) return;
         
-        //document.getElementById('total-a-payer').textContent = `${summary.total_a_payer.toLocaleString()} €`;
+        //document.getElementById('total-a-payer').textContent = `${summary.total_a_payer.toLocaleString()} TND`;
         document.getElementById('total-paye').textContent = `${summary.total_paye.toLocaleString()} TND`;
         //document.getElementById('total-remise').textContent = `${summary.total_remise.toLocaleString()} TND`;
         document.getElementById('reste-a-payer').textContent = `${summary.reste_a_payer.toLocaleString()} TND`;
@@ -235,16 +235,16 @@ class SituationPaiement {
 
         tbody.innerHTML = transactions.map(t => {
             const remiseDisplay = t.is_first_payment ? 
-                `${t.remise}% (${t.montant_remise.toLocaleString()} €)` : 
+                `${t.remise}% (${t.montant_remise.toLocaleString()} TND)` : 
                 '-';
             
             return `
                 <tr class="${t.is_first_payment ? 'first-payment' : ''}">
                     <td>${new Date(t.date).toLocaleString()}</td>
                     <td>${t.matricule}</td>
-                    <td>${t.montant.toLocaleString()} €</td>
-                    <td>${t.montant_paye.toLocaleString()} €</td>
-                    <td>${t.montant_reste.toLocaleString()} €</td>
+                    <td>${t.montant.toLocaleString()} TND</td>
+                    <td>${t.montant_paye.toLocaleString()} TND</td>
+                    <td>${t.montant_reste.toLocaleString()} TND</td>
                     <td>${t.type_reglement || '-'}</td>
                     <td>${t.banque || '-'}</td>
                     <td>${t.numero_cheque || '-'}</td>

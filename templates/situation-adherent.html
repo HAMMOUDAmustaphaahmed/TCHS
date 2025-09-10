@@ -97,7 +97,15 @@
         <div class="card info-card payment-info shadow-sm">
             <div class="card-header d-flex align-items-center">
                 <i class="fas fa-money-bill-wave me-2"></i>
-                <h5 class="mb-0">Situation Financière</h5>
+                <h1 class="dashboard-title">Situation Financière </h1>
+            <style>
+                .dashboard-title {
+            font-family: 'Orbitron', sans-serif;
+            color: #1976d2;
+            margin: 0;
+            font-size: 28px;
+        }
+            </style>
             </div>
             <div class="card-body">
                 <!-- Résumé financier -->
@@ -107,11 +115,7 @@
                         <div class="info-row d-flex justify-content-between"><span class="label">Code Saison:</span> <span id="code-saison" class="value"></span></div>
                         <div class="info-row d-flex justify-content-between"><span class="label">Date d'inscription:</span> <span id="date-inscription" class="value"></span></div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="info-row d-flex justify-content-between"><span class="label">Remise:</span> <span id="total-remise" class="value"></span></div>
-                        <div class="info-row d-flex justify-content-between"><span class="label">Montant après remise:</span> <span id="total-a-payer" class="value"></span></div>
-                        <div class="info-row d-flex justify-content-between text-success"><span class="label fw-bold">Reste à payer:</span> <span id="reste-a-payer" class="value fw-bold"></span></div>
-                    </div>
+                    
                 </div>
 
                 <!-- Tableau des paiements -->
