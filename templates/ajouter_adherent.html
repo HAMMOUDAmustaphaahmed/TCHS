@@ -136,12 +136,20 @@
                     <!-- Ancien Abonné -->
                     <div class="col-6">
                         <div class="form mb-3">
-                            <label for="ancien_abonne">Ancien Abonné / مشترك سابق</label>
-                            <select id="ancien_abonne" name="ancien_abonne" class="form-control" required>
+                            <label for="categorie">Categorie / المجموعة<span class="text-danger">*</span></label>
+                            <select id="categorie" name="categorie" class="form-control" required>
                                 <option value="" disabled selected>Choisissez une option</option>
-                                <option value="Oui">Oui</option>
-                                <option value="Non">Non</option>
+                                <option value="Lutin">Lutin</option>
+                                <option value="Poussin">Poussin</option>
+                                <option value="Benjamin">Benjamin</option>
+                                <option value="Minime">Minime</option>
+                                <option value="KD">KD</option>
+                                <option value="Ecole">École</option>
+                                <option value="Loisir">Loisir</option>
+                                <option value="Adulte">Adulte</option>
+                                <option value="Ecole_ete">Ecole d'été</option>
                             </select>
+                            
                         </div>
                     </div>
 
@@ -178,7 +186,7 @@ input[list].form-control {
                 </style>
 <div class="col-6">
     <div class="form mb-3">
-        <label for="groupe">Groupe / المجموعة</label>
+        <label for="groupe">Groupe / الفريق</label>
         <select id="groupe" name="groupe" class="form-control">
             <option value="" data-cotisation="">-- Sélectionner un groupe --</option>
             {% for g in groupes %}

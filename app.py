@@ -1595,7 +1595,7 @@ def ajouter_adherent():
             tel1=request.form['tel1'],
             tel2=request.form.get('tel2'),
             type_abonnement=type_abonnement,
-            ancien_abonne=request.form['ancien_abonne'],
+            categorie=request.form['categorie'],
             matricule=matricule,
             groupe=nom_groupe,
             entraineur=entraineur_nom,
@@ -1653,7 +1653,7 @@ def modifier_adherent(id):
         adherent.tel1 = request.form['tel1']
         adherent.tel2 = request.form['tel2']
         adherent.type_abonnement = request.form['type_abonnement']
-        adherent.ancien_abonnee = request.form['ancien_abonnee']
+        adherent.categorie = request.form['categorie']
         adherent.groupe = request.form['groupe']
         adherent.entraineur = request.form['entraineur']
         adherent.email = request.form['email']
@@ -2322,7 +2322,7 @@ class Adherent(db.Model):
     tel1 = db.Column(db.String(15), nullable=True)
     tel2 = db.Column(db.String(15), nullable=True)
     type_abonnement = db.Column(db.String(50), nullable=True)
-    ancien_abonne = db.Column(db.String(50), nullable=False)
+    categorie = db.Column(db.String(50), nullable=True)
     matricule = db.Column(db.Integer, unique=True, nullable=False)
     groupe = db.Column(db.String(100), nullable=True)
     entraineur = db.Column(db.String(50), nullable=True)
@@ -2347,7 +2347,7 @@ class Adherent(db.Model):
             "tel1": self.tel1,
             "tel2": self.tel2,
             "type_abonnement": self.type_abonnement,
-            "ancien_abonne": self.ancien_abonne,
+            "categorie": self.categorie,
             "matricule": self.matricule,
             "groupe": self.groupe,
             "entraineur": self.entraineur,
