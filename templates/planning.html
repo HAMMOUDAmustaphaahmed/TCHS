@@ -315,31 +315,40 @@ document.getElementById('exportScope').style.display = 'none';
                 {% endfor %}
             </tr>
             {% for terrain in range(2,10) %}
-            <tr>
-                <td>Terrain {{ terrain }}</td>
-                {% for creneau in creneaux %}
-                <td class="time-slot">
-                    {% for seance in seances %}
-                    {% if seance.date == current_day.date() and seance.terrain == terrain 
-                        and seance.heure_debut.strftime('%H:%M') == creneau.start.strftime('%H:%M') %}
-                    <div class="session-card">
-                        <small>{{ seance.groupe }}</small>
-                        <div class="text-muted" style="font-size:1em">{{ seance.entraineur }}</div>
-                        <button class="btn btn-xs btn-danger float-middle" 
-                            onclick="deleteSession({{ seance.seance_id }})">
-                            <i class="fas fa-times"></i>
-                        </button>
-                        <button class="btn btn-warning btn-sm" 
-                            onclick="openEditSessionModal({{ seance.seance_id }}, '{{ seance.date }}', '{{ seance.heure_debut }}', '{{ seance.terrain }}', '{{ seance.entraineur_id }}')">
-                            Éditer
-                        </button>
-                    </div>
-                    {% endif %}
-                    {% endfor %}
-                </td>
-                {% endfor %}
-            </tr>
-            {% endfor %}
+<tr>
+    <td 
+        {% if terrain == 5 %} style="background-color:#dd7041"{% endif %}
+    >
+        {% if terrain == 9 %}
+            Terrain 9 (mini terrain)
+        {% else %}
+            Terrain {{ terrain }}
+        {% endif %}
+    </td>
+    {% for creneau in creneaux %}
+    <td class="time-slot">
+        {% for seance in seances %}
+        {% if seance.date == current_day.date() and seance.terrain == terrain
+            and seance.heure_debut.strftime('%H:%M') == creneau.start.strftime('%H:%M') %}
+        <div class="session-card">
+            <small>{{ seance.groupe }}</small>
+            <div class="text-muted" style="font-size:1em">{{ seance.entraineur }}</div>
+            <button class="btn btn-xs btn-danger float-middle" 
+                    onclick="deleteSession({{ seance.seance_id }})">
+                <i class="fas fa-times"></i>
+            </button>
+            <button class="btn btn-warning btn-sm" 
+                    onclick="openEditSessionModal({{ seance.seance_id }}, '{{ seance.date }}', '{{ seance.heure_debut }}', '{{ seance.terrain }}', '{{ seance.entraineur_id }}')">
+                Éditer
+            </button>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </td>
+    {% endfor %}
+</tr>
+{% endfor %}
+
         </tbody>
     </table>
 </div>

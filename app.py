@@ -4964,82 +4964,52 @@ def situation_totale_page():
 def situation_totale():
     saison = request.args.get('saison')
     
-    # Récupérer tous les paiements
-    paiements = Paiement.query.all()
-    
-    # Pour les totaux généraux, on garde la logique de somme
-    total_a_payer_general = sum(p.montant or 0 for p in paiements)
-    total_paye_general = sum(p.montant_paye or 0 for p in paiements)
-    total_remise_general = sum(p.remise or 0 for p in paiements)
-    reste_a_payer_general = total_a_payer_general - total_paye_general
-    
     adherents = Adherent.query.all()
-    
-    # Filtrer les adhérents par saison si demandé
     if saison:
         adherents = [a for a in adherents if a.code_saison == saison]
-    
+
+    # Récupérer tous les paiements
+    paiements = Paiement.query.all()
+
     situation_par_adherent = []
-    
+
     for a in adherents:
+        # Paiements existants pour cet adhérent
         a_paiements = [
             p for p in paiements
             if str(p.matricule_adherent).strip() == str(a.matricule).strip()
         ]
-        
-        # Détecter adhérents sans paiement
-        aucun_paiement = len(a_paiements) == 0
-        if aucun_paiement:
-            print(f"⚠ Adhérent sans paiement : Matricule {a.matricule}, Nom {a.nom}, Prénom {a.prenom}")
-            
-            # Pour les adhérents sans paiement, utiliser les valeurs de l'adhérent
-            cotisation_adherent = float(a.cotisation or 0)
-            remise_adherent = float(a.remise or 0)
-            reste_adherent = cotisation_adherent  # Aucun paiement effectué
-            
-            situation_par_adherent.append({
-                'matricule': a.matricule,
-                'nom': a.nom,
-                'prenom': a.prenom,
-                'total_a_payer': cotisation_adherent,
-                'total_paye': 0,  # Aucun paiement effectué
-                'total_remise': remise_adherent,
-                'reste_a_payer': reste_adherent,
-                'aucun_paiement': aucun_paiement,
-                'code_saison': a.code_saison
-            })
-            continue
-        
-        # Logique corrigée pour chaque adhérent :
-        
-        # 1. Total à payer : depuis le DERNIER paiement seulement
-        dernier_paiement = max(a_paiements, key=lambda p: p.date_paiement or datetime.min)
-        total_a_payer_adherent = float(dernier_paiement.montant or 0)
-        
-        # 2. Remise : depuis le DERNIER paiement seulement (valeur fixe)
-        remise_adherent = float(dernier_paiement.remise or 0)
-        
-        # 3. Total payé : SOMME de tous les montants payés par cet adhérent
         total_paye_adherent = sum(float(p.montant_paye or 0) for p in a_paiements)
         
-        # 4. Reste à payer = Total à payer - Total payé
-        reste_a_payer_adherent = total_a_payer_adherent - total_paye_adherent
-        
+        # Cotisation et remise depuis la table adherent
+        cotisation = float(a.cotisation or 0)
+        remise = float(a.remise) if a.remise is not None else None
+        reste_a_payer = cotisation - total_paye_adherent - (remise or 0)
+
         situation_par_adherent.append({
             'matricule': a.matricule,
             'nom': a.nom,
             'prenom': a.prenom,
-            'total_a_payer': total_a_payer_adherent,
+            'cotisation': cotisation,
+            'groupe': a.groupe or '',
+            'type_abonnement': a.type_abonnement or '',
+            'entraineur': a.entraineur or '',
+            'total_a_payer': cotisation,
             'total_paye': total_paye_adherent,
-            'total_remise': remise_adherent,
-            'reste_a_payer': reste_a_payer_adherent,
-            'aucun_paiement': aucun_paiement,
+            'total_remise': remise,
+            'reste_a_payer': reste_a_payer,
+            'aucun_paiement': len(a_paiements) == 0,
             'code_saison': a.code_saison
         })
-    
-    # Extraire toutes les saisons disponibles depuis les adhérents
+
+    # Totaux généraux
+    total_a_payer_general = sum(float(a.cotisation or 0) for a in adherents)
+    total_paye_general = sum(sum(float(p.montant_paye or 0) for p in paiements if str(p.matricule_adherent).strip() == str(a.matricule).strip()) for a in adherents)
+    total_remise_general = sum(float(a.remise or 0) for a in adherents)
+    reste_a_payer_general = total_a_payer_general - total_paye_general - total_remise_general
+
     saisons_disponibles = list(set(a.code_saison for a in Adherent.query.all() if a.code_saison))
-    
+
     return jsonify({
         'totaux_generaux': {
             'total_a_payer': total_a_payer_general,
