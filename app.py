@@ -604,6 +604,65 @@ def directeur_technique():
 
 
 
+
+@app.route('/planning_prep_physique', methods=['GET', 'POST'])
+def planning_prep_physique():
+    if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
+        flash("Accès non autorisé.", "danger")
+        return redirect(url_for('login'))
+
+    # Création des créneaux horaires d'1h
+    creneaux = [
+        {'start': time(8, 0), 'end': time(9, 0)},
+        {'start': time(9, 0), 'end': time(10, 0)},
+        {'start': time(10, 0), 'end': time(11, 0)},
+        {'start': time(11, 0), 'end': time(12, 0)},
+        {'start': time(12, 0), 'end': time(13, 0)},
+        {'start': time(13, 0), 'end': time(14, 0)},
+        {'start': time(14, 0), 'end': time(15, 0)},
+        {'start': time(15, 0), 'end': time(16, 0)},
+        {'start': time(16, 0), 'end': time(17, 0)},
+        {'start': time(17, 0), 'end': time(18, 0)},
+        {'start': time(18, 0), 'end': time(19, 0)},
+        {'start': time(19, 0), 'end': time(20, 0)},
+        {'start': time(20, 0), 'end': time(21, 0)},
+        {'start': time(21, 0), 'end': time(22, 0)},
+    ]
+
+    # Navigation semaine
+    week_offset = request.args.get('week_offset', 0, type=int)
+    today = datetime.today()
+    start_of_week = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
+    days_of_week = [start_of_week + timedelta(days=i) for i in range(7)]
+
+    # Récupérer toutes les séances de type "prep_physique" pour la semaine
+    seances_week = Seance.query.filter(
+        Seance.type_seance == 'prep_physique',
+        Seance.date >= start_of_week.date(),
+        Seance.date <= (start_of_week + timedelta(days=6)).date()
+    ).all()
+
+    # Préparer un dictionnaire {jour: {créneau: [séances]}}
+    seances_dict = {}
+    for day in days_of_week:
+        seances_dict[day.date()] = {}
+        for c in creneaux:
+            seances_dict[day.date()][c['start']] = []
+
+    for s in seances_week:
+        start_time = s.heure_debut
+        if start_time in seances_dict[s.date]:
+            seances_dict[s.date][start_time].append(s)
+    week_offset = request.args.get('week_offset', 0, type=int)
+    return render_template(
+        'planning_prep_physique.html',
+        days_of_week=days_of_week,
+        creneaux=creneaux,
+        seances_dict=seances_dict,
+        week_offset=week_offset
+    )
+
+
 @app.route('/planning', methods=['GET', 'POST'])
 def planning():
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
@@ -726,7 +785,6 @@ def update_seance_adherents(seance_id):
     
     return jsonify({"message": "Séance mise à jour avec succès"}), 200
 
-
 @app.route('/ajouter_seance', methods=['POST'])
 def ajouter_seance():
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
@@ -748,7 +806,16 @@ def ajouter_seance():
 
         # Heure début
         heure_debut = datetime.strptime(data['heure_debut'], '%H:%M').time()
-        heure_fin = (datetime.combine(date_obj, heure_debut) + timedelta(minutes=90)).time()
+
+        # --- TYPE DE SÉANCE ---
+        type_seance = data.get('type_seance', 'normale')  # ← Lire depuis le frontend
+
+        # --- Calcul de la durée ---
+        if type_seance == "prep_physique":
+            duree_minutes = 60
+        else:
+            duree_minutes = 90
+        heure_fin = (datetime.combine(date_obj, heure_debut) + timedelta(minutes=duree_minutes)).time()
 
         # Option répétition
         repeat_weekly = data.get('repeat_weekly', False)
@@ -776,15 +843,25 @@ def ajouter_seance():
 
             if conflits:
                 return jsonify({"error": f"Conflit détecté pour la date {d}"}), 400
-
-            nouvelle_seance = Seance(
-                date=d,
-                heure_debut=heure_debut,
-                heure_fin=heure_fin,
-                groupe=groupe.nom_groupe,
-                entraineur=groupe.entraineur_nom,
-                terrain=data['terrain']
-            )
+            if type_seance == "prep_physique":
+                nouvelle_seance = Seance(
+                    date=d,
+                    heure_debut=heure_debut,
+                    heure_fin=heure_fin,
+                    groupe=groupe.nom_groupe,
+                    entraineur=groupe.entraineur_nom,
+                    type_seance="prep_physique",
+                    terrain=data['terrain']
+                )
+            else:
+                nouvelle_seance = Seance(
+                    date=d,
+                    heure_debut=heure_debut,
+                    heure_fin=heure_fin,
+                    groupe=groupe.nom_groupe,
+                    entraineur=groupe.entraineur_nom,
+                    terrain=data['terrain']
+                )
             db.session.add(nouvelle_seance)
 
         db.session.commit()
@@ -793,7 +870,6 @@ def ajouter_seance():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Erreur lors de l'ajout de la séance: {str(e)}"}), 500
-
 
 @app.route('/api/get_session/<int:session_id>', methods=['GET'])
 def api_get_session(session_id):
@@ -2354,16 +2430,19 @@ class Seance(db.Model):
     heure_fin = db.Column(db.Time, nullable=False)
     groupe = db.Column(db.String(100), nullable=False)
     entraineur = db.Column(db.String(100), nullable=False)
-    terrain = db.Column(db.Integer, nullable=False)
+    terrain = db.Column(db.Integer, nullable=True)
     adherents_matricules = db.Column(db.Text,nullable=True)
+    type_seance = db.Column(db.String(50), nullable=False, default="entrainement")  
 
-    def __init__(self, date, heure_debut, groupe, entraineur, terrain, heure_fin=None):
+
+    def __init__(self, date, heure_debut, groupe, entraineur, terrain, heure_fin=None, type_seance="entrainement"):
         self.date = date
         self.heure_debut = heure_debut
         self.heure_fin = heure_fin or (datetime.combine(date, heure_debut) + timedelta(minutes=90)).time()
         self.groupe = groupe
         self.entraineur = entraineur
         self.terrain = terrain
+        self.type_seance=type_seance
 
     
 class Reservation(db.Model):

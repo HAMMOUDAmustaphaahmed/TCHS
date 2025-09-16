@@ -12,17 +12,57 @@ const frenchDatepicker = flatpickr("#sessionDate", {
     disableMobile: true
 });
 
-let currentGroupId = null;
+// ⚡️ Créneaux
+const creneauxNormaux = [
+    '08:00', '09:30', '11:00','12:30', '14:00', '15:30','17:00','18:30','20:00','21:30'
+];
 
+const creneauxPrepPhysique = [
+    '08:00', '09:00', '10:00', '11:00', '12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'
+];
+
+let currentGroupId = null;
+let isPrepPhysique = false; // pour gérer le type de séance
+
+function populateCreneaux() {
+    const select = document.getElementById('sessionTime');
+    select.innerHTML = ''; // clear previous options
+
+    const creneaux = isPrepPhysique ? creneauxPrepPhysique : creneauxNormaux;
+
+    creneaux.forEach(time => {
+        const option = document.createElement('option');
+        option.value = time;
+        option.text = time;
+        select.appendChild(option);
+    });
+}
+
+// --------------------------
+// 🔹 Modal Séance
+// --------------------------
 function openSessionModal(groupId) {
     currentGroupId = groupId;
+    isPrepPhysique = false;
+    populateCreneaux();
+    document.getElementById('sessionModal').style.display = 'block';
+}
+
+function openPrepPhysiqueModal(groupId) {
+    currentGroupId = groupId;
+    isPrepPhysique = true;
+    populateCreneaux();
     document.getElementById('sessionModal').style.display = 'block';
 }
 
 function closeSessionModal() {
     document.getElementById('sessionModal').style.display = 'none';
+    isPrepPhysique = false;
 }
 
+// --------------------------
+// 🔹 Ajouter séance
+// --------------------------
 function addSession() {
     const date = document.getElementById('sessionDate').value;
     const time = document.getElementById('sessionTime').value;
@@ -34,6 +74,8 @@ function addSession() {
         return;
     }
 
+    const typeSeance = isPrepPhysique ? "prep_physique" : "normale";
+
     fetch('/ajouter_seance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -41,8 +83,9 @@ function addSession() {
             groupe_id: currentGroupId,
             date: date,
             heure_debut: time,
-            terrain: terrain,
-            repeat_weekly: repeatWeekly   // ✅ on envoie l’option
+            terrain: 0,
+            repeat_weekly: repeatWeekly,
+            type_seance: typeSeance
         })
     })
     .then(r => r.json())
@@ -65,7 +108,6 @@ function addSession() {
 // ==========================
 // 📌 Gestion des Groupes
 // ==========================
-
 function showGroupForm() {
     document.getElementById("groupForm").style.display = "block";
 }
@@ -89,24 +131,15 @@ function confirmGroupAdd() {
         body: JSON.stringify({ groupName, entraineurId })
     })
     .then(response => {
-        if (response.ok) {
-            location.reload();
-        } else {
-            alert("Erreur lors de la création du groupe");
-        }
+        if (response.ok) location.reload();
+        else alert("Erreur lors de la création du groupe");
     });
 }
 
 function deleteGroup(groupId) {
     if (confirm("Supprimer ce groupe et toutes ses séances ?")) {
         fetch(`/supprimer_groupe/${groupId}`, { method: 'DELETE' })
-        .then(r => {
-            if (r.ok) {
-                location.reload();
-            } else {
-                r.json().then(data => alert(data.error));
-            }
-        })
+        .then(r => r.ok ? location.reload() : r.json().then(data => alert(data.error)))
         .catch(err => console.error('Erreur:', err));
     }
 }
@@ -126,7 +159,6 @@ document.querySelectorAll('.entraineur-select').forEach(select => {
     select.addEventListener('change', function() {
         const groupeId = this.dataset.groupeId;
         const entraineurId = this.value;
-
         fetch('/directeur_technique', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -138,14 +170,12 @@ document.querySelectorAll('.entraineur-select').forEach(select => {
 // ==========================
 // 📌 Gestion des Adhérents
 // ==========================
-
 let selectedAdherents = [];
 
 function openAddAdherentModal(groupId) {
     currentGroupId = groupId;
     selectedAdherents = [];
 
-    // Charger les membres actuels
     fetch(`/api/get_adherents_groupe/${groupId}`)
         .then(r => r.json())
         .then(data => {
@@ -192,22 +222,15 @@ function removeFromGroup(matricule) {
     })
     .then(r => r.json())
     .then(data => {
-        if (data.error) {
-            alert(data.error);
-        } else {
-            openAddAdherentModal(currentGroupId);
-        }
+        if (data.error) alert(data.error);
+        else openAddAdherentModal(currentGroupId);
     });
 }
 
-// Recherche par matricule, nom ou prénom
+// Recherche adhérents
 document.getElementById('searchButton').addEventListener('click', function() {
     const searchTerm = document.getElementById('adherentSearchInput').value.trim();
-
-    if (searchTerm.length < 1) {
-        alert("Veuillez entrer un nom, prénom ou matricule");
-        return;
-    }
+    if (searchTerm.length < 1) { alert("Veuillez entrer un nom, prénom ou matricule"); return; }
 
     fetch(`/api/search-adherent?term=${encodeURIComponent(searchTerm)}`)
         .then(r => r.json())
@@ -240,9 +263,7 @@ document.getElementById('searchButton').addEventListener('click', function() {
 });
 
 document.getElementById('adherentSearchInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        document.getElementById('searchButton').click();
-    }
+    if (e.key === 'Enter') document.getElementById('searchButton').click();
 });
 
 function addToSelected(matricule, nom, prenom) {
@@ -262,7 +283,6 @@ function removeFromSelected(matricule) {
 function updateSelectedDisplay() {
     const container = document.getElementById('selectedAdherents');
     container.innerHTML = '';
-
     selectedAdherents.forEach(adherent => {
         const div = document.createElement('div');
         div.className = 'selected-adherent mb-2';
@@ -277,10 +297,7 @@ function updateSelectedDisplay() {
 }
 
 function confirmAddAdherents() {
-    if (selectedAdherents.length === 0) {
-        alert('Veuillez sélectionner au moins un adhérent');
-        return;
-    }
+    if (selectedAdherents.length === 0) { alert('Veuillez sélectionner au moins un adhérent'); return; }
 
     const matricules = selectedAdherents.map(a => a.matricule);
 
@@ -291,34 +308,23 @@ function confirmAddAdherents() {
     })
     .then(r => r.json())
     .then(data => {
-        if (data.error) {
-            alert(data.error);
-        } else {
+        if (data.error) alert(data.error);
+        else {
             alert(`${data.added_count} adhérent(s) ajouté(s) avec succès`);
             closeAddAdherentModal();
             location.reload();
         }
     })
-    .catch(err => {
-        console.error('Erreur:', err);
-        alert('Une erreur est survenue');
-    });
+    .catch(err => { console.error('Erreur:', err); alert('Une erreur est survenue'); });
 }
 
 // ==========================
 // 📌 Gestion du Mot de Passe
 // ==========================
-
-function ouvrirModal() {
-    document.getElementById('modalChangerMotDePasse').style.display = 'block';
-}
-
-function fermerModal() {
-    document.getElementById('modalChangerMotDePasse').style.display = 'none';
-}
+function ouvrirModal() { document.getElementById('modalChangerMotDePasse').style.display = 'block'; }
+function fermerModal() { document.getElementById('modalChangerMotDePasse').style.display = 'none'; }
 
 document.getElementById('changePasswordLink').addEventListener('click', ouvrirModal);
-
 document.getElementById('submitMotDePasse').addEventListener('click', function() {
     const nouveauMotDePasse = document.getElementById('nouveauMotDePasse').value;
     const confirmationMotDePasse = document.getElementById('confirmationMotDePasse').value;
@@ -331,23 +337,20 @@ document.getElementById('submitMotDePasse').addEventListener('click', function()
     fetch('/changer_mot_de_passe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            nouveau_mot_de_passe: nouveauMotDePasse,
-            confirmation_mot_de_passe: confirmationMotDePasse
-        }),
+        body: JSON.stringify({ nouveau_mot_de_passe: nouveauMotDePasse, confirmation_mot_de_passe: confirmationMotDePasse })
     })
     .then(r => r.json())
     .then(data => {
-        if (data.message) {
-            alert(data.message);
-        } else {
-            alert(data.error);
-        }
+        if (data.message) alert(data.message);
+        else alert(data.error);
         fermerModal();
     })
-    .catch(err => {
-        console.error('Erreur:', err);
-        alert('Une erreur est survenue.');
-        fermerModal();
-    });
+    .catch(err => { console.error('Erreur:', err); alert('Une erreur est survenue.'); fermerModal(); });
+});
+
+// --------------------------
+// 🔹 Bouton fermeture modal séance
+// --------------------------
+document.querySelectorAll('.closeSessionModal').forEach(btn => {
+    btn.addEventListener('click', closeSessionModal);
 });

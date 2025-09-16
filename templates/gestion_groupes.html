@@ -273,10 +273,16 @@
 
 </script>
                     <td>
-                        <button class="btn btn-sm btn-primary" onclick="openSessionModal({{ groupe.id_groupe }})">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </td>
+    <!-- Bouton séance "entrainement" existant -->
+    <button class="btn btn-sm btn-primary" onclick="openSessionModal({{ groupe.id_groupe }}, 'entrainement')">
+        <i class="fas fa-plus"></i>
+    </button>
+
+    <!-- Nouveau bouton séance "préparation physique" -->
+    <button class="btn btn-sm btn-warning" onclick="openPrepPhysiqueModal({{ groupe.id_groupe }}, 'prep_physique')">
+        <i class="fas fa-dumbbell"></i>
+    </button>
+</td>
                     <td>
                         <button class="btn btn-sm btn-success" onclick="openAddAdherentModal({{ groupe.id_groupe }})">
                             <i class="fas fa-user-plus"></i> Gestion des adhérents
@@ -438,15 +444,11 @@ function closeAdherentsListModal() {
 
     <!-- Créneaux -->
     <div class="mb-3">
-        <label for="sessionTime" class="form-label">Heure de début :</label>
-        <select id="sessionTime" class="form-select" required>
-            {% for creneau in creneaux %}
-            <option value="{{ creneau.start.strftime('%H:%M') }}">
-                {{ creneau.start.strftime('%H:%M') }} - {{ creneau.end.strftime('%H:%M') }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
+    <label for="sessionTime" class="form-label">Heure de début :</label>
+    <select id="sessionTime" class="form-select" required>
+        <!-- Options will be dynamically generated via JS -->
+    </select>
+</div>
 
     <!-- Terrain -->
     <div class="mb-3">
