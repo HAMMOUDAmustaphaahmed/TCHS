@@ -90,38 +90,78 @@
 
                 <!-- Infos adhérent -->
                 <div class="card shadow-sm border-0 rounded-3 mb-4">
-                    <div class="card-body p-4">
-                        <h5 class="card-title d-flex align-items-center mb-3">
-                            <i class="bi bi-person-circle text-primary me-2 fs-3 shadow-sm p-1 rounded-circle bg-light"></i>
-                            <span class="fw-bold">{{ adherent.nom }} {{ adherent.prenom }}</span>
-                            <span class="badge bg-gradient bg-info text-dark ms-3 shadow-sm">
-                                Matricule : {{ adherent.matricule }}
-                            </span>
-                        </h5>
+    <div class="card-body p-4">
+        <h5 class="card-title d-flex align-items-center mb-4">
+            <i class="bi bi-person-circle text-primary me-2 fs-3 shadow-sm p-1 rounded-circle bg-light"></i>
+            <span class="fw-bold">{{ adherent.nom }} {{ adherent.prenom }}</span>
+            <span class="badge bg-gradient bg-info text-dark ms-3 shadow-sm">
+                Matricule : {{ adherent.matricule }}
+            </span>
+        </h5>
 
-                        <ul class="list-unstyled mb-3">
-                            <li class="mb-2"><i class="bi bi-card-checklist text-info me-2"></i>
-                                <strong>Type d'abonnement :</strong> {{ adherent.type_abonnement }}</li>
-                            <li class="mb-2"><i class="bi bi-calendar-check text-success me-2"></i>
-                                <strong>Date d'inscription :</strong> {{ adherent.date_inscription.strftime('%d/%m/%Y') }}</li>
-                            <li class="mb-2"><i class="bi bi-cash text-warning me-2"></i>
-                                <strong>Cotisation :</strong> {{ cotisation }} TND</li>
-                            <li class="mb-2"><i class="bi bi-hash text-secondary me-2"></i>
-                                <strong>Code Saison :</strong> {{ code_saison }}</li>
-                            <li class="mb-2"><i class="bi bi-percent text-primary me-2"></i>
-                                <strong>Remise :</strong> {{ remise }}%
-                                <span class="badge bg-light text-dark ms-2">-{{ remise_montant }} TND</span>
-                            </li>
-                            <li class="mb-2"><i class="bi bi-cash me-2"></i>
-                                <strong>Montant brut :</strong> {{ montant_brut }} TND</li>
-                        </ul>
+        <div class="row g-4">
+            <!-- Colonne 1: Coordonnées -->
+            <div class="col-lg-4 col-md-6 col-12">
+                <div class="p-3 bg-light rounded-3 h-100">
+                    <h6 class="fw-bold text-primary mb-3 border-bottom border-primary pb-2">
+                        <i class="bi bi-person-vcard me-2"></i>Coordonnées
+                    </h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="bi bi-person text-secondary me-2"></i>
+                            <strong>Nom :</strong> {{ adherent.nom }}</li>
+                        <li class="mb-2"><i class="bi bi-person text-secondary me-2"></i>
+                            <strong>Prénom :</strong> {{ adherent.prenom }}</li>
+                        <li class="mb-2"><i class="bi bi-hash text-secondary me-2"></i>
+                            <strong>Matricule :</strong> {{ adherent.matricule }}</li>
+                        <li class="mb-0"><i class="bi bi-calendar-check text-success me-2"></i>
+                            <strong>Date d'inscription :</strong> {{ adherent.date_inscription.strftime('%d/%m/%Y') }}</li>
+                    </ul>
+                </div>
+            </div>
 
-                        <div class="alert {% if reste_a_payer == 0 %}alert-success{% else %}alert-danger{% endif %} d-flex align-items-center mb-0" role="alert">
-                            <i class="bi {% if reste_a_payer == 0 %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %} me-2"></i>
-                            <div><strong>Reste à payer :</strong> {{ "%.2f"|format(cotisation-total_montant_paye) }} TND</div>
-                        </div>
+            <!-- Colonne 2: Infos Club -->
+            <div class="col-lg-4 col-md-6 col-12">
+                <div class="p-3 bg-light rounded-3 h-100">
+                    <h6 class="fw-bold text-info mb-3 border-bottom border-info pb-2">
+                        <i class="bi bi-building me-2"></i>Infos Club
+                    </h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="bi bi-calendar2 text-info me-2"></i>
+                            <strong>Code Saison :</strong> {{ code_saison }}</li>
+                        <li class="mb-2"><i class="bi bi-card-checklist text-info me-2"></i>
+                            <strong>Type d'abonnement :</strong> {{ adherent.type_abonnement }}</li>
+                        <li class="mb-0"><i class="bi bi-people text-info me-2"></i>
+                            <strong>Groupe :</strong> {{ adherent.groupe|default("Non défini") }}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Colonne 3: Paiements -->
+            <div class="col-lg-4 col-12">
+                <div class="p-3 bg-light rounded-3 h-100">
+                    <h6 class="fw-bold text-warning mb-3 border-bottom border-warning pb-2">
+                        <i class="bi bi-credit-card me-2"></i>Paiements
+                    </h6>
+                    <ul class="list-unstyled mb-3">
+                        <li class="mb-2"><i class="bi bi-cash text-warning me-2"></i>
+                            <strong>Cotisation :</strong> {{ cotisation }} TND</li>
+                        <li class="mb-2"><i class="bi bi-percent text-primary me-2"></i>
+                            <strong>Remise :</strong> {{ remise }}%
+                            <span class="badge bg-light text-dark ms-2">-{{ remise_montant }} TND</span>
+                        </li>
+                        <li class="mb-2"><i class="bi bi-cash me-2"></i>
+                            <strong>Montant brut :</strong> {{ montant_brut }} TND</li>
+                    </ul>
+
+                    <div class="alert {% if reste_a_payer == 0 %}alert-success{% else %}alert-danger{% endif %} d-flex align-items-center mb-0" role="alert">
+                        <i class="bi {% if reste_a_payer == 0 %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %} me-2"></i>
+                        <div><strong>Reste à payer :</strong> {{ "%.2f"|format(cotisation-total_montant_paye) }} TND</div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
 
                 <!-- Situation de paiement -->
                 {% if paiements %}

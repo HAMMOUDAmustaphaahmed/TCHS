@@ -42,32 +42,32 @@ def page():
 def presentation():
     return render_template('presentation.html')
 
-
-
 @app.route('/admin')
 def admin():
     if 'user_id' not in session or session.get('role') != 'admin':
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
-    # Statistiques de base
+    
     paiements = Paiement.query.all()
-    total_collecte=0
-    total_reste =0
+    total_collecte = 0
+    total_reste = 0
     moyenne_paiement = 0
+    
     for p in paiements:
-        total_collecte += p.montant_paye 
-        total_reste += p.montant_reste
+        total_collecte += p.montant_paye or 0
+        total_reste += p.montant_reste or 0
+    
     paiements_count = len(paiements)
     if paiements_count > 0:
         moyenne_paiement = total_collecte / paiements_count
-    else:
-        return moyenne_paiement
     
-    
-
-    # Derniers paiements
     paiements_recent = Paiement.query.order_by(Paiement.date_paiement.desc()).limit(5).all()
-    moyenne_paiement=f"{moyenne_paiement:.2f}"
+
+    print("[/admin] total_collecte:", total_collecte)
+    print("[/admin] total_reste:", total_reste)
+    print("[/admin] moyenne_paiement:", moyenne_paiement)
+    print("[/admin] paiements_count:", paiements_count)
+    print("[/admin] paiements_recent:", [p.id_paiement for p in paiements_recent])
 
     return render_template('admin.html',
         total_collecte=float(total_collecte),
@@ -76,132 +76,99 @@ def admin():
         paiements_count=int(paiements_count),
         paiements_recent=paiements_recent)
 
-# Route Flask à ajouter dans votre application
 @app.route('/api/adherents-data')
 def get_adherents_data():
-    """Route pour récupérer tous les adhérents avec leurs informations"""
     try:
-        # Récupérer tous les adhérents
         all_adherents = Adherent.query.all()
-        
-        # Debug: afficher les noms des colonnes disponibles
-        if all_adherents:
-            first_adherent = all_adherents[0]
-            available_columns = [column.name for column in first_adherent.__table__.columns]
-            
-        
-        # Créer la liste des adhérents avec leurs informations
         adherents_list = []
         for a in all_adherents:
-            
-            
-            # Récupération et nettoyage du type d'abonnement
             type_abonnement = getattr(a, 'type_abonnement', None)
             if type_abonnement is None or str(type_abonnement).strip() in ['', 'N/D', 'None', 'null']:
                 type_abonnement = 'N/D'
             else:
                 type_abonnement = str(type_abonnement).strip()
-                # Nettoyage spécifique selon vos données
                 if 'ecole' in type_abonnement.lower():
-                    type_abonnement = 'Ecole d\'été'
+                    type_abonnement = "Ecole d'été"
                 elif type_abonnement.lower() == 'competitif':
                     type_abonnement = 'Compétitif'
                 elif type_abonnement.lower() == 'loisir':
                     type_abonnement = 'Loisir'
-            
-            # Récupération et nettoyage du groupe  
+
             groupe = getattr(a, 'groupe', None)
             if groupe is None or str(groupe).strip() in ['', 'N/D', 'None', 'null']:
                 groupe = 'Non spécifié'
             else:
                 groupe = str(groupe).strip()
-                # Extraction du nom du groupe principal à partir des formats comme "Poussin-1-A"
                 if '-' in groupe:
-                    # Prendre la première partie avant le premier tiret
                     base_groupe = groupe.split('-')[0]
-                    # Vérifier si c'est un groupe valide
                     groupes_valides = ['Poussin', 'Lutin', 'Benjamin', 'Minime', 'KD', 'Ecole']
                     if base_groupe in groupes_valides:
                         groupe = base_groupe
-                
-                # Nettoyage des groupes étranges
-                if groupe.lower() == 'john.doe' or groupe.lower() == 'x':
+                if groupe.lower() in ['john.doe', 'x']:
                     groupe = 'Non spécifié'
-            
+
             adherents_list.append({
                 'id': getattr(a, 'id', len(adherents_list) + 1),
                 'nom': getattr(a, 'nom', 'N/A'),
                 'type_abonnement': type_abonnement,
                 'groupe': groupe
             })
-        
-        # Obtenir les listes uniques pour les filtres
+
         types_abonnement = list(set([a['type_abonnement'] for a in adherents_list]))
         groupes = list(set([a['groupe'] for a in adherents_list]))
-        
-        # Tri personnalisé
-        types_ordre = ['Compétitif', 'Loisir', 'Ecole d\'été', 'N/D']
+
+        types_ordre = ['Compétitif', 'Loisir', "Ecole d'été", 'N/D']
         types_abonnement.sort(key=lambda x: types_ordre.index(x) if x in types_ordre else len(types_ordre))
-        
+
         groupes_ordre = ['Poussin', 'Lutin', 'Benjamin', 'Minime', 'KD', 'Ecole', 'Non spécifié']
         groupes.sort(key=lambda x: groupes_ordre.index(x) if x in groupes_ordre else len(groupes_ordre))
-        
+
+        print("[/api/adherents-data] Total adherents:", len(adherents_list))
+        print("[/api/adherents-data] Types abonnement:", types_abonnement)
+        print("[/api/adherents-data] Groupes:", groupes)
+
         return jsonify({
             'success': True,
             'adherents': adherents_list,
             'types_abonnement': types_abonnement,
             'groupes': groupes,
-            'total': len(adherents_list),
-            'debug_info': {
-                'total_in_db': len(all_adherents),
-                'total_processed': len(adherents_list),
-                'raw_sample': [
-                    {
-                        'type': getattr(all_adherents[0], 'type_abonnement', 'N/A'),
-                        'groupe': getattr(all_adherents[0], 'groupe', 'N/A')
-                    }
-                ] if all_adherents else []
-            }
+            'total': len(adherents_list)
         })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
 
-from sqlalchemy import func
-from datetime import datetime, timedelta
+    except Exception as e:
+        print(f"Erreur dans get_adherents_data: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/paiements-indicators')
 def get_paiements_indicators():
-    """Route pour récupérer tous les indicateurs de paiement avec liaison aux adhérents"""
     try:
-        paiements_query = db.session.query(
-            Paiement,
-            Adherent.nom,
-            Adherent.prenom,
-            Adherent.type_abonnement,
-            Adherent.groupe,
-            Adherent.paye.label('adherent_paye_status')
-        ).outerjoin(
-            Adherent, Paiement.matricule_adherent == Adherent.matricule.cast(db.String)
-        ).all()
-        
+        types_filter = request.args.getlist('types[]')
+        groupes_filter = request.args.getlist('groupes[]')
+
+        print("[/api/paiements-indicators] Filters:", types_filter, groupes_filter)
+
+        base_query = db.session.query(
+            Paiement, Adherent.nom, Adherent.prenom, Adherent.type_abonnement,
+            Adherent.groupe, Adherent.paye.label('adherent_paye_status')
+        ).outerjoin(Adherent, Paiement.matricule_adherent == Adherent.matricule)
+
+
+        if types_filter:
+            base_query = base_query.filter(Adherent.type_abonnement.in_(types_filter))
+        if groupes_filter:
+            base_query = base_query.filter(Adherent.groupe.in_(groupes_filter))
+
+        paiements_query = base_query.all()
+        print("[/api/paiements-indicators] Paiements found:", len(paiements_query))
+
         paiements_list = []
-        statistics = {
-            'complets': 0,
-            'partiels': 0,
-            'impayes': 0,
-            'montant_total': 0
-        }
-        
+        statistics = {'complets': 0, 'partiels': 0, 'impayes': 0, 'montant_total': 0}
         reglement_stats = {}
-        reglement_montants = {}  # 🟢 Nouveau: montants par type de règlement
+        reglement_montants = {}
         type_abonnement_payment_stats = {}
-        type_abonnement_montants = {}  # 🟢 Nouveau: montants détaillés par type d'abonnement
+        type_abonnement_montants = {}
         montant_par_abonnement = {}
-        
+
         for paiement_data in paiements_query:
             paiement = paiement_data[0]
             nom = paiement_data[1] or 'Inconnu'
@@ -209,12 +176,11 @@ def get_paiements_indicators():
             type_abonnement = paiement_data[3] or 'Non spécifié'
             groupe = paiement_data[4] or 'Non spécifié'
             adherent_paye_status = paiement_data[5]
-            
+
             montant_reste = float(paiement.montant_reste or 0)
             montant_paye = float(paiement.total_montant_paye or paiement.montant_paye or 0)
             montant_total = float(paiement.montant or 0)
-            
-            # Statut paiement
+
             if montant_reste <= 0 and montant_paye >= montant_total:
                 status_paiement = 'complet'
                 statistics['complets'] += 1
@@ -224,42 +190,28 @@ def get_paiements_indicators():
             else:
                 status_paiement = 'impaye'
                 statistics['impayes'] += 1
-            
-            # Total global
+
             statistics['montant_total'] += montant_paye
-            
-            # Total par type d'abonnement
             montant_par_abonnement[type_abonnement] = montant_par_abonnement.get(type_abonnement, 0) + montant_paye
-            
-            # 🟢 Stats par type de règlement avec montants
+
             type_reglement = paiement.type_reglement or 'Non spécifié'
             reglement_stats[type_reglement] = reglement_stats.get(type_reglement, 0) + 1
             reglement_montants[type_reglement] = reglement_montants.get(type_reglement, 0) + montant_paye
-            
-            # 🟢 Stats par type d'abonnement et statut avec montants détaillés
+
             if type_abonnement not in type_abonnement_payment_stats:
-                type_abonnement_payment_stats[type_abonnement] = {
-                    'complets': 0,
-                    'partiels': 0,
-                    'impayes': 0
-                }
-                type_abonnement_montants[type_abonnement] = {
-                    'complets': 0,
-                    'partiels': 0,
-                    'impayes': 0
-                }
-            
+                type_abonnement_payment_stats[type_abonnement] = {'complets': 0, 'partiels': 0, 'impayes': 0}
+                type_abonnement_montants[type_abonnement] = {'complets': 0, 'partiels': 0, 'impayes': 0}
+
             type_abonnement_payment_stats[type_abonnement][status_paiement + 's'] += 1
-            
-            # Ajouter les montants selon le statut
+
             if status_paiement == 'complet':
                 type_abonnement_montants[type_abonnement]['complets'] += montant_paye
             elif status_paiement == 'partiel':
                 type_abonnement_montants[type_abonnement]['partiels'] += montant_paye
                 type_abonnement_montants[type_abonnement]['impayes'] += montant_reste
-            else:  # impaye
+            else:
                 type_abonnement_montants[type_abonnement]['impayes'] += montant_total
-            
+
             paiements_list.append({
                 'id_paiement': paiement.id_paiement,
                 'matricule_adherent': paiement.matricule_adherent,
@@ -274,60 +226,65 @@ def get_paiements_indicators():
                 'status_paiement': status_paiement,
                 'adherent_paye_status': adherent_paye_status
             })
-        
-        # Paiements récents (tri par date)
+
+        print("[/api/paiements-indicators] Statistics:", statistics)
+
         paiements_recents = sorted(
-            [p for p in paiements_list if p['date_paiement']], 
-            key=lambda x: x['date_paiement'], 
-            reverse=True
-        )[:10]
-        
-        # 🟢 Gestion des adhérents sans paiement
-        adherents_avec_paiement = set(p.matricule_adherent for p in db.session.query(Paiement.matricule_adherent).distinct())
-        adherents_sans_paiement = Adherent.query.filter(
-            ~Adherent.matricule.cast(db.String).in_(adherents_avec_paiement)
-        ).all()
-        
-        for adherent in adherents_sans_paiement:
-            statistics['impayes'] += 1
-            type_abo = adherent.type_abonnement or 'Non spécifié'
-            
-            if type_abo not in type_abonnement_payment_stats:
-                type_abonnement_payment_stats[type_abo] = {
-                    'complets': 0,
-                    'partiels': 0,
-                    'impayes': 0
-                }
-                type_abonnement_montants[type_abo] = {
-                    'complets': 0,
-                    'partiels': 0,
-                    'impayes': 0
-                }
-            
-            type_abonnement_payment_stats[type_abo]['impayes'] += 1
-            # Vous devrez définir un montant par défaut pour les adhérents sans paiement
-            # ou récupérer le montant attendu depuis une autre source
-            montant_attendu = 100.0  # À adapter selon votre logique métier
-            type_abonnement_montants[type_abo]['impayes'] += montant_attendu
-        
+            [p for p in paiements_list if p['date_paiement']],
+            key=lambda x: x['date_paiement'], reverse=True)[:10]
+
         return jsonify({
             'success': True,
             'paiements': paiements_list,
             'statistics': statistics,
             'reglement_stats': reglement_stats,
-            'reglement_montants': reglement_montants,  # 🟢 Nouveau
+            'reglement_montants': reglement_montants,
             'type_abonnement_payment_stats': type_abonnement_payment_stats,
-            'type_abonnement_montants': type_abonnement_montants,  # 🟢 Nouveau
+            'type_abonnement_montants': type_abonnement_montants,
             'paiements_recents': paiements_recents,
             'montant_par_abonnement': montant_par_abonnement,
-            'total_adherents_sans_paiement': len(adherents_sans_paiement),
         })
-        
+
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        print(f"Erreur dans get_paiements_indicators: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/financial-indicators')
+def get_financial_indicators():
+    try:
+        types = request.args.getlist('types[]')
+        groupes = request.args.getlist('groupes[]')
+        print("[/api/financial-indicators] Filters:", types, groupes)
+
+        query = db.session.query(Paiement)
+        if types or groupes:
+            adherents_query = Adherent.query
+            if types:
+                adherents_query = adherents_query.filter(Adherent.type_abonnement.in_(types))
+            if groupes:
+                adherents_query = adherents_query.filter(Adherent.groupe.in_(groupes))
+            adherents_filtres = adherents_query.all()
+            matricules_filtres = [str(a.matricule) for a in adherents_filtres]
+
+            if matricules_filtres:
+                query = query.filter(Paiement.matricule_adherent.in_(matricules_filtres))
+            else:
+                print("[/api/financial-indicators] No matching adherents, returning 0s.")
+                return jsonify({'success': True, 'total_collecte': 0, 'total_reste': 0})
+
+        paiements = query.all()
+        total_collecte = sum(float(p.montant_paye or 0) for p in paiements)
+        total_reste = sum(float(p.montant_reste or 0) for p in paiements)
+
+        print("[/api/financial-indicators] total_collecte:", total_collecte)
+        print("[/api/financial-indicators] total_reste:", total_reste)
+
+        return jsonify({'success': True, 'total_collecte': total_collecte, 'total_reste': total_reste})
+
+    except Exception as e:
+        print(f"Erreur dans get_financial_indicators: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 from sqlalchemy import func, or_
 

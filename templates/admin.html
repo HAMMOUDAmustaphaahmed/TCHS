@@ -9,271 +9,784 @@
     <meta content="" name="description">
 
     <!-- Favicon -->
-    <!-- Favicon -->
-<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
 
-<!-- Google Web Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- Icon Font Stylesheet -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
 
-<!-- Libraries Stylesheet -->
-<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
-<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
 
-<!-- Customized Bootstrap Stylesheet -->
-<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
 
-<!-- Template Stylesheet -->
-<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 
 </head>
 
 <body>
         
+    <!-- Sidebar Start -->
+    {% include 'sidebar.html' %}
+    <!-- Sidebar End -->
 
-        <!-- Sidebar Start -->
-        {% include 'sidebar.html' %}
-        <!-- Sidebar End -->
+    <!-- Content Start -->
+    <div class="content">
+        <!-- Navbar Start -->
+        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+            <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                <h2 class="text-primary mb-0"></h2>
+            </a>
+            <a href="#" class="sidebar-toggler flex-shrink-0">
+                <i class="fa fa-bars"></i>
+            </a>
+        </nav>
+        <!-- Navbar End -->
 
+        <!-- Sale & Revenue Start -->
+        <div class="container-fluid pt-4 px-4">
+            <div class="row g-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                        <i class="fa fa-wallet fa-3x text-primary"></i>
+                        <div class="ms-3">
+                            <p class="mb-2">Total Collecté</p>
+                            <h6 class="mb-0" id="totalCollecte">{{ total_collecte }} TND</h6>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                        <i class="fa fa-chart-bar fa-3x text-primary"></i>
+                        <div class="ms-3">
+                            <p class="mb-2">Total Restant</p>
+                            <h6 class="mb-0" id="totalRestant">{{ total_reste }} TND</h6>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
+                        <i class="fa fa-file-invoice-dollar fa-3x text-primary"></i>
+                        <div class="ms-3">
+                            <p class="mb-2">Total</p>
+                            <h6 class="mb-0" id="totalGeneral">{{ total_collecte + total_reste }} TND</h6>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="bg-light rounded p-4">
+                        <h6 class="mb-4">Statut des Paiements Saison Actuelle</h6>
+                        <div id="paymentStatusGauge" class="gauge-container"></div>
+                        <div class="mt-3">
+                            <span class="badge bg-success">Payé: <span id="paidAmount">0</span> TND</span>
+                            <span class="badge bg-danger ms-2">Reste: <span id="remainingAmount">0</span> TND</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Sale & Revenue End -->
 
-        <!-- Content Start -->
-        <div class="content">
-            <!-- Navbar Start -->
-            <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
-                <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
-                    <h2 class="text-primary mb-0"></h2>
-                </a>
-                <a href="#" class="sidebar-toggler flex-shrink-0">
-                    <i class="fa fa-bars"></i>
-                </a>
-
+        <!-- Adherents Indicators Start -->
+        <div class="container-fluid pt-4 px-4">
+            <div class="bg-light rounded p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <h6 class="mb-0">Indicateurs Adhérents</h6>
+                    <button class="btn btn-sm btn-outline-primary" onclick="resetFilters()">Réinitialiser</button>
+                </div>
                 
-
+                <!-- Filtres -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 class="mb-3">Filtrer par Type d'Abonnement:</h6>
+                        <div id="typeAbonnementFilters" class="d-flex flex-wrap gap-2">
+                            <!-- Les checkboxes seront générées dynamiquement -->
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="mb-3">Filtrer par Groupe:</h6>
+                        <div id="groupeFilters" class="d-flex flex-wrap gap-2">
+                            <!-- Les checkboxes seront générées dynamiquement -->
+                        </div>
+                    </div>
+                </div>
                 
-
+                <!-- Indicateur principal -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="bg-primary text-white rounded p-4 text-center">
+                            <i class="fa fa-users fa-3x mb-3"></i>
+                            <h2 id="totalAdherents" class="mb-2">0</h2>
+                            <p class="mb-0">Adhérents Sélectionnés</p>
+                            <small id="filterStatus" class="text-light">Tous les adhérents</small>
+                        </div>
+                    </div>
+                </div>
                 
-            </nav>
-            <!-- Navbar End -->
+                <!-- Statistiques détaillées avec graphiques en anneau -->
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="bg-white rounded p-3">
+                            <h6 class="mb-3">Répartition par Type D'Abonnement</h6>
+                            <canvas id="typeChart" height="200"></canvas>
+                            <div id="typeStatsDetails" class="mt-3 small"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="bg-white rounded p-3">
+                            <h6 class="mb-3">Répartition par Groupe</h6>
+                            <canvas id="groupeChart" height="200"></canvas>
+                            <div id="groupeStatsDetails" class="mt-3 small"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Adherents Indicators End -->
 
-<!-- Sale & Revenue Start -->
-<div class="container-fluid pt-4 px-4">
-    <div class="row g-4">
-        <div class="col-sm-6 col-xl-3">
-            <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
-                <i class="fa fa-wallet fa-3x text-primary"></i>
-                <div class="ms-3">
-                    <p class="mb-2">Total Collecté</p>
-                    <h6 class="mb-0">{{ total_collecte }} TND</h6>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
-                <i class="fa fa-chart-bar fa-3x text-primary"></i>
-                <div class="ms-3">
-                    <p class="mb-2">Total Restant</p>
-                    <h6 class="mb-0">{{ total_reste }} TND</h6>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-sm-6 col-xl-3">
-            <div class="bg-light rounded d-flex align-items-center justify-content-between p-4">
-                <i class="fa fa-file-invoice-dollar fa-3x text-primary"></i>
-                <div class="ms-3">
-                    <p class="mb-2">Total</p>
-                    <h6 class="mb-0">{{ total_collecte + total_reste }} TND</h6>
-                </div>
-            </div>
-        </div>
-        
-    </div>
-</div>
-<!-- Sale & Revenue End -->
-<!-- Adherents Indicators Start -->
-<div class="container-fluid pt-4 px-4">
-    <div class="bg-light rounded p-4">
-        <div class="d-flex align-items-center justify-content-between mb-4">
-            <h6 class="mb-0">Indicateurs Adhérents</h6>
-            <button class="btn btn-sm btn-outline-primary" onclick="resetFilters()">Réinitialiser</button>
-        </div>
-        
-        <!-- Filtres -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <h6 class="mb-3">Filtrer par Type d'Abonnement:</h6>
-                <div id="typeAbonnementFilters" class="d-flex flex-wrap gap-2">
-                    <!-- Les checkboxes seront générées dynamiquement -->
-                </div>
-            </div>
-            <div class="col-md-6">
-                <h6 class="mb-3">Filtrer par Groupe:</h6>
-                <div id="groupeFilters" class="d-flex flex-wrap gap-2">
-                    <!-- Les checkboxes seront générées dynamiquement -->
-                </div>
-            </div>
-        </div>
-        
-        <!-- Indicateur principal -->
-        <div class="row">
-            <div class="col-12">
-                <div class="bg-primary text-white rounded p-4 text-center">
-                    <i class="fa fa-users fa-3x mb-3"></i>
-                    <h2 id="totalAdherents" class="mb-2">0</h2>
-                    <p class="mb-0">Adhérents Sélectionnés</p>
-                    <small id="filterStatus" class="text-light">Tous les adhérents</small>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Statistiques détaillées -->
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <div class="bg-white rounded p-3">
-                    <h6 class="mb-3">Répartition par Type D'Abonnement</h6>
-                    <div id="typeStats"></div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="bg-white rounded p-3">
-                    <h6 class="mb-3">Répartition par Groupe</h6>
-                    <div id="groupeStats"></div>
-                </div>
-            </div>
-        </div>
         <!-- Section Indicateurs de Paiement -->
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="bg-light rounded p-4">
-            <div class="d-flex align-items-center justify-content-between mb-4">
-                <h6 class="mb-0">Indicateurs de Paiement</h6>
-                <button class="btn btn-sm btn-outline-success" onclick="refreshPaymentData()">
-                    <i class="fa fa-refresh me-1"></i>Actualiser
-                </button>
-            </div>
-            
-           <!-- Indicateurs principaux de paiement -->
-<div class="row mb-4 g-3">
-    <div class="col-md-3">
-        <div class="stat-card bg-success text-white d-flex flex-column justify-content-between rounded p-3 text-center h-100">
-            <div>
-                <i class="fa fa-check-circle fa-2x mb-2"></i>
-                <h4 id="totalPaiementsComplets" class="mb-1">0</h4>
-                <small>Paiements Complets</small>
+        <div class="container-fluid pt-4 px-4">
+            <div class="bg-light rounded p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <h6 class="mb-0">Indicateurs de Paiement</h6>
+                    <button class="btn btn-sm btn-outline-success" onclick="refreshPaymentData()">
+                        <i class="fa fa-refresh me-1"></i>Actualiser
+                    </button>
+                </div>
+                
+                <!-- Indicateurs principaux de paiement -->
+                <div class="row mb-4 g-3">
+                    <div class="col-md-3">
+                        <div class="stat-card bg-success text-white d-flex flex-column justify-content-between rounded p-3 text-center h-100">
+                            <div>
+                                <i class="fa fa-check-circle fa-2x mb-2"></i>
+                                <h4 id="totalPaiementsComplets" class="mb-1">0</h4>
+                                <small>Paiements Complets</small>
+                            </div>
+                            <div id="completParAbonnement" class="mt-3 text-start small bg-light text-dark p-2 rounded"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card bg-warning text-white d-flex flex-column justify-content-between rounded p-3 text-center h-100">
+                            <div>
+                                <i class="fa fa-clock-o fa-2x mb-2"></i>
+                                <h4 id="totalPaiementsPartiels" class="mb-1">0</h4>
+                                <small>Paiements Partiels</small>
+                            </div>
+                            <div id="partielParAbonnement" class="mt-3 text-start small bg-light text-dark p-2 rounded"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card bg-danger text-white d-flex flex-column justify-content-between rounded p-3 text-center h-100">
+                            <div>
+                                <i class="fa fa-times-circle fa-2x mb-2"></i>
+                                <h4 id="totalPaiementsImpaye" class="mb-1">0</h4>
+                                <small>Impayés</small>
+                            </div>
+                            <div id="impayeParAbonnement" class="mt-3 text-start small bg-light text-dark p-2 rounded"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card bg-info text-white d-flex flex-column justify-content-between rounded p-3 text-center h-100">
+                            <div>
+                                <i class="fa fa-euro fa-2x mb-2"></i>
+                                <h4 id="totalMontantPercu" class="mb-1">0TND</h4>
+                                <small>Montant Total Perçu</small>
+                            </div>
+                            <div id="montantParAbonnement" class="mt-3 text-start small bg-light text-dark p-2 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Statistiques détaillées de paiement avec graphiques -->
+                <div class="row g-3">
+                    <div class="col-md-4 d-flex">
+                        <div class="stat-card bg-white rounded shadow-sm p-3 d-flex flex-column justify-content-between w-100 h-100">
+                            <h6 class="mb-3">Répartition par Type de Règlement</h6>
+                            <canvas id="reglementChart" height="200"></canvas>
+                            <div id="reglementDetails" class="mt-3 small"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex">
+                        <div class="stat-card bg-white rounded shadow-sm p-3 d-flex flex-column justify-content-between w-100 h-100">
+                            <h6 class="mb-3">Status de Paiement par Type d'Abonnement</h6>
+                            <canvas id="paiementTypeChart" height="200"></canvas>
+                            <div id="paiementTypeDetails" class="mt-3 small"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex">
+                        <div class="stat-card bg-white rounded shadow-sm p-3 d-flex flex-column justify-content-start w-100 h-100">
+                            <h6 class="mb-3">Paiements Récents</h6>
+                            <div id="paiementsRecents" class="flex-grow-1 overflow-auto"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card bg-warning text-white d-flex flex-column justify-content-between rounded p-3 text-center h-100">
-            <div>
-                <i class="fa fa-clock-o fa-2x mb-2"></i>
-                <h4 id="totalPaiementsPartiels" class="mb-1">0</h4>
-                <small>Paiements Partiels</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card bg-danger text-white d-flex flex-column justify-content-between rounded p-3 text-center h-100">
-            <div>
-                <i class="fa fa-times-circle fa-2x mb-2"></i>
-                <h4 id="totalPaiementsImpaye" class="mb-1">0</h4>
-                <small>Impayés</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card bg-info text-white d-flex flex-column justify-content-between rounded p-3 text-center h-100">
-            <div>
-                <i class="fa fa-euro fa-2x mb-2"></i>
-                <h4 id="totalMontantPercu" class="mb-1">0€</h4>
-                <small>Montant Total Perçu</small>
-            </div>
-            <!-- 🟢 Nouveau conteneur aligné en bas -->
-            <div id="montantParAbonnement" class="mt-3 text-start small bg-light text-dark p-2 rounded"></div>
-        </div>
-    </div>
-</div>
-<style>
-    .stat-card {
-    min-height: 150px; /* Hauteur minimale pour uniformiser */
-}
-#montantParAbonnement {
-    font-size: 0.85rem;
-    line-height: 1.4;
-}
+        <!-- Charts Start -->
+        <div class="container-fluid pt-4 ">
+            <div class="row g-4">
+                
 
-</style>
-            
-            <!-- Statistiques détaillées de paiement -->
-            <div class="row g-3">
-    <div class="col-md-4 d-flex">
-        <div class="stat-card bg-white rounded shadow-sm p-3 d-flex flex-column justify-content-between w-100 h-100">
-            <h6 class="mb-3">Répartition par Type de Règlement</h6>
-            <div id="reglementStats" class="flex-grow-1"></div>
-        </div>
-    </div>
-    <div class="col-md-4 d-flex">
-        <div class="stat-card bg-white rounded shadow-sm p-3 d-flex flex-column justify-content-between w-100 h-100">
-            <h6 class="mb-3">Status de Paiement par Type d'Abonnement</h6>
-            <div id="paiementTypeAbonnementStats" class="flex-grow-1"></div>
-        </div>
-    </div>
-    <div class="col-md-4 d-flex">
-        <div class="stat-card bg-white rounded shadow-sm p-3 d-flex flex-column justify-content-start w-100 h-100">
-    <h6 class="mb-3">Paiements Récents</h6>
-    <div id="paiementsRecents" class="flex-grow-1 overflow-auto" ></div>
-</div>
+                <!-- Nouveaux charts -->
+                
 
-    </div>
-</div>
-<style>
-    .stat-card {
-    min-height: 280px; /* même hauteur pour toutes les cartes */
-    display: flex;
-    flex-direction: column;
-}
-
-#paiementsRecents {
-    scrollbar-width: thin; 
-    scrollbar-color: #ccc transparent;
-}
-#paiementsRecents::-webkit-scrollbar {
-    width: 6px;
-}
-#paiementsRecents::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 3px;
-}
-
-</style>
+                
+            </div>
         </div>
+        <!-- Charts End -->
+
+        <!-- Recent Payments Start -->
+        <div class="container-fluid pt-4 px-4">
+            <div class="bg-light text-center rounded p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <h6 class="mb-0">Derniers Paiements</h6>
+                    <a href="/recherche-paiements">Voir tous</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table text-start align-middle table-bordered table-hover mb-0">
+                        <thead>
+                            <tr class="text-dark">
+                                <th scope="col">Date</th>
+                                <th scope="col">Matricule</th>
+                                <th scope="col">Montant Payé</th>
+                                <th scope="col">Type</th>
+                                <th scope="col">Saison</th>
+                                <th scope="col">Détails</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in paiements_recent %}
+                            <tr>
+                                <td>{{ p.date_paiement.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ p.matricule_adherent }}</td>
+                                <td>{{ p.montant_paye }} TND</td>
+                                <td>{{ p.type_reglement or 'Non spécifié' }}</td>
+                                <td>{{ p.code_saison }}</td>
+                                <td><a class="btn btn-sm btn-primary" href="/static/bons_paiements/paiement_{{p.numero_bon}}.pdf">Détails 🧾</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- Recent Payments End -->
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+        <!-- Footer Start -->
+        <div class="container-fluid pt-4 px-4">
+            <div class="bg-light rounded-top p-4">
+                <div class="row">
+                    <div class="col-12 col-sm-6 text-center text-sm-start">
+                        &copy; <a href="#">TCHS</a>, All Right Reserved. 
+                    </div>
+                    <div class="col-12 col-sm-6 text-center text-sm-end">
+                        Designed by <a>AMH</a>
+                    </br>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Footer End -->
     </div>
-</div>
+    <!-- Content End -->
+
+    <!-- Back to Top -->
+    <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
 <script>
-    // Variables globales pour les paiements
-let paiementsData = [];
+// Debug mode - set to false for production
+const DEBUG_MODE = true;
 
-// Charger les données de paiement au chargement initial
+// Variables globales
+let adherentsData = [];
+let allAdherents = [];
+let selectedTypes = new Set();
+let selectedGroupes = new Set();
+let paiementsData = [];
+let typeChart, groupeChart, reglementChart, paiementTypeChart;
+
+// Debug logging function
+function debugLog(message, data = null) {
+    if (DEBUG_MODE) {
+        console.log(`[DEBUG] ${message}`, data || '');
+    }
+}
+
+// Error logging function
+function errorLog(message, error = null) {
+    console.error(`[ERROR] ${message}`, error || '');
+    
+    // Show error in UI if possible
+    const errorElement = document.getElementById('errorContainer');
+    if (errorElement) {
+        errorElement.innerHTML = `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+            ${message} ${error ? '(' + error.message + ')' : ''}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>`;
+    }
+}
+
+// Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
-    // Délai pour laisser le temps aux adhérents de se charger
-    setTimeout(() => {
-        loadPaiementsData();
-    }, 1000);
+    debugLog('DOM fully loaded, initializing application');
+    initializeApplication();
 });
+
+// Improved initialization with proper sequencing
+async function initializeApplication() {
+    try {
+        debugLog('Loading adherents data');
+        await loadAdherentsData();
+        
+        debugLog('Loading payments data');
+        await loadPaiementsData();
+        
+        debugLog('Initializing charts');
+        initializeCharts();
+        
+        debugLog('Application initialized successfully');
+    } catch (error) {
+        errorLog('Failed to initialize application', error);
+    }
+}
+
+// Fonction pour échapper les caractères spéciaux dans les identifiants
+function escapeId(str) {
+    return str.replace(/'/g, '_apostrophe_').replace(/\s+/g, '_space_').replace(/[^\w-]/g, '_');
+}
+
+// Fonction pour charger les données des adhérents
+async function loadAdherentsData() {
+    try {
+        debugLog('Fetching adherents data from /api/adherents-data');
+        const response = await fetch('/api/adherents-data');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        debugLog('Adherents API response', data);
+        
+        if (data.success) {
+            allAdherents = data.adherents;
+            adherentsData = [...allAdherents];
+            
+            debugLog(`Loaded ${allAdherents.length} adherents`);
+            
+            // Générer les filtres
+            generateTypeFilters(data.types_abonnement);
+            generateGroupeFilters(data.groupes);
+            
+            // Mettre à jour l'affichage
+            updateDisplay();
+            updateFinancialIndicators();
+        } else {
+            const errorMsg = 'Erreur lors du chargement des données: ' + data.error;
+            errorLog(errorMsg);
+            showError('totalAdherents', 'Erreur');
+            showError('filterStatus', data.error);
+        }
+    } catch (error) {
+        errorLog('Erreur de connexion lors du chargement des adhérents', error);
+        showError('totalAdherents', 'Erreur');
+        showError('filterStatus', 'Erreur de connexion');
+    }
+}
+
+// Fonction utilitaire pour afficher les erreurs
+function showError(elementId, message) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = message;
+        element.classList.add('text-danger');
+    }
+}
+
+// Générer les filtres pour les types d'abonnement
+function generateTypeFilters(types) {
+    const container = document.getElementById('typeAbonnementFilters');
+    if (!container) {
+        errorLog('Type filter container not found');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    types.forEach(type => {
+        const div = document.createElement('div');
+        div.className = 'form-check form-check-inline';
+        
+        const escapedType = escapeId(type);
+        
+        div.innerHTML = `
+            <input class="form-check-input" type="checkbox" id="type_${escapedType}" 
+                   data-original-value="${type}" onchange="toggleTypeFilter(this)">
+            <label class="form-check-label" for="type_${escapedType}">
+                ${type}
+            </label>
+        `;
+        container.appendChild(div);
+    });
+    
+    debugLog(`Generated ${types.length} type filters`);
+}
+
+// Générer les filtres pour les groupes
+function generateGroupeFilters(groupes) {
+    const container = document.getElementById('groupeFilters');
+    if (!container) {
+        errorLog('Groupe filter container not found');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    groupes.forEach(groupe => {
+        const div = document.createElement('div');
+        div.className = 'form-check form-check-inline';
+        
+        const escapedGroupe = escapeId(groupe);
+        
+        div.innerHTML = `
+            <input class="form-check-input" type="checkbox" id="groupe_${escapedGroupe}" 
+                   data-original-value="${groupe}" onchange="toggleGroupeFilter(this)">
+            <label class="form-check-label" for="groupe_${escapedGroupe}">
+                ${groupe}
+            </label>
+        `;
+        container.appendChild(div);
+    });
+    
+    debugLog(`Generated ${groupes.length} groupe filters`);
+}
+
+// Basculer le filtre de type d'abonnement
+function toggleTypeFilter(checkbox) {
+    const type = checkbox.getAttribute('data-original-value');
+    
+    if (checkbox.checked) {
+        selectedTypes.add(type);
+        debugLog(`Added type filter: ${type}`);
+    } else {
+        selectedTypes.delete(type);
+        debugLog(`Removed type filter: ${type}`);
+    }
+    
+    applyFilters();
+}
+
+// Basculer le filtre de groupe
+function toggleGroupeFilter(checkbox) {
+    const groupe = checkbox.getAttribute('data-original-value');
+    
+    if (checkbox.checked) {
+        selectedGroupes.add(groupe);
+        debugLog(`Added groupe filter: ${groupe}`);
+    } else {
+        selectedGroupes.delete(groupe);
+        debugLog(`Removed groupe filter: ${groupe}`);
+    }
+    
+    applyFilters();
+}
+
+// Appliquer les filtres
+function applyFilters() {
+    debugLog('Applying filters', {
+        types: Array.from(selectedTypes),
+        groupes: Array.from(selectedGroupes)
+    });
+    
+    adherentsData = allAdherents.filter(adherent => {
+        const typeMatch = selectedTypes.size === 0 || selectedTypes.has(adherent.type_abonnement);
+        const groupeMatch = selectedGroupes.size === 0 || selectedGroupes.has(adherent.groupe);
+        
+        return typeMatch && groupeMatch;
+    });
+    
+    debugLog(`Filtered to ${adherentsData.length} adherents`);
+    
+    updateDisplay();
+    updateFinancialIndicators();
+    updatePaiementsIndicators();
+}
+
+// Mettre à jour l'affichage
+function updateDisplay() {
+    // Mettre à jour le nombre total
+    const totalAdherents = document.getElementById('totalAdherents');
+    const totalAdherentsHeader = document.getElementById('totalAdherentsHeader');
+    
+    if (totalAdherents) totalAdherents.textContent = adherentsData.length;
+    if (totalAdherentsHeader) totalAdherentsHeader.textContent = adherentsData.length;
+    
+    // Mettre à jour le statut du filtre
+    updateFilterStatus();
+    
+    // Mettre à jour les statistiques détaillées
+    updateDetailedStats();
+    
+    debugLog('Display updated with ' + adherentsData.length + ' adherents');
+}
+
+// Mettre à jour le statut du filtre
+function updateFilterStatus() {
+    const statusElement = document.getElementById('filterStatus');
+    if (!statusElement) return;
+    
+    const totalFilters = selectedTypes.size + selectedGroupes.size;
+    
+    if (totalFilters === 0) {
+        statusElement.textContent = 'Tous les adhérents';
+    } else {
+        const filters = [];
+        if (selectedTypes.size > 0) {
+            filters.push(`${selectedTypes.size} type(s)`);
+        }
+        if (selectedGroupes.size > 0) {
+            filters.push(`${selectedGroupes.size} groupe(s)`);
+        }
+        statusElement.textContent = `Filtré par: ${filters.join(', ')}`;
+    }
+}
+
+// Mettre à jour les statistiques détaillées avec graphiques
+function updateDetailedStats() {
+    updateTypeStats();
+    updateGroupeStats();
+}
+
+// Mettre à jour les stats par type avec graphique en anneau
+function updateTypeStats() {
+    const typeCount = {};
+    adherentsData.forEach(adherent => {
+        typeCount[adherent.type_abonnement] = (typeCount[adherent.type_abonnement] || 0) + 1;
+    });
+
+    const labels = Object.keys(typeCount);
+    const data = Object.values(typeCount);
+    debugLog('Type statistics', { labels, data });
+
+    const canvas = document.getElementById('typeChart');
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) {
+        errorLog('Type chart canvas not found');
+        return;
+    }
+
+    if (window.typeChart && typeof window.typeChart.destroy === 'function') {
+        window.typeChart.destroy();
+    }
+
+    try {
+        window.typeChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: [
+                        '#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f',
+                        '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ac'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+            }
+        });
+    } catch (error) {
+        errorLog('Failed to create type chart', error);
+    }
+
+    const container = document.getElementById('typeStatsDetails');
+    if (!container) return;
+
+    container.innerHTML = '';
+    if (adherentsData.length === 0) {
+        container.innerHTML = '<span class="text-muted">Aucune donnée</span>';
+        return;
+    }
+
+    Object.entries(typeCount).sort((a, b) => b[1] - a[1]).forEach(([type, count]) => {
+        const percentage = ((count / adherentsData.length) * 100).toFixed(1);
+        container.innerHTML += `
+            <div class="d-flex justify-content-between mb-1">
+                <span>${type}:</span>
+                <span><strong>${count}</strong> (${percentage}%)</span>
+            </div>`;
+    });
+}
+
+// Mettre à jour les stats par groupe avec graphique en anneau
+function updateGroupeStats() {
+    const groupeCount = {};
+    adherentsData.forEach(adherent => {
+        groupeCount[adherent.groupe] = (groupeCount[adherent.groupe] || 0) + 1;
+    });
+
+    const labels = Object.keys(groupeCount);
+    const data = Object.values(groupeCount);
+    debugLog('Groupe statistics', { labels, data });
+
+    const canvas = document.getElementById('groupeChart');
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) {
+        errorLog('Groupe chart canvas not found');
+        return;
+    }
+
+    // ✅ Check that window.groupeChart exists *and* has destroy() as a function
+    if (window.groupeChart && typeof window.groupeChart.destroy === 'function') {
+        window.groupeChart.destroy();
+    }
+
+    try {
+        window.groupeChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: [
+                        '#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f',
+                        '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ac'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                }
+            }
+        });
+    } catch (error) {
+        errorLog('Failed to create groupe chart', error);
+    }
+
+    const container = document.getElementById('groupeStatsDetails');
+    if (!container) return;
+
+    container.innerHTML = '';
+    if (adherentsData.length === 0) {
+        container.innerHTML = '<span class="text-muted">Aucune donnée</span>';
+        return;
+    }
+
+    Object.entries(groupeCount).sort((a, b) => b[1] - a[1]).forEach(([groupe, count]) => {
+        const percentage = ((count / adherentsData.length) * 100).toFixed(1);
+        container.innerHTML += `
+            <div class="d-flex justify-content-between mb-1">
+                <span>${groupe}:</span>
+                <span><strong>${count}</strong> (${percentage}%)</span>
+            </div>`;
+    });
+}
+
+// Réinitialiser tous les filtres
+function resetFilters() {
+    debugLog('Resetting all filters');
+    
+    document.querySelectorAll('#typeAbonnementFilters input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+    document.querySelectorAll('#groupeFilters input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+    
+    selectedTypes.clear();
+    selectedGroupes.clear();
+    
+    applyFilters();
+}
+
+function clearPaiementErrors() {
+    ['reglementDetails','paiementTypeDetails','paiementsRecents'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+    });
+}
+
+// Fonction pour mettre à jour les indicateurs financiers en fonction des filtres
+async function updateFinancialIndicators() {
+    try {
+        const params = new URLSearchParams();
+        selectedTypes.forEach(type => params.append('types[]', type));
+        selectedGroupes.forEach(groupe => params.append('groupes[]', groupe));
+        
+        debugLog('Fetching financial indicators with params: ' + params.toString());
+        const response = await fetch(`/api/financial-indicators?${params}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        debugLog('Financial indicators response', data);
+        
+        if (data.success) {
+            const totalCollecte = document.getElementById('totalCollecte');
+            const totalRestant = document.getElementById('totalRestant');
+            const totalGeneral = document.getElementById('totalGeneral');
+            
+            // Backend returns TND, frontend should display TND
+            if (totalCollecte) totalCollecte.textContent = data.total_collecte.toFixed(2) + ' TND';
+            if (totalRestant) totalRestant.textContent = data.total_reste.toFixed(2) + ' TND';
+            if (totalGeneral) totalGeneral.textContent = (data.total_collecte + data.total_reste).toFixed(2) + ' TND';
+        } else {
+            errorLog('Erreur indicateurs financiers: ' + data.error);
+        }
+    } catch (error) {
+        errorLog('Erreur de connexion indicateurs financiers', error);
+    }
+}
 
 // Fonction pour charger les données des paiements
 async function loadPaiementsData() {
     try {
-        const response = await fetch('/api/paiements-indicators');
+        const params = new URLSearchParams();
+        selectedTypes.forEach(type => params.append('types[]', type));
+        selectedGroupes.forEach(groupe => params.append('groupes[]', groupe));
+
+        debugLog('Fetching payment indicators with params: ' + params.toString());
+        const response = await fetch(`/api/paiements-indicators?${params}`);
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+
         const data = await response.json();
-        
+        debugLog('Payment indicators response', data);
+
         if (data.success) {
+            clearPaiementErrors();  // ✅ CLEAR PREVIOUS ERRORS HERE
             paiementsData = data.paiements;
             updatePaiementDisplay(data.statistics, data.montant_par_abonnement);
             updateDetailedPaiementStats(data);
@@ -281,62 +794,174 @@ async function loadPaiementsData() {
             showPaiementError(data.error);
         }
     } catch (error) {
-        console.error('Erreur lors du chargement des paiements:', error);
+        errorLog('Erreur lors du chargement des paiements', error);
+        showPaiementError('Erreur de connexion');
+    }
+}
+// Fonction pour mettre à jour les indicateurs de paiement en fonction des filtres
+async function updatePaiementsIndicators() {
+    try {
+        const params = new URLSearchParams();
+        selectedTypes.forEach(type => params.append('types[]', type));
+        selectedGroupes.forEach(groupe => params.append('groupes[]', groupe));
+
+        debugLog('Updating payment indicators with params: ' + params.toString());
+        const response = await fetch(`/api/paiements-indicators?${params}`);
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+
+        const data = await response.json();
+
+        if (data.success) {
+            clearPaiementErrors();  // ✅ CLEAR PREVIOUS ERRORS HERE
+            paiementsData = data.paiements;
+            updatePaiementDisplay(data.statistics, data.montant_par_abonnement);
+            updateDetailedPaiementStats(data);
+        } else {
+            showPaiementError(data.error);
+        }
+    } catch (error) {
+        errorLog('Erreur lors de la mise à jour des paiements', error);
         showPaiementError('Erreur de connexion');
     }
 }
 
 // Mettre à jour l'affichage principal des paiements
 function updatePaiementDisplay(stats, montantParAbonnement) {
-    document.getElementById('totalPaiementsComplets').textContent = stats.complets || 0;
-    document.getElementById('totalPaiementsPartiels').textContent = stats.partiels || 0;
-    document.getElementById('totalPaiementsImpaye').textContent = stats.impayes || 0;
-    document.getElementById('totalMontantPercu').textContent = `${(stats.montant_total || 0).toLocaleString('fr-FR')}€`;
+    debugLog('Updating payment display with stats', stats);
+    
+    const elements = {
+        'totalPaiementsComplets': stats.complets || 0,
+        'totalPaiementsPartiels': stats.partiels || 0,
+        'totalPaiementsImpaye': stats.impayes || 0,
+        'totalMontantPercu': `${(stats.montant_total || 0).toLocaleString('fr-FR')} TND`  // Changed to TND
+    };
+    
+    Object.entries(elements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) element.textContent = value;
+    });
 
-    // Mise à jour du détail par type d'abonnement
-    const container = document.getElementById('montantParAbonnement');
-    container.innerHTML = '';
-    if (montantParAbonnement && Object.keys(montantParAbonnement).length > 0) {
-        Object.entries(montantParAbonnement).forEach(([type, montant]) => {
-            container.innerHTML += `<div>${type}: <strong>${montant.toLocaleString('fr-FR')}€</strong></div>`;
+    // Mise à jour du détail par type d'abonnement pour chaque indicateur
+    updateDetailByType('montantParAbonnement', montantParAbonnement, ' TND');  // Changed to TND
+    
+    // Pour les autres indicateurs, nous devons calculer les répartitions
+    if (paiementsData && paiementsData.length > 0) {
+        const completParType = {};
+        const partielParType = {};
+        const impayeParType = {};
+        
+        paiementsData.forEach(p => {
+            const type = p.type_abonnement || 'Non spécifié';
+            
+            if (p.status_paiement === 'complet') {
+                completParType[type] = (completParType[type] || 0) + 1;
+            } else if (p.status_paiement === 'partiel') {
+                partielParType[type] = (partielParType[type] || 0) + 1;
+            } else if (p.status_paiement === 'impaye') {
+                impayeParType[type] = (impayeParType[type] || 0) + 1;
+            }
         });
-    } else {
-        container.innerHTML = '<span class="text-muted">Aucun paiement</span>';
+        
+        updateDetailByType('completParAbonnement', completParType, '');
+        updateDetailByType('partielParAbonnement', partielParType, '');
+        updateDetailByType('impayeParAbonnement', impayeParType, '');
     }
 }
 
-// Mettre à jour les statistiques détaillées
+// Fonction utilitaire pour mettre à jour les détails par type d'abonnement
+function updateDetailByType(elementId, data, suffix) {
+    const container = document.getElementById(elementId);
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (data && Object.keys(data).length > 0) {
+        Object.entries(data).forEach(([type, value]) => {
+            const formattedValue = suffix === ' TND' ? value.toLocaleString('fr-FR') + suffix : value + suffix;
+            container.innerHTML += `<div>${type}: <strong>${formattedValue}</strong></div>`;
+        });
+    } else {
+        container.innerHTML = '<span class="text-muted">Aucune donnée</span>';
+    }
+}
+
+// Mettre à jour les statistiques détaillées des paiements avec graphiques
 function updateDetailedPaiementStats(data) {
-    // 🟢 Utiliser directement les données du backend
+    // Utiliser directement les données du backend
     const reglementMontants = data.reglement_montants || {};
     const typeAbonnementMontants = data.type_abonnement_montants || {};
     
-    // Stats par type de règlement
+    // Stats par type de règlement avec graphique
     updateReglementStats(data.reglement_stats, reglementMontants);
     
-    // Stats paiement par type d'abonnement
+    // Stats paiement par type d'abonnement avec graphique
     updatePaiementTypeAbonnementStats(data.type_abonnement_payment_stats, typeAbonnementMontants);
     
     // Paiements récents
     updatePaiementsRecents(data.paiements_recents);
 }
 
-// Mettre à jour les stats par type de règlement
+// Mettre à jour les stats par type de règlement avec graphique
 function updateReglementStats(reglementStats, reglementMontants) {
-    const container = document.getElementById('reglementStats');
-    container.innerHTML = '';
-    
+    const detailsContainer = document.getElementById('reglementDetails');
+
     if (!reglementStats || Object.keys(reglementStats).length === 0) {
-        container.innerHTML = '<p class="text-muted">Aucun paiement enregistré</p>';
+        if (detailsContainer) {
+            detailsContainer.innerHTML = '<p class="text-muted">Aucun paiement enregistré</p>';
+        }
         return;
     }
-    
+
+    const labels = Object.keys(reglementStats);
+    const data = Object.values(reglementStats);
+    debugLog('Reglement statistics', { labels, data });
+
+    const canvas = document.getElementById('reglementChart');
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) {
+        errorLog('Reglement chart canvas not found');
+        return;
+    }
+
+    if (window.reglementChart && typeof window.reglementChart.destroy === 'function') {
+        window.reglementChart.destroy();
+    }
+
+    try {
+        window.reglementChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: [
+                        '#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f',
+                        '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ac'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                }
+            }
+        });
+    } catch (error) {
+        errorLog('Failed to create reglement chart', error);
+    }
+
+    if (!detailsContainer) return;
+    detailsContainer.innerHTML = '';
+    const total = Object.values(reglementStats).reduce((sum, val) => sum + val, 0);
+
     Object.entries(reglementStats).sort((a, b) => b[1] - a[1]).forEach(([type, count]) => {
-        const total = Object.values(reglementStats).reduce((sum, val) => sum + val, 0);
         const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
         const montant = reglementMontants[type] || 0;
-        
-        container.innerHTML += `
+
+        detailsContainer.innerHTML += `
             <div class="border-bottom pb-2 mb-2">
                 <div class="d-flex justify-content-between">
                     <span><strong>${type || 'Non spécifié'}</strong></span>
@@ -344,51 +969,88 @@ function updateReglementStats(reglementStats, reglementMontants) {
                 </div>
                 <div class="d-flex justify-content-between small text-muted">
                     <span>${percentage}%</span>
-                    <span class="text-success fw-bold">${montant.toLocaleString('fr-FR')}€</span>
+                    <span class="text-success fw-bold">${montant.toLocaleString('fr-FR')} TND</span>
                 </div>
-            </div>
-        `;
+            </div>`;
     });
 }
 
-// Mettre à jour les stats paiement par type d'abonnement
+// Mettre à jour les stats paiement par type d'abonnement avec graphique
 function updatePaiementTypeAbonnementStats(typeStats, typeMontants) {
-    const container = document.getElementById('paiementTypeAbonnementStats');
-    container.innerHTML = '';
-    
+    const detailsContainer = document.getElementById('paiementTypeDetails');
     if (!typeStats || Object.keys(typeStats).length === 0) {
-        container.innerHTML = '<p class="text-muted">Aucune données disponible</p>';
+        if (detailsContainer) detailsContainer.innerHTML = '<p class="text-muted">Aucune donnée disponible</p>';
         return;
     }
-    
+
+    const labels = Object.keys(typeStats);
+    const completeData = labels.map(type => typeStats[type].complets || 0);
+    const partialData = labels.map(type => typeStats[type].partiels || 0);
+    const unpaidData = labels.map(type => typeStats[type].impayes || 0);
+    debugLog('Payment type statistics', { labels, completeData, partialData, unpaidData });
+
+    const canvas = document.getElementById('paiementTypeChart');
+    const ctx = canvas?.getContext('2d');
+  
+
+    if (window.paiementTypeChart && typeof window.paiementTypeChart.destroy === 'function') {
+        window.paiementTypeChart.destroy();
+    }
+
+    try {
+        window.paiementTypeChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Complets', data: completeData, backgroundColor: '#28a745' },
+                    { label: 'Partiels', data: partialData, backgroundColor: '#ffc107' },
+                    { label: 'Impayés', data: unpaidData, backgroundColor: '#dc3545' }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                },
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    } catch (error) {
+        errorLog('Failed to create payment type chart', error);
+    }
+
+    if (!detailsContainer) return;
+    detailsContainer.innerHTML = '';
+
     Object.entries(typeStats).forEach(([type, stats]) => {
         const total = stats.complets + stats.partiels + stats.impayes;
         const montants = typeMontants[type] || { complets: 0, partiels: 0, impayes: 0 };
         const montantTotal = montants.complets + montants.partiels + montants.impayes;
-        
+
         if (total > 0) {
-            container.innerHTML += `
+            detailsContainer.innerHTML += `
                 <div class="border-bottom pb-2 mb-3">
                     <div class="d-flex justify-content-between mb-2">
                         <strong>${type}</strong>
-                        <span class="badge bg-info">${montantTotal.toLocaleString('fr-FR')}€</span>
+                        <span class="badge bg-info">${montantTotal.toLocaleString('fr-FR')} TND</span>
                     </div>
                     <div class="small">
                         <div class="d-flex justify-content-between">
                             <span class="text-success">✓ Complets: ${stats.complets}</span>
-                            <span class="text-success">${montants.complets.toLocaleString('fr-FR')}€</span>
+                            <span class="text-success">${montants.complets.toLocaleString('fr-FR')} TND</span>
                         </div>
                         <div class="d-flex justify-content-between">
                             <span class="text-warning">⏳ Partiels: ${stats.partiels}</span>
-                            <span class="text-warning">${montants.partiels.toLocaleString('fr-FR')}€</span>
+                            <span class="text-warning">${montants.partiels.toLocaleString('fr-FR')} TND</span>
                         </div>
                         <div class="d-flex justify-content-between">
                             <span class="text-danger">✗ Impayés: ${stats.impayes}</span>
-                            <span class="text-danger">${montants.impayes.toLocaleString('fr-FR')}€</span>
+                            <span class="text-danger">${montants.impayes.toLocaleString('fr-FR')} TND</span>
                         </div>
                     </div>
-                </div>
-            `;
+                </div>`;
         }
     });
 }
@@ -396,12 +1058,16 @@ function updatePaiementTypeAbonnementStats(typeStats, typeMontants) {
 // Mettre à jour les paiements récents
 function updatePaiementsRecents(paiementsRecents) {
     const container = document.getElementById('paiementsRecents');
+    if (!container) return;
+    
     container.innerHTML = '';
     
     if (!paiementsRecents || paiementsRecents.length === 0) {
         container.innerHTML = '<p class="text-muted">Aucun paiement récent</p>';
         return;
     }
+    
+    debugLog('Updating recent payments', paiementsRecents);
     
     paiementsRecents.forEach(paiement => {
         const dateFormatted = paiement.date_paiement ? 
@@ -417,7 +1083,7 @@ function updatePaiementsRecents(paiementsRecents) {
                     <span class="badge bg-${statusClass}">${statusText}</span>
                 </div>
                 <div class="small text-muted">
-                    ${dateFormatted} - ${paiement.montant_paye}€/${paiement.montant}€
+                    ${dateFormatted} - ${paiement.montant_paye} TND/${paiement.montant} TND  <!-- Changed to TND -->
                 </div>
             </div>
         `;
@@ -426,7 +1092,7 @@ function updatePaiementsRecents(paiementsRecents) {
 
 // Afficher une erreur pour les paiements
 function showPaiementError(error) {
-    console.error('Erreur paiements:', error);
+    errorLog('Payment error', error);
     ['totalPaiementsComplets', 'totalPaiementsPartiels', 'totalPaiementsImpaye'].forEach(id => {
         const element = document.getElementById(id);
         if (element) element.textContent = '?';
@@ -434,7 +1100,7 @@ function showPaiementError(error) {
     const montantElement = document.getElementById('totalMontantPercu');
     if (montantElement) montantElement.textContent = 'Erreur';
     
-    const containers = ['reglementStats', 'paiementTypeAbonnementStats', 'paiementsRecents'];
+    const containers = ['reglementDetails', 'paiementTypeDetails', 'paiementsRecents'];
     containers.forEach(containerId => {
         const container = document.getElementById(containerId);
         if (container) {
@@ -453,659 +1119,166 @@ function refreshPaymentData() {
     button.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Chargement...';
     button.disabled = true;
     
-    loadPaiementsData().finally(() => {
+    updatePaiementsIndicators().finally(() => {
         button.innerHTML = originalContent;
         button.disabled = false;
     });
 }
-</script>
-    </div>
-</div>
-<!-- Adherents Indicators End -->
 
-<script>
-// Variables globales
-let adherentsData = [];
-let allAdherents = [];
-let selectedTypes = new Set();
-let selectedGroupes = new Set();
-
-// Initialisation au chargement de la page
-document.addEventListener('DOMContentLoaded', function() {
-    loadAdherentsData();
-});
-
-// Fonction pour échapper les caractères spéciaux dans les identifiants
-function escapeId(str) {
-    return str.replace(/'/g, '_apostrophe_').replace(/\s+/g, '_space_').replace(/[^\w-]/g, '_');
-}
-
-// Fonction pour décoder les identifiants échappés
-function unescapeId(str) {
-    return str.replace(/_apostrophe_/g, "'").replace(/_space_/g, ' ').replace(/_/g, ' ');
-}
-
-// Fonction pour charger les données des adhérents
-async function loadAdherentsData() {
-    try {
-        const response = await fetch('/api/adherents-data');
-        const data = await response.json();
-        
-        if (data.success) {
-            allAdherents = data.adherents;
-            adherentsData = [...allAdherents];
-            
-            // Debug: afficher les informations détaillées dans la console
-            console.log('=== DEBUG ADHERENTS DÉTAILLÉ ===');
-            console.log(`Total en DB: ${data.debug_info.total_in_db}`);
-            console.log(`Total traité: ${data.debug_info.total_processed}`);
-            console.log('Échantillon brut:', data.debug_info.raw_sample);
-            console.log('Types d\'abonnement uniques:', data.types_abonnement);
-            console.log('Groupes uniques:', data.groupes);
-            console.log('Tous les adhérents traités:');
-            data.adherents.forEach((adh, index) => {
-                console.log(`  ${index + 1}. ID:${adh.id} | Type:"${adh.type_abonnement}" | Groupe:"${adh.groupe}" | Nom:"${adh.nom}"`);
-            });
-            
-            // Vérification des comptages
-            const typeCount = {};
-            const groupeCount = {};
-            data.adherents.forEach(adh => {
-                typeCount[adh.type_abonnement] = (typeCount[adh.type_abonnement] || 0) + 1;
-                groupeCount[adh.groupe] = (groupeCount[adh.groupe] || 0) + 1;
-            });
-            console.log('Comptage par type:', typeCount);
-            console.log('Comptage par groupe:', groupeCount);
-            
-            // Générer les filtres
-            generateTypeFilters(data.types_abonnement);
-            generateGroupeFilters(data.groupes);
-            
-            // Mettre à jour l'affichage
-            updateDisplay();
-        } else {
-            console.error('Erreur lors du chargement des données:', data.error);
-            // Afficher l'erreur dans l'interface
-            document.getElementById('totalAdherents').textContent = 'Erreur';
-            document.getElementById('filterStatus').textContent = data.error;
-        }
-    } catch (error) {
-        console.error('Erreur de connexion:', error);
-        document.getElementById('totalAdherents').textContent = 'Erreur';
-        document.getElementById('filterStatus').textContent = 'Erreur de connexion';
-    }
-}
-
-// Générer les filtres pour les types d'abonnement (VERSION CORRIGÉE)
-function generateTypeFilters(types) {
-    const container = document.getElementById('typeAbonnementFilters');
-    container.innerHTML = '';
-    
-    types.forEach(type => {
-        const div = document.createElement('div');
-        div.className = 'form-check form-check-inline';
-        
-        // Échapper l'identifiant pour éviter les problèmes avec les apostrophes
-        const escapedType = escapeId(type);
-        
-        div.innerHTML = `
-            <input class="form-check-input" type="checkbox" id="type_${escapedType}" 
-                   data-original-value="${type}" onchange="toggleTypeFilter(this)">
-            <label class="form-check-label" for="type_${escapedType}">
-                ${type}
-            </label>
-        `;
-        container.appendChild(div);
-    });
-}
-
-// Générer les filtres pour les groupes (VERSION CORRIGÉE)
-function generateGroupeFilters(groupes) {
-    const container = document.getElementById('groupeFilters');
-    container.innerHTML = '';
-    
-    groupes.forEach(groupe => {
-        const div = document.createElement('div');
-        div.className = 'form-check form-check-inline';
-        
-        // Échapper l'identifiant pour éviter les problèmes avec les apostrophes
-        const escapedGroupe = escapeId(groupe);
-        
-        div.innerHTML = `
-            <input class="form-check-input" type="checkbox" id="groupe_${escapedGroupe}" 
-                   data-original-value="${groupe}" onchange="toggleGroupeFilter(this)">
-            <label class="form-check-label" for="groupe_${escapedGroupe}">
-                ${groupe}
-            </label>
-        `;
-        container.appendChild(div);
-    });
-}
-
-// Basculer le filtre de type d'abonnement (VERSION CORRIGÉE)
-function toggleTypeFilter(checkbox) {
-    const type = checkbox.getAttribute('data-original-value');
-    
-    if (checkbox.checked) {
-        selectedTypes.add(type);
-        console.log(`Type ajouté: "${type}"`);
-    } else {
-        selectedTypes.delete(type);
-        console.log(`Type retiré: "${type}"`);
-    }
-    
-    console.log('Types sélectionnés:', Array.from(selectedTypes));
-    applyFilters();
-}
-
-// Basculer le filtre de groupe (VERSION CORRIGÉE)
-function toggleGroupeFilter(checkbox) {
-    const groupe = checkbox.getAttribute('data-original-value');
-    
-    if (checkbox.checked) {
-        selectedGroupes.add(groupe);
-        console.log(`Groupe ajouté: "${groupe}"`);
-    } else {
-        selectedGroupes.delete(groupe);
-        console.log(`Groupe retiré: "${groupe}"`);
-    }
-    
-    console.log('Groupes sélectionnés:', Array.from(selectedGroupes));
-    applyFilters();
-}
-
-// Appliquer les filtres (VERSION AMÉLIORÉE AVEC DEBUG)
-function applyFilters() {
-    console.log('=== DÉBUT FILTRAGE ===');
-    console.log('Types sélectionnés:', Array.from(selectedTypes));
-    console.log('Groupes sélectionnés:', Array.from(selectedGroupes));
-    console.log('Nombre total d\'adhérents:', allAdherents.length);
-    
-    adherentsData = allAdherents.filter(adherent => {
-        const typeMatch = selectedTypes.size === 0 || selectedTypes.has(adherent.type_abonnement);
-        const groupeMatch = selectedGroupes.size === 0 || selectedGroupes.has(adherent.groupe);
-        
-        const result = typeMatch && groupeMatch;
-        
-        if (selectedTypes.size > 0 || selectedGroupes.size > 0) {
-            console.log(`Adhérent "${adherent.nom}": type="${adherent.type_abonnement}" (${typeMatch}), groupe="${adherent.groupe}" (${groupeMatch}) => ${result ? 'INCLUS' : 'EXCLU'}`);
-        }
-        
-        return result;
-    });
-    
-    console.log('Nombre d\'adhérents filtrés:', adherentsData.length);
-    console.log('=== FIN FILTRAGE ===');
-    
-    updateDisplay();
-}
-
-// Mettre à jour l'affichage
-function updateDisplay() {
-    // Mettre à jour le nombre total
-    document.getElementById('totalAdherents').textContent = adherentsData.length;
-    
-    // Mettre à jour le statut du filtre
-    updateFilterStatus();
-    
-    // Mettre à jour les statistiques détaillées
-    updateDetailedStats();
-}
-
-// Mettre à jour le statut du filtre
-function updateFilterStatus() {
-    const statusElement = document.getElementById('filterStatus');
-    const totalFilters = selectedTypes.size + selectedGroupes.size;
-    
-    if (totalFilters === 0) {
-        statusElement.textContent = 'Tous les adhérents';
-    } else {
-        const filters = [];
-        if (selectedTypes.size > 0) {
-            filters.push(`${selectedTypes.size} type(s)`);
-        }
-        if (selectedGroupes.size > 0) {
-            filters.push(`${selectedGroupes.size} groupe(s)`);
-        }
-        statusElement.textContent = `Filtré par: ${filters.join(', ')}`;
-    }
-}
-
-// Mettre à jour les statistiques détaillées
-function updateDetailedStats() {
-    updateTypeStats();
-    updateGroupeStats();
-}
-
-// Mettre à jour les stats par type
-function updateTypeStats() {
-    const typeCount = {};
-    adherentsData.forEach(adherent => {
-        typeCount[adherent.type_abonnement] = (typeCount[adherent.type_abonnement] || 0) + 1;
-    });
-    
-    const container = document.getElementById('typeStats');
-    container.innerHTML = '';
-    
-    Object.entries(typeCount).sort((a, b) => b[1] - a[1]).forEach(([type, count]) => {
-        const percentage = ((count / adherentsData.length) * 100).toFixed(1);
-        container.innerHTML += `
-            <div class="d-flex justify-content-between mb-2">
-                <span>${type}:</span>
-                <span><strong>${count}</strong> (${percentage}%)</span>
-            </div>
-        `;
-    });
-}
-
-// Mettre à jour les stats par groupe
-function updateGroupeStats() {
-    const groupeCount = {};
-    adherentsData.forEach(adherent => {
-        groupeCount[adherent.groupe] = (groupeCount[adherent.groupe] || 0) + 1;
-    });
-    
-    const container = document.getElementById('groupeStats');
-    container.innerHTML = '';
-    
-    Object.entries(groupeCount).sort((a, b) => b[1] - a[1]).forEach(([groupe, count]) => {
-        const percentage = ((count / adherentsData.length) * 100).toFixed(1);
-        container.innerHTML += `
-            <div class="d-flex justify-content-between mb-2">
-                <span>${groupe}:</span>
-                <span><strong>${count}</strong> (${percentage}%)</span>
-            </div>
-        `;
-    });
-}
-
-// Réinitialiser tous les filtres (VERSION CORRIGÉE)
-function resetFilters() {
-    // Décocher toutes les checkboxes
-    document.querySelectorAll('#typeAbonnementFilters input[type="checkbox"]').forEach(cb => {
-        cb.checked = false;
-    });
-    document.querySelectorAll('#groupeFilters input[type="checkbox"]').forEach(cb => {
-        cb.checked = false;
-    });
-    
-    // Vider les sets
-    selectedTypes.clear();
-    selectedGroupes.clear();
-    
-    console.log('Filtres réinitialisés');
-    
-    // Réappliquer les filtres (tous les adhérents)
-    applyFilters();
-}
-</script>
-<!-- Charts Start -->
-<div class="container-fluid pt-4 ">
-    <div class="row g-4">
-        <!-- Chart existants -->
-        <div class="col-sm-12 col-xl-6">
-            <div class="bg-light text-center rounded p-4">
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <h6 class="mb-0">Répartition des Paiements</h6>
-                    <a href="javascript:void(0);" onclick="downloadChart('typePaiementChart')">Télécharger</a>
-                </div>
-                <canvas id="typePaiementChart"></canvas>
-            </div>
-        </div>
-        
-        <div class="col-sm-12 col-xl-6">
-            <div class="bg-light text-center rounded p-4">
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <h6 class="mb-0">Collecte par Saison</h6>
-                    <div class="form-check">
-                        
-                        
-                    </div>
-                </div>
-                <canvas id="saisonChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Nouveaux charts -->
-        <div class="col-12">
-            <div class="bg-light rounded p-4">
-                <div class="d-flex justify-content-between mb-4">
-                    <h6 class="mb-0">Évolution Mensuelle des Paiements</h6>
-                    <div class="btn-group">
-                       
-                    </div>
-                </div>
-                <canvas id="monthlyTrendChart"></canvas>
-            </div>
-        </div>
-
-        <div class="col-sm-12 col-xl-8">
-            <div class="bg-light text-center rounded p-4">
-                <h6 class="mb-4">Top 10 Adhérents</h6>
-                <canvas id="topAdherentsChart"></canvas>
-            </div>
-        </div>
-
-        <div class="col-sm-12 col-xl-4">
-            <div class="bg-light rounded p-4">
-                <h6 class="mb-4">Statut des Paiements Saison Actuelle</h6>
-                <div id="paymentStatusGauge" class="gauge-container"></div>
-                <div class="mt-3">
-                    <span class="badge bg-success">Payé: <span id="paidAmount">0</span> TND</span>
-                    <span class="badge bg-danger ms-2">Reste: <span id="remainingAmount">0</span> TND</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<style>
-    .gauge-container {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    margin: 0 auto;
-}
-
-.gauge {
-    transform: rotate(-90deg);
-    transform-origin: 50% 50%;
-}
-
-.gauge-circle {
-    fill: none;
-    stroke-width: 10;
-}
-
-.gauge-background {
-    stroke: #eee;
-}
-
-.gauge-progress {
-    stroke: #4CAF50;
-    transition: stroke-dashoffset 0.5s;
-}
-
-.chart-tooltip {
-    position: absolute;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
-    pointer-events: none;
-    font-size: 0.9em;
-}
-</style>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
+// Initialisation des charts
+function initializeCharts() {
     // Configuration globale
-    Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-    Chart.defaults.color = '#666';
+    if (typeof Chart !== 'undefined') {
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        Chart.defaults.color = '#666';
+    }
 
-    // Initialisation des charts
+    // Initialisation des autres charts
     initPaymentTypeChart();
     initSaisonChart();
-    initMonthlyTrendChart();
-    initTopAdherentsChart();
     initPaymentGauge();
-
-
-    // Gestion des années pour le trend chart
-    document.querySelectorAll('.btn-group button').forEach(button => {
-        button.addEventListener('click', function() {
-            const year = this.dataset.year;
-            updateMonthlyTrendChart(year);
-            document.querySelectorAll('.btn-group button').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-        });
-    });
-});
-
-// Fonctions d'initialisation des charts
-async function initPaymentTypeChart() {
-    const response = await fetch('/stats/payment-types');
-    const data = await response.json();
-    
-    new Chart(document.getElementById('typePaiementChart'), {
-        type: 'doughnut',
-        data: {
-            labels: data.labels,
-            datasets: [{
-                data: data.values,
-                backgroundColor: [
-                    '#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f'
-                ],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            cutout: '70%',
-            plugins: {
-                legend: { position: 'bottom' },
-                tooltip: {
-                    callbacks: {
-                        label: (context) => `${context.label}: ${context.raw.toFixed(2)} TND `
-                    }
-                }
-            }
-        }
-    });
 }
 
-async function initSaisonChart() {
-    const response = await fetch('/stats/saisons');
-    const data = await response.json();
-    
-    window.saisonChart = new Chart(document.getElementById('saisonChart'), {
-        type: 'bar',
-        data: {
-            labels: data.labels,
-            datasets: [{
-                label: 'Montant Collecté',
-                data: data.values,
-                backgroundColor: 'rgba(78, 121, 167, 0.8)',
-                borderColor: '#4e79a7',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                x: { stacked: false },
-                y: {
-                    stacked: false,
-                    beginAtZero: true,
-                    ticks: { callback: value => `${value} TND` }
-                }
+// Fonctions d'initialisation des charts existants
+async function initPaymentTypeChart() {
+    try {
+        debugLog('Initializing payment type chart');
+        const response = await fetch('/stats/payment-types');
+        if (!response.ok) throw new Error('Erreur de chargement');
+        
+        const data = await response.json();
+        debugLog('Payment type chart data', data);
+        
+        const ctx = document.getElementById('typePaiementChart');
+        
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    data: data.values || [],
+                    backgroundColor: [
+                        '#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f'
+                    ],
+                    borderWidth: 0
+                }]
             },
-            plugins: {
-                annotation: {
-                    annotations: {
-                        avgLine: {
-                            type: 'line',
-                            yMin: data.average,
-                            yMax: data.average,
-                            borderColor: '#e15759',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            label: {
-                                content: `Moyenne: ${data.average.toFixed(2)} TND`,
-                                position: 'end'
-                            }
+            options: {
+                cutout: '70%',
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${context.label}: ${context.raw.toFixed(2)} TND`  // Changed to TND
                         }
                     }
                 }
             }
-        }
-    });
+        });
+    } catch (error) {
+        errorLog('Erreur lors de l\'initialisation du chart des types de paiement', error);
+    }
 }
 
-// Fonction pour le gauge de statut de paiement
-async function initPaymentGauge() {
-    const response = await fetch('/stats/payment-status');
-    const data = await response.json();
+async function initSaisonChart() {
+
+        debugLog('Initializing season chart');
+        const response = await fetch('/stats/saisons');
+        if (!response.ok) throw new Error('Erreur de chargement');
+        
+        const data = await response.json();
+        debugLog('Season chart data', data);
+        
+        const ctx = document.getElementById('saisonChart');
+        
+        window.saisonChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    label: 'Montant Collecté',
+                    data: data.values || [],
+                    backgroundColor: 'rgba(78, 121, 167, 0.8)',
+                    borderColor: '#4e79a7',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { stacked: false },
+                    y: {
+                        stacked: false,
+                        beginAtZero: true,
+                        ticks: { callback: value => `${value} TND` }  // Changed to TND
+                    }
+                }
+            }
+        });
     
-    const gauge = document.getElementById('paymentStatusGauge');
-    gauge.innerHTML = `
-        <svg class="gauge" viewBox="0 0 100 100">
-            <circle class="gauge-circle gauge-background" cx="50" cy="50" r="45"/>
-            <circle class="gauge-circle gauge-progress" cx="50" cy="50" r="45" 
-                    stroke-dasharray="${2 * Math.PI * 45}" 
-                    stroke-dashoffset="${2 * Math.PI * 45 * (1 - data.paidPercentage)}"/>
-        </svg>
-    `;
-    
-    document.getElementById('paidAmount').textContent = data.totalPaid.toFixed(2);
-    document.getElementById('remainingAmount').textContent = data.totalRemaining.toFixed(2);
 }
+
+async function initPaymentGauge() {
+    try {
+        debugLog('Initializing payment gauge');
+        const response = await fetch('/stats/payment-status');
+        if (!response.ok) throw new Error('Erreur de chargement');
+        
+        const data = await response.json();
+        debugLog('Payment gauge data', data);
+        
+        const gauge = document.getElementById('paymentStatusGauge');
+        if (!gauge) {
+            errorLog('Payment gauge element not found');
+            return;
+        }
+        
+        gauge.innerHTML = `
+            <div class="text-center">
+                <div class="display-4 text-primary">${(data.paidPercentage * 100).toFixed(1)}%</div>
+                <small class="text-muted">Paiements collectés</small>
+            </div>
+        `;
+        
+        const paidElement = document.getElementById('paidAmount');
+        const remainingElement = document.getElementById('remainingAmount');
+        
+        if (paidElement) paidElement.textContent = data.totalPaid.toFixed(2) + ' TND';  // Changed to TND
+        if (remainingElement) remainingElement.textContent = data.totalRemaining.toFixed(2) + ' TND';  // Changed to TND
+    } catch (error) {
+        errorLog('Erreur lors de l\'initialisation du gauge', error);
+    }
+}
+
 
 // Fonction de téléchargement
 function downloadChart(chartId) {
     const canvas = document.getElementById(chartId);
+    if (!canvas) {
+        errorLog('Canvas not found for download: ' + chartId);
+        return;
+    }
+    
     const link = document.createElement('a');
     link.download = `${chartId}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
 }
 
-async function initMonthlyTrendChart(year = new Date().getFullYear()) {
-    const response = await fetch(`/stats/monthly-trend/${year}`);
-    const data = await response.json();
-    
-    window.monthlyTrendChart = new Chart(document.getElementById('monthlyTrendChart'), {
-        type: 'line',
-        data: {
-            labels: data.months.map(m => new Date(2000, m - 1).toLocaleString('default', { month: 'long' })),
-            datasets: [{
-                label: 'Montant Collecté',
-                data: data.amounts,
-                borderColor: '#4e79a7',
-                tension: 0.4,
-                fill: true,
-                backgroundColor: 'rgba(78, 121, 167, 0.1)'
-            }]
-        },
-        options: {
-            scales: {
-                y: { beginAtZero: true }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: (context) => `${context.dataset.label}: ${context.raw.toFixed(2)} TND`
-                    }
-                }
-            }
-        }
-    });
+// Add error container to page if it doesn't exist
+function ensureErrorContainer() {
+    if (!document.getElementById('errorContainer')) {
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'errorContainer';
+        errorDiv.className = 'position-fixed top-0 end-0 p-3';
+        errorDiv.style.zIndex = '9999';
+        document.body.appendChild(errorDiv);
+    }
 }
 
-async function initTopAdherentsChart() {
-    const response = await fetch('/stats/top-adherents');
-    const data = await response.json();
-    
-    new Chart(document.getElementById('topAdherentsChart'), {
-        type: 'bar',
-        data: {
-            labels: data.labels,
-            datasets: [{
-                label: 'Total Payé',
-                data: data.values,
-                backgroundColor: data.colors
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                x: { beginAtZero: true }
-            }
-        }
-    });
-}
+// Initialize error container
+ensureErrorContainer();
 </script>
-<!-- Charts End -->
-
-<!-- Recent Payments Start -->
-<div class="container-fluid pt-4 px-4">
-    <div class="bg-light text-center rounded p-4">
-        <div class="d-flex align-items-center justify-content-between mb-4">
-            <h6 class="mb-0">Derniers Paiements</h6>
-            <a href="/recherche-paiements">Voir tous</a>
-        </div>
-        <div class="table-responsive">
-            <table class="table text-start align-middle table-bordered table-hover mb-0">
-                <thead>
-                    <tr class="text-dark">
-                        <th scope="col">Date</th>
-                        <th scope="col">Matricule</th>
-                        <th scope="col">Montant Payé</th>
-                        <th scope="col">Type</th>
-                        <th scope="col">Saison</th>
-                        <th scope="col">Détails</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in paiements_recent %}
-                    <tr>
-                        <td>{{ p.date_paiement.strftime('%d/%m/%Y') }}</td>
-                        <td>{{ p.matricule_adherent }}</td>
-                        <td>{{ p.montant_paye }} TND</td>
-                        <td>{{ p.type_reglement or 'Non spécifié' }}</td>
-                        <td>{{ p.code_saison }}</td>
-                        <td><a class="btn btn-sm btn-primary" href="/static/bons_paiements/paiement_{{p.numero_bon}}.pdf">Détails 🧾</a></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-<!-- Recent Payments End -->
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-
-
-            <!-- Footer Start -->
-            <div class="container-fluid pt-4 px-4">
-                <div class="bg-light rounded-top p-4">
-                    <div class="row">
-                        <div class="col-12 col-sm-6 text-center text-sm-start">
-                            &copy; <a href="#">TCHS</a>, All Right Reserved. 
-                        </div>
-                        <div class="col-12 col-sm-6 text-center text-sm-end">
-                            <!--/*** This template is free as long as you keep the footer author’s credit link/attribution link/backlink. If you'd like to use the template without the footer author’s credit link/attribution link/backlink, you can purchase the Credit Removal License from "https://htmlcodex.com/credit-removal". Thank you for your support. ***/-->
-                            Designed by <a>AMH</a>
-                        </br>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Footer End -->
-        </div>
-        <!-- Content End -->
-
-
-        <!-- Back to Top -->
-        <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
-    
-
-    <!-- JavaScript Libraries -->
-<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
-<script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
-<script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
-<script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
-<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
-<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
-<script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
-
-<!-- Template Javascript -->
-<script src="{{ url_for('static', filename='js/main.js') }}"></script>
-
 </body>
-
 </html>
