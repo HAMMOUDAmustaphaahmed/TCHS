@@ -378,8 +378,13 @@ def emploi_prep_physique():
         type_seance_global='prep_physique'  # ← AJOUT: Envoyer le type global
     )
 
+
+from flask import flash, redirect, render_template, request, session, url_for
+from datetime import datetime, timedelta, time
+
 @app.route('/entraineur', methods=['GET', 'POST'])
 def entraineur():
+    # Vérification des permissions
     if 'user_id' not in session or session.get('role') != 'entraineur':
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
@@ -395,13 +400,21 @@ def entraineur():
         flash("Format du nom d'utilisateur invalide.", "danger")
         return redirect(url_for('login'))
     
+    # Normaliser le nom et prénom pour la requête
+    nom = nom.strip()
+    prenom = prenom.strip()
+
     entraineur = Entraineur.query.filter_by(nom=nom, prenom=prenom).first()
     if not entraineur:
         flash("Entraîneur introuvable.", "danger")
         return redirect(url_for('login'))
     
-    nom_complet_entraineur = nom + " " + prenom
-    
+    # Construire le nom complet normalisé
+    nom_complet_entraineur = f"{nom} {prenom}".replace('\u00A0', ' ').strip()
+
+    # Debug pour vérifier le nom complet envoyé au template
+    print(f"[DEBUG] Nom complet entraîneur connecté : '{nom_complet_entraineur}'")
+
     # Gestion de la navigation
     week_offset = request.args.get('week_offset', 0, type=int)
     day_offset = request.args.get('day_offset', 0, type=int)
@@ -409,11 +422,34 @@ def entraineur():
     start_of_week = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
     day_offset = max(0, min(6, day_offset))
     current_day = start_of_week + timedelta(days=day_offset)
-    
-    # Récupérer TOUTES les séances pour la journée courante avec leurs types
+
+    # Récupérer toutes les séances du jour
     seances_tous = Seance.query.filter(Seance.date == current_day.date()).all()
-    
-    # Création des créneaux horaires
+
+    # Préparer la structure pour le template
+    seances_par_terrain_et_heure = {}
+    for seance in seances_tous:
+        terrain = seance.terrain
+        heure_debut = seance.heure_debut.strftime('%H:%M')
+        key = f"{terrain}_{heure_debut}"
+
+        # Normalisation et debug de chaque entraîneur enregistré
+        entraineur_seance_norm = seance.entraineur.replace('\u00A0', ' ').strip()
+        print(f"[DEBUG] Séance ID {seance.seance_id} → Entraîneur dans la DB : '{entraineur_seance_norm}'")
+
+        seances_par_terrain_et_heure[key] = {
+            'id': seance.seance_id,
+            'date': seance.date,
+            'heure_debut': seance.heure_debut,
+            'heure_fin': seance.heure_fin,
+            'groupe': seance.groupe,
+            'entraineur': entraineur_seance_norm,
+            'terrain': seance.terrain,
+            'type_seance': seance.type_seance or 'entrainement',
+            'adherents_matricules': seance.adherents_matricules
+        }
+
+    # Créneaux horaires
     creneaux = [
         {'start': time(8, 0), 'end': time(9, 30)},
         {'start': time(9, 30), 'end': time(11, 0)},
@@ -422,29 +458,9 @@ def entraineur():
         {'start': time(14, 0), 'end': time(15, 30)},
         {'start': time(15, 30), 'end': time(17, 0)},
         {'start': time(17, 0), 'end': time(18, 30)},
-        {'start': time(18, 30), 'end': time(20, 0)}
+        {'start': time(18, 30), 'end': time(20, 0)},
     ]
-    
-    # Préparer une structure de données pour faciliter l'accès aux séances
-    seances_par_terrain_et_heure = {}
-    for seance in seances_tous:
-        terrain = seance.terrain
-        heure_debut = seance.heure_debut.strftime('%H:%M')
-        key = f"{terrain}_{heure_debut}"
-        
-        seance_info = {
-            'id': seance.seance_id,
-            'date': seance.date,
-            'heure_debut': seance.heure_debut,
-            'heure_fin': seance.heure_fin,
-            'groupe': seance.groupe,
-            'entraineur': seance.entraineur,
-            'terrain': seance.terrain,
-            'type_seance': seance.type_seance or 'entrainement',
-            'adherents_matricules': seance.adherents_matricules
-        }
-        seances_par_terrain_et_heure[key] = seance_info
-    
+
     return render_template(
         'entraineur.html',
         current_day=current_day,
@@ -453,8 +469,8 @@ def entraineur():
         entraineur=entraineur,
         seances_par_terrain_et_heure=seances_par_terrain_et_heure,
         creneaux=creneaux,
-        nom_complet_entraineur=f"{nom} {prenom}",
-        type_seance_global='entrainement'  # ← AJOUT: Envoyer le type global
+        nom_complet_entraineur=nom_complet_entraineur,
+        type_seance_global='entrainement'
     )
 
 
@@ -649,34 +665,29 @@ def save_presences():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-
-# Route pour récupérer les adhérents d'un groupe
-@app.route('/api/adherents_groupe/<string:groupe>', methods=['GET'])
-def get_adherents_groupe(groupe):
+@app.route('/api/get_adherents_groupe/<string:nom_groupe>', methods=['GET'])
+def get_adherents_groupe(nom_groupe):
     if 'user_id' not in session:
         return jsonify({"error": "Non autorisé"}), 403
-    
+
     try:
-        # Récupérer les adhérents du groupe
-        adherents = Adherent.query.filter_by(groupe=groupe).all()
-        
-        adherents_list = []
-        for adherent in adherents:
-            adherents_list.append({
-                'matricule': adherent.matricule,
-                'nom': adherent.nom,
-                'prenom': adherent.prenom,
-                'groupe': adherent.groupe
-            })
-        print(adherents_list)
-        
+        adherents = Adherent.query.filter_by(groupe=nom_groupe).all()
+
+        adherents_list = [{
+            'matricule': a.matricule,
+            'nom': a.nom,
+            'prenom': a.prenom,
+            'groupe': a.groupe
+        } for a in adherents]
+
         return jsonify({
             "success": True,
             "adherents": adherents_list
         })
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
 
 
 # Route pour récupérer les statistiques des présences par type de séance
@@ -988,6 +999,56 @@ def supprimer_location(id):
     return redirect(url_for('locations_terrains'))
 
 
+@app.route('/ajouter_groupe', methods=['POST'])
+def ajouter_groupe():
+    if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
+        flash("Accès non autorisé.", "danger")
+        return redirect(url_for('login'))
+    
+    data = request.get_json()
+    
+    # Récupérer les données avec les bons noms de clés
+    group_name = data.get('groupName')
+    entraineur_id = data.get('entraineurId')
+    prep_physique_id = data.get('prepPhysiqueId')  # Nouveau champ
+
+    if not group_name or not entraineur_id:
+        return "Le nom du groupe ou l'entraîneur est manquant.", 400
+
+    # Vérifier l'existence du groupe
+    if Groupe.query.filter_by(nom_groupe=group_name).first():
+        return "Un groupe avec ce nom existe déjà.", 400
+
+    try:
+        # Récupérer l'entraîneur par ID
+        entraineur = Entraineur.query.get(entraineur_id)
+        if not entraineur:
+            return "Entraîneur introuvable.", 404
+        
+        # Récupérer le préparateur physique si fourni
+        prep_physique_nom = None
+        if prep_physique_id:
+            prep_physique = Entraineur.query.get(prep_physique_id)
+            if prep_physique and prep_physique.type_abonnement == "prep_physique":
+                prep_physique_nom = f"{prep_physique.nom} {prep_physique.prenom}"
+
+        # Créer le groupe avec les bonnes données
+        nouveau_groupe = Groupe(
+            nom_groupe=group_name,
+            entraineur_nom=f"{entraineur.nom} {entraineur.prenom}",
+            type_abonnement=entraineur.type_abonnement,
+            categorie=group_name.split('-')[0],
+            preparateur_physique=prep_physique_nom  # Nouveau champ
+        )
+        
+        db.session.add(nouveau_groupe)
+        db.session.commit()
+        return "Groupe ajouté avec succès.", 200
+
+    except Exception as e:
+        db.session.rollback()
+        return f"Erreur lors de l'ajout du groupe : {str(e)}", 500
+
 @app.route('/directeur_technique', methods=['GET', 'POST'])
 def directeur_technique():
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
@@ -1022,6 +1083,23 @@ def directeur_technique():
             db.session.commit()
             flash("Entraîneur modifié avec succès", "success")
 
+        elif action == 'changer_prep_physique':
+            groupe_id = request.form.get('groupe_id')
+            nouveau_prep_id = request.form.get('prep_physique_id')
+            groupe = Groupe.query.get(groupe_id)
+            
+            if nouveau_prep_id:
+                nouveau_prep = Entraineur.query.get(nouveau_prep_id)
+                if nouveau_prep and nouveau_prep.type_abonnement == "prep_physique":
+                    groupe.preparateur_physique = nouveau_prep.nom + ' ' + nouveau_prep.prenom
+                else:
+                    groupe.preparateur_physique = None
+            else:
+                groupe.preparateur_physique = None
+                
+            db.session.commit()
+            flash("Préparateur physique modifié avec succès", "success")
+
         elif action == 'supprimer_seance':
             seance_id = request.form.get('seance_id')
             seance = Seance.query.get(seance_id)
@@ -1042,6 +1120,7 @@ def directeur_technique():
     # Récupération des données
     groupes = Groupe.query.all()
     entraineurs = Entraineur.query.all()
+    prep_physiques = Entraineur.query.filter_by(type_abonnement="prep_physique").all()
     
     # Séances pour la semaine entière (pour les stats)
     seances_week = Seance.query.filter(
@@ -1068,7 +1147,7 @@ def directeur_technique():
         'nom': a.nom,
         'prenom': a.prenom
     } for a in all_adherents]
-
+    
     return render_template(
         'gestion_groupes.html',
         current_day=current_day,
@@ -1076,6 +1155,7 @@ def directeur_technique():
         day_offset=day_offset,
         groupes=groupes,
         entraineurs=entraineurs,
+        prep_physiques=prep_physiques,
         seances=seances_day,  # Utilise les séances du jour seulement
         seances_week=seances_week,  # Pour les stats hebdomadaires
         creneaux=creneaux,
@@ -1084,8 +1164,6 @@ def directeur_technique():
         all_adherents=adherents_list,  
         adherents_json=json.dumps(adherents_list)
     )
-
-
 
 
 @app.route('/planning_prep_physique', methods=['GET', 'POST'])
@@ -1549,45 +1627,6 @@ def ajouter_adherents_groupe(groupe_id):
         "added_count": added_count
     }), 200
 
-@app.route('/ajouter_groupe', methods=['POST'])
-def ajouter_groupe():
-    if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
-        flash("Accès non autorisé.", "danger")
-        return redirect(url_for('login'))
-    data = request.get_json()
-
-    # Récupérer les données avec les bons noms de clés
-    group_name = data.get('groupName')
-    entraineur_id = data.get('entraineurId')  # Changé de 'entraineur' à 'entraineurId'
-
-    if not group_name or not entraineur_id:
-        return "Le nom du groupe ou l'entraîneur est manquant.", 400
-
-    # Vérifier l'existence du groupe
-    if Groupe.query.filter_by(nom_groupe=group_name).first():
-        return "Un groupe avec ce nom existe déjà.", 400
-
-    try:
-        # Récupérer l'entraîneur par ID
-        entraineur = Entraineur.query.get(entraineur_id)
-        if not entraineur:
-            return "Entraîneur introuvable.", 404
-
-        # Créer le groupe avec les bonnes données
-        nouveau_groupe = Groupe(
-            nom_groupe=group_name,
-            entraineur_nom=f"{entraineur.nom} {entraineur.prenom}",
-            type_abonnement=entraineur.type_abonnement,
-            categorie=group_name.split('-')[0]  # Ajout de la catégorie
-        )
-        
-        db.session.add(nouveau_groupe)
-        db.session.commit()
-        return "Groupe ajouté avec succès.", 200
-
-    except Exception as e:
-        db.session.rollback()
-        return f"Erreur lors de l'ajout du groupe : {str(e)}", 500
 
 @app.route('/supprimer_groupe/<int:id>', methods=['DELETE'])
 def supprimer_groupe(id):
@@ -2874,6 +2913,7 @@ class Groupe(db.Model):
     entraineur_nom = db.Column(db.String(50), nullable=False)
     type_abonnement = db.Column(db.String(50), nullable=False)
     categorie = db.Column(db.String(50), nullable=False)
+    preparateur_physique = db.Column(db.String(100), nullable=True)  # Nouvelle colonne
 
     def __repr__(self):
         return f'<Groupe {self.nom_groupe} géré par {self.entraineur_nom}>'

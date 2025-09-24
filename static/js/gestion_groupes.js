@@ -83,7 +83,7 @@ function addSession() {
             groupe_id: currentGroupId,
             date: date,
             heure_debut: time,
-            terrain: 0,
+            terrain: terrain,
             repeat_weekly: repeatWeekly,
             type_seance: typeSeance
         })
@@ -117,9 +117,10 @@ function confirmGroupAdd() {
     const number = document.getElementById("groupNumber").value;
     const letter = document.getElementById("groupLetter").value.toUpperCase();
     const entraineurId = document.getElementById("groupEntraineur").value;
+    const prepPhysiqueId = document.getElementById("groupPrepPhysique").value;
 
     if (!category || !number || !letter || !entraineurId) {
-        alert("Veuillez remplir tous les champs");
+        alert("Veuillez remplir tous les champs obligatoires");
         return;
     }
 
@@ -128,13 +129,77 @@ function confirmGroupAdd() {
     fetch('/ajouter_groupe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupName, entraineurId })
+        body: JSON.stringify({ 
+            groupName, 
+            entraineurId,
+            prepPhysiqueId  // Nouveau champ
+        })
     })
     .then(response => {
-        if (response.ok) location.reload();
-        else alert("Erreur lors de la création du groupe");
+        if (response.ok) {
+            alert("Groupe créé avec succès!");
+            location.reload();
+        } else {
+            response.text().then(text => alert("Erreur: " + text));
+        }
+    })
+    .catch(err => {
+        console.error('Erreur:', err);
+        alert("Une erreur est survenue lors de la création du groupe");
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Event listener existant pour les entraîneurs
+    document.querySelectorAll('.entraineur-select').forEach(select => {
+        select.addEventListener('change', function() {
+            const groupeId = this.dataset.groupeId;
+            const entraineurId = this.value;
+            
+            const formData = new FormData();
+            formData.append('action', 'changer_entraineur');
+            formData.append('groupe_id', groupeId);
+            formData.append('entraineur_id', entraineurId);
+
+            fetch('/directeur_technique', {
+                method: 'POST',
+                body: formData
+            })
+            .then(() => location.reload())
+            .catch(err => {
+                console.error('Erreur:', err);
+                alert('Une erreur est survenue lors du changement d\'entraîneur');
+            });
+        });
+    });
+
+    // Nouvel event listener pour les préparateurs physiques
+    document.querySelectorAll('.prep-physique-select').forEach(select => {
+        select.addEventListener('change', function() {
+            const groupeId = this.dataset.groupeId;
+            const prepPhysiqueId = this.value;
+            
+            const formData = new FormData();
+            formData.append('action', 'changer_prep_physique');
+            formData.append('groupe_id', groupeId);
+            formData.append('prep_physique_id', prepPhysiqueId);
+
+            fetch('/directeur_technique', {
+                method: 'POST',
+                body: formData
+            })
+            .then(() => {
+                alert('Préparateur physique modifié avec succès');
+                location.reload();
+            })
+            .catch(err => {
+                console.error('Erreur:', err);
+                alert('Une erreur est survenue lors du changement de préparateur physique');
+            });
+        });
+    });
+});
+
 
 function deleteGroup(groupId) {
     if (confirm("Supprimer ce groupe et toutes ses séances ?")) {

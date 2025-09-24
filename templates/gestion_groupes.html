@@ -194,21 +194,19 @@
             </div>
     
             <!-- Formulaire d'ajout de groupe -->
-            <div id="groupForm" class="mt-2" style="display:none;">
+<div id="groupForm" class="mt-2" style="display:none;">
     <h5>Créer un nouveau groupe</h5>
     <select id="groupCategory" class="form-control mt-2">
         <option value="">Catégorie</option>
-        
-            <option value="Lutin">Lutin</option>
-            <option value="Poussin">Poussin</option>
-            <option value="Benjamin">Benjamin</option>
-            <option value="Minime">Minime</option>
-            <option value="KD">KD</option>
-            <option value="Ecole">École</option>
-            <option value="Loisir">Loisir</option>
-            <option value="Adulte">Adulte</option>
-        
-            <option value="Ecole_ete">Ecole d'été</option>
+        <option value="Lutin">Lutin</option>
+        <option value="Poussin">Poussin</option>
+        <option value="Benjamin">Benjamin</option>
+        <option value="Minime">Minime</option>
+        <option value="KD">KD</option>
+        <option value="Ecole">École</option>
+        <option value="Loisir">Loisir</option>
+        <option value="Adulte">Adulte</option>
+        <option value="Ecole_ete">Ecole d'été</option>
     </select>
     <input type="number" id="groupNumber" class="form-control mt-2" placeholder="Numéro (1-9)" min="1" max="9">
     <input type="text" id="groupLetter" class="form-control mt-2" placeholder="Lettre (A-Z)" maxlength="1">
@@ -218,86 +216,86 @@
         <option value="{{ entraineur.id_entraineur }}">{{ entraineur.nom }} {{ entraineur.prenom }}</option>
         {% endfor %}
     </select>
+    <select id="groupPrepPhysique" class="form-control mt-2">
+        <option value="">Préparateur Physique (optionnel)</option>
+        {% for prep_physique in prep_physiques %}
+        <option value="{{ prep_physique.id_entraineur }}">{{ prep_physique.nom }} {{ prep_physique.prenom }}</option>
+        {% endfor %}
+    </select>
     <button class="btn btn-success mt-2" onclick="confirmGroupAdd()">Confirmer</button>
 </div>
     
             <!-- Tableau des Groupes -->
-            <div class="table-responsive mt-4">
+<div class="table-responsive mt-4">
     <h5 class="text-start mb-4">Les Groupes</h5>
     <table class="table table-hover">
-    <thead>
-        <tr>
-            <th>Nom du Groupe</th>
-            <th>Entraîneur</th>
-            <th>Adhérents</th> 
-            <th>Ajouter Séance</th>
-            <th>Ajouter Adhérent</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for groupe in groupes %}
-            
-                <tr>
-                    <td>{{ groupe.nom_groupe }}</td>
-                    <td>
-                        <select class="form-select entraineur-select" data-groupe-id="{{ groupe.id_groupe }}">
-                            {% for entraineur in entraineurs %}
-                            <option value="{{ entraineur.id_entraineur }}" 
-                                {% if entraineur.nom + ' ' + entraineur.prenom == groupe.entraineur_nom %}selected{% endif %}>
-                                {{ entraineur.nom }} {{ entraineur.prenom }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </td>
-                    <td>
-    <button class="btn btn-sm btn-info" 
-            data-groupe-id="{{ groupe.id_groupe }}" 
-            onclick="openAdherentsListModal({{ groupe.id_groupe }})">
-        <i class="fas fa-users"></i> Voir
-    </button>
-</td>
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll(".btn-info[data-groupe-id]").forEach(btn => {
-        const groupId = btn.dataset.groupeId;
-
-        fetch(`/api/get_adherents_groupe/${groupId}`)
-            .then(r => r.json())
-            .then(data => {
-                const count = data.adherents ? data.adherents.length : 0;
-                btn.innerHTML = `<i class="fas fa-users"></i> Voir (${count})`;
-            });
-    });
-});
-
-</script>
-                    <td>
-    <!-- Bouton séance "entrainement" existant -->
-    <button class="btn btn-sm btn-primary" onclick="openSessionModal({{ groupe.id_groupe }}, 'entrainement')">
-        <i class="fas fa-plus"></i>
-    </button>
-
-    <!-- Nouveau bouton séance "préparation physique" -->
-    <button class="btn btn-sm btn-warning" onclick="openPrepPhysiqueModal({{ groupe.id_groupe }}, 'prep_physique')">
-        <i class="fas fa-dumbbell"></i>
-    </button>
-</td>
-                    <td>
-                        <button class="btn btn-sm btn-success" onclick="openAddAdherentModal({{ groupe.id_groupe }})">
-                            <i class="fas fa-user-plus"></i> Gestion des adhérents
-                        </button>
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-danger" onclick="deleteGroup({{ groupe.id_groupe }})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
+        <thead>
+            <tr>
+                <th>Nom du Groupe</th>
+                <th>Entraîneur</th>
+                <th>Préparateur Physique</th>
+                <th>Adhérents</th>
+                <th>Ajouter Séance</th>
+                <th>Ajouter Adhérent</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for groupe in groupes %}
+            <tr>
+                <td>{{ groupe.nom_groupe }}</td>
+                <td>
+                    <select class="form-select entraineur-select" data-groupe-id="{{ groupe.id_groupe }}">
+                        {% for entraineur in entraineurs %}
+                        <option value="{{ entraineur.id_entraineur }}" 
+                            {% if entraineur.nom + ' ' + entraineur.prenom == groupe.entraineur_nom %}selected{% endif %}>
+                            {{ entraineur.nom }} {{ entraineur.prenom }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <select class="form-select prep-physique-select" data-groupe-id="{{ groupe.id_groupe }}">
+                        <option value="">Aucun</option>
+                        {% for prep_physique in prep_physiques %}
+                        <option value="{{ prep_physique.id_entraineur }}" 
+                            {% if prep_physique.nom + ' ' + prep_physique.prenom == groupe.preparateur_physique %}selected{% endif %}>
+                            {{ prep_physique.nom }} {{ prep_physique.prenom }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-info"
+                        data-groupe-nom="{{ groupe.nom_groupe }}"
+                        onclick="openAdherentsListModal('{{ groupe.nom_groupe }}')">
+                        <i class="fas fa-users"></i> Voir
+                    </button>
+                </td>
+                <td>
+                    <!-- Bouton séance "entrainement" existant -->
+                    <button class="btn btn-sm btn-primary" onclick="openSessionModal({{ groupe.id_groupe }}, 'entrainement')">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <!-- Nouveau bouton séance "préparation physique" -->
+                    <button class="btn btn-sm btn-warning" onclick="openPrepPhysiqueModal({{ groupe.id_groupe }}, 'prep_physique')">
+                        <i class="fas fa-dumbbell"></i>
+                    </button>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-success" onclick="openAddAdherentModal({{ groupe.id_groupe }})">
+                        <i class="fas fa-user-plus"></i> Gestion des adhérents
+                    </button>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="deleteGroup({{ groupe.id_groupe }})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
  <!-- Modal Voir Adhérents -->
 <div id="adherentsListModal" class="modal" style="display:none;">
@@ -319,48 +317,25 @@
 <script>
 let currentViewGroupId = null; // ⚡️ variable séparée
 
-function openAdherentsListModal(groupId) {
-    currentViewGroupId = groupId;
+function openAdherentsListModal(nomGroupe) {
     document.getElementById('adherentsListContainer').innerHTML = "<p class='text-muted'>Chargement...</p>";
     document.getElementById('adherentsListModal').style.display = 'block';
 
-    fetch(`/api/get_adherents_groupe/${groupId}`)
-        .then(response => response.json())
+    fetch(`/api/get_adherents_groupe/${encodeURIComponent(nomGroupe)}`)
+        .then(res => res.json())
         .then(data => {
             const container = document.getElementById('adherentsListContainer');
-            container.innerHTML = '';
-
             if (!data.adherents || data.adherents.length === 0) {
                 container.innerHTML = '<div class="text-muted">Aucun adhérent dans ce groupe</div>';
                 return;
             }
-
-            let table = `
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Matricule</th>
-                            <th>Nom</th>
-                            <th>Prénom</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
+            let table = `<table class="table table-striped"><thead><tr>
+                         <th>Matricule</th><th>Nom</th><th>Prénom</th></tr></thead><tbody>`;
             data.adherents.forEach(a => {
-                table += `
-                    <tr>
-                        <td>${a.matricule}</td>
-                        <td>${a.nom}</td>
-                        <td>${a.prenom}</td>
-                    </tr>
-                `;
+                table += `<tr><td>${a.matricule}</td><td>${a.nom}</td><td>${a.prenom}</td></tr>`;
             });
-            table += `</tbody></table>`;
+            table += '</tbody></table>';
             container.innerHTML = table;
-        })
-        .catch(err => {
-            console.error("Erreur lors du chargement :", err);
-            document.getElementById('adherentsListContainer').innerHTML = "<div class='text-danger'>Erreur de chargement</div>";
         });
 }
 

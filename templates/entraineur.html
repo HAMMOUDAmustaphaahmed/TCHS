@@ -452,56 +452,61 @@
                                                 {% set key = terrain|string + "_" + creneau.start.strftime('%H:%M') %}
                                                 {% set seance = seances_par_terrain_et_heure.get(key) %}
                                                 <td class="time-slot">
-                                                   {% if seance %}
-                                                        {% set is_my_session = (seance.entraineur|lower == nom_complet_entraineur|lower) %}
-                                                        {% set type_seance = seance.type_seance or 'entrainement' %}
-                                                        
-                                                        <div class="session-card {{ type_seance }} {% if is_my_session %}my-session{% else %}other-session{% endif %}">
-                                                            <!-- Type de séance avec icône -->
-                                                            <div class="session-type">
-                                                                {% if type_seance == 'prep_physique' %}
-                                                                    <i class="fas fa-dumbbell session-icon"></i>PRÉPA PHYSIQUE
-                                                                {% elif type_seance == 'match' %}
-                                                                    <i class="fas fa-trophy session-icon"></i>MATCH
-                                                                {% elif type_seance == 'stage' %}
-                                                                    <i class="fas fa-graduation-cap session-icon"></i>STAGE
-                                                                {% elif type_seance == 'entrainement' %}
-                                                                    <i class="fas fa-running session-icon"></i>ENTRAÎNEMENT
-                                                                {% else %}
-                                                                    <i class="fas fa-circle session-icon"></i>{{ type_seance.upper() }}
-                                                                {% endif %}
-                                                            </div>
-                                                            
-                                                            <!-- Groupe -->
-                                                            <div class="session-groupe">{{ seance.groupe }}</div>
-                                                            
-                                                            <!-- Entraîneur -->
-                                                            <div class="session-entraineur">
-                                                                <i class="fas fa-user"></i> {{ seance.entraineur }}
-                                                            </div>
-                                                            
-                                                            <!-- Bouton présence si c'est ma séance -->
-                                                            {% if is_my_session %}
-                                                                <button type="button" 
-                                                                        class="btn btn-light btn-sm presence-btn mt-2 w-100" 
-                                                                        data-groupe="{{ seance.groupe }}"
-                                                                        data-date="{{ seance.date }}"
-                                                                        data-heure="{{ seance.heure_debut.strftime('%H:%M') }}"
-                                                                        data-entraineur="{{ seance.entraineur }}"
-                                                                        data-seance-id="{{ seance.seance_id }}"
-                                                                        data-type-seance="{{ type_seance }}"
-                                                                        onclick="openPresenceModal(this)"
-                                                                        title="Gérer les présences">
-                                                                    <i class="fas fa-clipboard-check"></i> Présence
-                                                                </button>
-                                                            {% endif %}
-                                                        </div>
-                                                    {% else %}
-                                                        <div class="text-center text-success p-2">
-                                                            <i class="fas fa-check-circle"></i> Disponible
-                                                        </div>
-                                                    {% endif %}
-                                                </td>
+    {% if seance %}
+        {# --- Correction ici --- #}
+        {% set entraineur_norm = (seance.entraineur|default('')|replace('\u00A0',' ')|trim|lower) %}
+        {% set nom_entraineur_norm = (nom_complet_entraineur|default('')|replace('\u00A0',' ')|trim|lower) %}
+        {% set is_my_session = (entraineur_norm == nom_entraineur_norm) %}
+
+        {% set type_seance = seance.type_seance or 'entrainement' %}
+        
+        <div class="session-card {{ type_seance }} {% if is_my_session %}my-session{% else %}other-session{% endif %}">
+            <!-- Type de séance avec icône -->
+            <div class="session-type">
+                {% if type_seance == 'prep_physique' %}
+                    <i class="fas fa-dumbbell session-icon"></i>PRÉPA PHYSIQUE
+                {% elif type_seance == 'match' %}
+                    <i class="fas fa-trophy session-icon"></i>MATCH
+                {% elif type_seance == 'stage' %}
+                    <i class="fas fa-graduation-cap session-icon"></i>STAGE
+                {% elif type_seance == 'entrainement' %}
+                    <i class="fas fa-running session-icon"></i>ENTRAÎNEMENT
+                {% else %}
+                    <i class="fas fa-circle session-icon"></i>{{ type_seance.upper() }}
+                {% endif %}
+            </div>
+            
+            <!-- Groupe -->
+            <div class="session-groupe">{{ seance.groupe }}</div>
+            
+            <!-- Entraîneur -->
+            <div class="session-entraineur">
+                <i class="fas fa-user"></i> {{ seance.entraineur }}
+            </div>
+            
+            <!-- Bouton présence si c'est ma séance -->
+            {% if is_my_session %}
+                <button type="button" 
+                        class="btn btn-light btn-sm presence-btn mt-2 w-100" 
+                        data-groupe="{{ seance.groupe }}"
+                        data-date="{{ seance.date }}"
+                        data-heure="{{ seance.heure_debut.strftime('%H:%M') }}"
+                        data-entraineur="{{ seance.entraineur }}"
+                        data-seance-id="{{ seance.seance_id }}"
+                        data-type-seance="{{ type_seance }}"
+                        onclick="openPresenceModal(this)"
+                        title="Gérer les présences">
+                    <i class="fas fa-clipboard-check"></i> Présence
+                </button>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="text-center text-success p-2">
+            <i class="fas fa-check-circle"></i> Disponible
+        </div>
+    {% endif %}
+</td>
+
                                             {% endfor %}
                                         </tr>
                                     {% endfor %}
@@ -690,7 +695,7 @@
             adherentsList.innerHTML = '<tr><td colspan="4" class="text-center"><i class="fas fa-spinner fa-spin"></i> Chargement...</td></tr>';
             
             // Simulation d'un appel AJAX
-            fetch(`/api/adherents_groupe/${encodeURIComponent(groupe)}`)
+            fetch(`/api/get_adherents_groupe/${encodeURIComponent(groupe)}`)
                 .then(response => response.json())
                 .then(data => {
                     adherentsList.innerHTML = '';
