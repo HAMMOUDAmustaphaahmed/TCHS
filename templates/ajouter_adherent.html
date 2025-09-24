@@ -227,7 +227,7 @@ $(document).ready(function() {
     const selectedOption = $('#groupe').find('option:selected');
     const cotisation = parseFloat(selectedOption.data('cotisation')) || 0;
     const remise = parseFloat($('#remise').val()) || 0;
-    const finalCotisation = cotisation - (cotisation * remise / 100);
+    const finalCotisation = cotisation ;
     $('#cotisation').val(finalCotisation.toFixed(2));
 });
 

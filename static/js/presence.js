@@ -1,4 +1,4 @@
-// Module pattern pour éviter les conflits de variables
+// Module pattern pour éviter les conflits de variables - VERSION CORRIGÉE
 const PresenceModule = (function() {
     // Variables privées
     let currentSearchType = null;
@@ -41,6 +41,13 @@ const PresenceModule = (function() {
 
         // Export Excel des détails
         $('#exportDetailsBtn').on('click', exportDetailsData);
+        
+        // Enter key sur le champ de recherche
+        $('#searchInput').on('keypress', function(e) {
+            if (e.which === 13) {
+                performSearchHandler();
+            }
+        });
     }
 
     // Mise à jour du placeholder de recherche
@@ -57,7 +64,7 @@ const PresenceModule = (function() {
     // Gestionnaire de recherche
     function performSearchHandler() {
         if (!currentSearchType) {
-            alert('Veuillez sélectionner un type de recherche');
+            showError('Veuillez sélectionner un type de recherche');
             return;
         }
 
@@ -66,7 +73,13 @@ const PresenceModule = (function() {
         const searchTerm = $('#searchToggle').is(':checked') ? $('#searchInput').val() : '';
 
         if (!startDate || !endDate) {
-            alert('Veuillez sélectionner les dates de début et fin');
+            showError('Veuillez sélectionner les dates de début et fin');
+            return;
+        }
+
+        // Validation des dates
+        if (new Date(startDate) > new Date(endDate)) {
+            showError('La date de début doit être antérieure à la date de fin');
             return;
         }
 
@@ -78,6 +91,7 @@ const PresenceModule = (function() {
         $('#loadingSpinner').show();
         $('#resultsContent').empty();
         $('#resultsSection').addClass('visible');
+        $('#exportBtn').prop('disabled', true);
 
         const requestData = {
             type: currentSearchType,
@@ -92,19 +106,29 @@ const PresenceModule = (function() {
             contentType: 'application/json',
             data: JSON.stringify(requestData),
             success: function(response) {
-                displayResults(response.data || []);
                 $('#loadingSpinner').hide();
-                $('#exportBtn').prop('disabled', false);
+                
+                if (response.status === 'success') {
+                    displayResults(response.data || []);
+                    $('#exportBtn').prop('disabled', response.data.length === 0);
+                } else {
+                    showError(response.message || 'Erreur lors de la recherche');
+                }
             },
             error: function(xhr, status, error) {
                 console.error('Erreur lors de la recherche:', error);
-                showError('Erreur serveur. Veuillez réessayer plus tard.');
                 $('#loadingSpinner').hide();
+                
+                let errorMessage = 'Erreur serveur. Veuillez réessayer plus tard.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                showError(errorMessage);
             }
         });
     }
 
-    // Affichage des résultats
+    // Affichage des résultats - VERSION CORRIGÉE
     function displayResults(data) {
         searchResults = data;
         $('#resultsCount').text(`${data.length} résultat(s)`);
@@ -126,23 +150,26 @@ const PresenceModule = (function() {
                         <tr>
         `;
 
+        // En-têtes selon le type
         if (currentSearchType === 'adherent') {
             tableHtml += `
                 <th>Matricule</th>
                 <th>Nom</th>
                 <th>Prénom</th>
-                <th>Présences</th>
+                <th>Statistiques & Présences</th>
                 <th>Actions</th>
             `;
         } else if (currentSearchType === 'entraineur') {
             tableHtml += `
-                <th>Nom</th>
-                <th>Présences</th>
+                <th>Nom Entraîneur</th>
+                <th>Statistiques & Présences</th>
+                <th>Actions</th>
             `;
         } else if (currentSearchType === 'groupe') {
             tableHtml += `
                 <th>Nom du Groupe</th>
-                <th>Présences</th>
+                <th>Statistiques & Présences</th>
+                <th>Actions</th>
             `;
         }
 
@@ -152,6 +179,7 @@ const PresenceModule = (function() {
                     <tbody>
         `;
 
+        // Génération des lignes
         data.forEach(item => {
             let presentCount = 0;
             let absentCount = 0;
@@ -159,7 +187,7 @@ const PresenceModule = (function() {
 
             if (item.sessions && item.sessions.length > 0) {
                 item.sessions.forEach(session => {
-                    const isPresent = (session.est_present && session.est_present === 'O');
+                    const isPresent = (session.est_present === 'O');
                     if (isPresent) {
                         presentCount++;
                     } else {
@@ -172,7 +200,9 @@ const PresenceModule = (function() {
 
                     attendanceHtml += `
                         <div class="attendance-day ${isPresent ? 'present' : 'absent'}" 
-                             title="${session.date_seance} - ${isPresent ? 'Présent' : 'Absent'}">
+                             title="${formatDateForDisplay(session.date_seance)} - ${session.heure_debut} - ${isPresent ? 'Présent' : 'Absent'}
+${session.groupe_nom ? 'Groupe: ' + session.groupe_nom : ''}
+${session.entraineur_nom ? 'Entraîneur: ' + session.entraineur_nom : ''}">
                             ${day}/${month}
                         </div>
                     `;
@@ -181,6 +211,7 @@ const PresenceModule = (function() {
 
             tableHtml += '<tr>';
 
+            // Colonnes spécifiques selon le type
             if (currentSearchType === 'adherent') {
                 tableHtml += `
                     <td><strong>${item.matricule || 'N/A'}</strong></td>
@@ -197,44 +228,42 @@ const PresenceModule = (function() {
                 `;
             }
 
+            // Colonne des statistiques et présences
             tableHtml += `
                 <td>
-  <div class="stats-summary">
-    <div class="stat-card present">
-      <div class="stat-number">${presentCount}</div>
-      <div class="stat-label">Présent(e)</div>
-    </div>
-    <div class="stat-card absent">
-      <div class="stat-number">${absentCount}</div>
-      <div class="stat-label">Absent(e)</div>
-    </div>
-    <div class="stat-card total">
-      <div class="stat-number">${presentCount + absentCount}</div>
-      <div class="stat-label">Total séances</div>
-    </div>
-  </div>
-  <div class="attendance-grid">
-    ${attendanceHtml}
-  </div>
-</td>
-
+                    <div class="stats-summary">
+                        <div class="stat-card present">
+                            <div class="stat-number">${presentCount}</div>
+                            <div class="stat-label">Présent(e)${presentCount > 1 ? 's' : ''}</div>
+                        </div>
+                        <div class="stat-card absent">
+                            <div class="stat-number">${absentCount}</div>
+                            <div class="stat-label">Absent(e)${absentCount > 1 ? 's' : ''}</div>
+                        </div>
+                        <div class="stat-card total">
+                            <div class="stat-number">${presentCount + absentCount}</div>
+                            <div class="stat-label">Total séances</div>
+                        </div>
+                    </div>
+                    <div class="attendance-grid">
+                        ${attendanceHtml}
+                    </div>
+                </td>
             `;
 
-            // Ajouter le bouton "Voir détails" seulement pour les adhérents
+            // Colonne actions
+            tableHtml += '<td>';
             if (currentSearchType === 'adherent') {
                 tableHtml += `
-                    <td>
-                        <button class="btn btn-sm btn-outline-primary view-details-btn" 
-                                data-matricule="${item.matricule}" 
-                                data-nom="${item.nom}" 
-                                data-prenom="${item.prenom}">
-                            <i class="fas fa-eye"></i> Voir détails
-                        </button>
-                    </td>
+                    <button class="btn btn-sm btn-outline-primary view-details-btn" 
+                            data-matricule="${item.matricule}" 
+                            data-nom="${item.nom}" 
+                            data-prenom="${item.prenom}">
+                        <i class="fas fa-eye"></i> Voir détails
+                    </button>
                 `;
-            } else {
-                tableHtml += '<td></td>';
             }
+            tableHtml += '</td>';
 
             tableHtml += '</tr>';
         });
@@ -256,19 +285,30 @@ const PresenceModule = (function() {
         });
     }
 
-    // Affichage des erreurs
+    // Fonction utilitaire pour formater les dates
+    function formatDateForDisplay(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fr-FR');
+    }
+
+    // Affichage des erreurs amélioré
     function showError(message) {
         $('#resultsContent').html(`
-            <div class="error-message">
-                <i class="fas fa-exclamation-triangle"></i>
-                ${message}
+            <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Erreur:</strong> ${message}
             </div>
         `);
+        $('#resultsCount').text('0 résultat(s)');
+        $('#exportBtn').prop('disabled', true);
     }
 
     // Export des données globales
     function exportGlobalData() {
-        if (searchResults.length === 0) return;
+        if (searchResults.length === 0) {
+            alert('Aucune donnée à exporter');
+            return;
+        }
 
         const params = new URLSearchParams({
             type: currentSearchType,
@@ -277,77 +317,152 @@ const PresenceModule = (function() {
             search_term: $('#searchToggle').is(':checked') ? $('#searchInput').val() : ''
         });
 
-        window.open(`${API_BASE_URL}/presences/export?${params.toString()}`, '_blank');
+        // Créer un lien temporaire pour le téléchargement
+        const downloadUrl = `${API_BASE_URL}/presences/export?${params.toString()}`;
+        window.open(downloadUrl, '_blank');
     }
 
-    // Affichage des détails d'un adhérent
+    // Affichage des détails d'un adhérent - VERSION CORRIGÉE
     function showAdherentDetails(matricule, nom, prenom) {
-        $('#loadingSpinner').show();
         currentAdherentName = `${nom} ${prenom}`;
         currentAdherentDetails = [];
         
+        // Afficher le modal avec un spinner de chargement
+        $('#adherentName').text(`Chargement des détails de ${currentAdherentName}...`);
+        $('#detailsTable tbody').html(`
+            <tr>
+                <td colspan="5" class="text-center">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    Chargement des données...
+                </td>
+            </tr>
+        `);
+        $('#detailsModal').modal('show');
+        
         $.ajax({
-            url: `/api/presences/adherent/${matricule}/details`,
+            url: `${API_BASE_URL}/presences/adherent/${matricule}/details`,
             method: 'GET',
             success: function(response) {
                 if (response.success) {
                     currentAdherentDetails = response.details;
                     displayAdherentDetails(response.details);
                     $('#adherentName').text(`Détails des présences de ${currentAdherentName}`);
-                    $('#detailsModal').modal('show');
                 } else {
-                    alert('Erreur lors du chargement des détails: ' + response.error);
+                    showModalError('Erreur lors du chargement des détails: ' + (response.error || 'Erreur inconnue'));
                 }
-                $('#loadingSpinner').hide();
             },
-            error: function() {
-                alert('Erreur lors du chargement des détails');
-                $('#loadingSpinner').hide();
+            error: function(xhr, status, error) {
+                console.error('Erreur lors du chargement des détails:', error);
+                showModalError('Impossible de charger les détails. Veuillez réessayer.');
             }
         });
     }
 
-    // Affichage des détails dans le modal
+    // Affichage des détails dans le modal - VERSION AMÉLIORÉE
     function displayAdherentDetails(details) {
         const tbody = $('#detailsTable tbody');
         tbody.empty();
         
-        if (details.length === 0) {
-            tbody.append('<tr><td colspan="5" class="text-center">Aucune donnée de présence trouvée</td></tr>');
+        if (!details || details.length === 0) {
+            tbody.append(`
+                <tr>
+                    <td colspan="5" class="text-center text-muted">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Aucune donnée de présence trouvée pour cette période
+                    </td>
+                </tr>
+            `);
+            $('#exportDetailsBtn').prop('disabled', true);
             return;
         }
         
-        details.forEach(detail => {
+        $('#exportDetailsBtn').prop('disabled', false);
+        
+        details.forEach((detail, index) => {
             const row = `
-                <tr>
-                    <td>${detail.date}</td>
+                <tr class="${index % 2 === 0 ? 'table-light' : ''}">
+                    <td>${detail.date || 'N/A'}</td>
                     <td>${detail.groupe || 'N/A'}</td>
                     <td>${detail.entraineur || 'N/A'}</td>
-                    <td>${detail.heure_debut}</td>
-                    <td><span class="badge ${detail.etat === 'Présent(e)' ? 'bg-success' : 'bg-danger'}">${detail.etat}</span></td>
+                    <td>${detail.heure_debut || 'N/A'}</td>
+                    <td>
+                        <span class="badge ${detail.etat === 'Présent(e)' ? 'bg-success' : 'bg-danger'}">
+                            ${detail.etat || 'N/A'}
+                        </span>
+                    </td>
                 </tr>
             `;
             tbody.append(row);
         });
     }
 
-    // Export des données détaillées
+    // Affichage des erreurs dans le modal
+    function showModalError(message) {
+        const tbody = $('#detailsTable tbody');
+        tbody.html(`
+            <tr>
+                <td colspan="5" class="text-center text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    ${message}
+                </td>
+            </tr>
+        `);
+        $('#exportDetailsBtn').prop('disabled', true);
+    }
+
+    // Export des données détaillées - VERSION CORRIGÉE
     function exportDetailsData() {
         if (!currentAdherentDetails || currentAdherentDetails.length === 0) {
             alert('Aucune donnée à exporter');
             return;
         }
         
-        // Créer un workbook et une worksheet
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(currentAdherentDetails);
-        
-        // Ajouter la worksheet au workbook
-        XLSX.utils.book_append_sheet(wb, ws, 'Détails présences');
-        
-        // Générer le fichier XLSX et le télécharger
-        const fileName = `details_presences_${currentAdherentName.replace(/\s+/g, '_')}.xlsx`;
-        XLSX.writeFile(wb, fileName);
+        try {
+            // Préparer les données pour l'export
+            const exportData = currentAdherentDetails.map(detail => ({
+                'Date': detail.date,
+                'Groupe': detail.groupe,
+                'Entraîneur': detail.entraineur,
+                'Heure début': detail.heure_debut,
+                'État': detail.etat
+            }));
+            
+            // Créer un workbook et une worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            
+            // Ajuster la largeur des colonnes
+            const wscols = [
+                { width: 15 }, // Date
+                { width: 20 }, // Groupe
+                { width: 25 }, // Entraîneur
+                { width: 12 }, // Heure début
+                { width: 15 }  // État
+            ];
+            ws['!cols'] = wscols;
+            
+            // Ajouter la worksheet au workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Détails présences');
+            
+            // Générer le nom de fichier
+            const safeAdherentName = currentAdherentName
+                .replace(/[^a-zA-Z0-9]/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^_|_$/g, '');
+            
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const fileName = `details_presences_${safeAdherentName}_${dateStr}.xlsx`;
+            
+            // Télécharger le fichier
+            XLSX.writeFile(wb, fileName);
+            
+        } catch (error) {
+            console.error('Erreur lors de l\'export:', error);
+            alert('Erreur lors de l\'export des données. Veuillez réessayer.');
+        }
     }
 
     // Définition des dates par défaut
@@ -360,13 +475,61 @@ const PresenceModule = (function() {
         $('#startDate').val(oneMonthAgo.toISOString().split('T')[0]);
     }
 
+    // Fonction utilitaire pour valider les dates
+    function validateDates(startDate, endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const today = new Date();
+        
+        if (start > end) {
+            return 'La date de début doit être antérieure à la date de fin';
+        }
+        
+        if (start > today) {
+            return 'La date de début ne peut pas être dans le futur';
+        }
+        
+        // Vérifier que la période ne dépasse pas 1 an
+        const oneYearAgo = new Date(today);
+        oneYearAgo.setFullYear(today.getFullYear() - 1);
+        
+        if (start < oneYearAgo) {
+            return 'La période de recherche ne peut pas dépasser 1 an';
+        }
+        
+        return null; // Pas d'erreur
+    }
+
+    // Fonctions utilitaires pour améliorer l'UX
+    function showLoading(show = true) {
+        if (show) {
+            $('#loadingSpinner').show();
+            $('#searchBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Recherche...');
+        } else {
+            $('#loadingSpinner').hide();
+            $('#searchBtn').prop('disabled', false).html('<i class="fas fa-search"></i> Rechercher');
+        }
+    }
+
     // Retourner les méthodes publiques
     return {
-        init: init
+        init: init,
+        // Exposer certaines fonctions pour les tests ou usage externe
+        search: performSearch,
+        exportData: exportGlobalData,
+        validateDates: validateDates
     };
 })();
 
 // Initialisation du module lorsque le document est prêt
 $(document).ready(function() {
     PresenceModule.init();
+    
+    // Ajouter des tooltips Bootstrap si disponible
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
 });

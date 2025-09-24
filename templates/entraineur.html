@@ -32,11 +32,161 @@
     
     <!-- Custom CSS for this page -->
     <link href="{{ url_for('static', filename='css/entraineur.css') }}" rel="stylesheet">
+    
+    <style>
+        /* Styles pour les différents types de séances */
+        .session-card {
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 12px;
+            margin: 2px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .session-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Séance d'entraînement classique */
+        .session-card.entrainement {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border-left: 4px solid #2E7D32;
+        }
+
+        /* Séance de préparation physique */
+        .session-card.prep_physique {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            color: white;
+            border-left: 4px solid #E65100;
+        }
+
+        /* Séance de match */
+        .session-card.match {
+            background: linear-gradient(135deg, #F44336, #D32F2F);
+            color: white;
+            border-left: 4px solid #B71C1C;
+        }
+
+        /* Séance de stage */
+        .session-card.stage {
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+            color: white;
+            border-left: 4px solid #4A148C;
+        }
+
+        /* Séance par défaut */
+        .session-card.autre {
+            background: linear-gradient(135deg, #607D8B, #455A64);
+            color: white;
+            border-left: 4px solid #263238;
+        }
+
+        .session-card .session-type {
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            opacity: 0.9;
+            margin-bottom: 3px;
+        }
+
+        .session-card .session-groupe {
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+
+        .session-card .session-entraineur {
+            font-size: 11px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .session-card .btn {
+            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 3px;
+        }
+
+        .time-slot {
+            min-height: 80px;
+            vertical-align: middle;
+            position: relative;
+        }
+
+        /* Légende des couleurs */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .legend-color.entrainement {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+
+        .legend-color.prep_physique {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+        }
+
+        .legend-color.match {
+            background: linear-gradient(135deg, #F44336, #D32F2F);
+        }
+
+        .legend-color.stage {
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+        }
+
+        .legend-color.autre {
+            background: linear-gradient(135deg, #607D8B, #455A64);
+        }
+
+        .legend-text {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* Badge pour indiquer si c'est notre séance */
+        .my-session {
+            border: 2px solid #FFD700 !important;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .other-session {
+            opacity: 0.85;
+        }
+
+        /* Icônes pour les types de séances */
+        .session-icon {
+            font-size: 14px;
+            margin-right: 5px;
+        }
+    </style>
 </head>
 
 <body>
-    <div class="container-xxl position-relative d-flex p-0">
-
+<!-- Ajouter cet élément caché pour le type de séance -->
+<input type="hidden" id="globalSeanceType" value="{{ type_seance_global }}">
         <div class="sidebar pe-4 pb-3">
             <nav class="navbar bg-light navbar-light">
                 <a href="{{ url_for('entraineur') }}" class="navbar-brand mx-4 mb-3">
@@ -51,6 +201,11 @@
                     <a href="{{ url_for('entraineur') }}" class="nav-item nav-link active">
                         <i class="fa fa-tachometer-alt me-2"></i>Dashboard
                     </a>
+                    <div class="nav-item">
+                        <a href="{{ url_for('emploi_prep_physique') }}" class="nav-link" >
+                            <i class="fa fa-clipboard me-2"></i>Prep Physique
+                        </a>
+                    </div>
                     <div class="nav-item">
                         <a href="javascript:void(0);" class="nav-link" id="changePasswordLink">
                             <i class="fa fa-key"></i> Mot de Passe
@@ -189,6 +344,34 @@
                     <div class="mt-5">
                         <h4 class="text-start mb-4">Emploi du Temps</h4>
 
+                        <!-- Légende des couleurs -->
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-color entrainement"></div>
+                                <span class="legend-text">Entraînement</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color prep_physique"></div>
+                                <span class="legend-text">Préparation Physique</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color match"></div>
+                                <span class="legend-text">Match</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color stage"></div>
+                                <span class="legend-text">Stage</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color autre"></div>
+                                <span class="legend-text">Autre</span>
+                            </div>
+                            <div class="legend-item">
+                                <div style="width: 16px; height: 16px; border: 2px solid #FFD700; border-radius: 3px; background: rgba(255, 215, 0, 0.1);"></div>
+                                <span class="legend-text">Mes séances</span>
+                            </div>
+                        </div>
+
                         <!-- Navigation double -->
                         <div class="mb-3 d-flex justify-content-between">
                             <div>
@@ -270,29 +453,54 @@
                                                 {% set seance = seances_par_terrain_et_heure.get(key) %}
                                                 <td class="time-slot">
                                                    {% if seance %}
-    <div class="session-card">
-        <small>{{ seance.groupe }}</small>
-        <div class="text-muted">{{ seance.entraineur }}</div>
-        {% if seance.entraineur|lower == nom_complet_entraineur|lower %}
-            <button type="button" 
-                    class="btn btn-warning btn-sm presence-btn mt-2" 
-                    data-groupe="{{ seance.groupe }}"
-                    data-date="{{ seance.date }}"
-                    data-heure="{{ seance.heure_debut.strftime('%H:%M') }}"
-                    data-entraineur="{{ seance.entraineur }}"
-                    data-seance-id="{{ seance.id }}"
-                    onclick="openPresenceModal(this)">
-                <i class="fas fa-clipboard-check"></i> Présence
-            </button>
-        {% else %}
-            <div class="badge bg-secondary mt-2">Autre entraîneur</div>
-        {% endif %}
-    </div>
-{% else %}
-    <div class="text-center text-success p-2">
-        <i class="fas fa-check-circle"></i> Disponible
-    </div>
-{% endif %}
+                                                        {% set is_my_session = (seance.entraineur|lower == nom_complet_entraineur|lower) %}
+                                                        {% set type_seance = seance.type_seance or 'entrainement' %}
+                                                        
+                                                        <div class="session-card {{ type_seance }} {% if is_my_session %}my-session{% else %}other-session{% endif %}">
+                                                            <!-- Type de séance avec icône -->
+                                                            <div class="session-type">
+                                                                {% if type_seance == 'prep_physique' %}
+                                                                    <i class="fas fa-dumbbell session-icon"></i>PRÉPA PHYSIQUE
+                                                                {% elif type_seance == 'match' %}
+                                                                    <i class="fas fa-trophy session-icon"></i>MATCH
+                                                                {% elif type_seance == 'stage' %}
+                                                                    <i class="fas fa-graduation-cap session-icon"></i>STAGE
+                                                                {% elif type_seance == 'entrainement' %}
+                                                                    <i class="fas fa-running session-icon"></i>ENTRAÎNEMENT
+                                                                {% else %}
+                                                                    <i class="fas fa-circle session-icon"></i>{{ type_seance.upper() }}
+                                                                {% endif %}
+                                                            </div>
+                                                            
+                                                            <!-- Groupe -->
+                                                            <div class="session-groupe">{{ seance.groupe }}</div>
+                                                            
+                                                            <!-- Entraîneur -->
+                                                            <div class="session-entraineur">
+                                                                <i class="fas fa-user"></i> {{ seance.entraineur }}
+                                                            </div>
+                                                            
+                                                            <!-- Bouton présence si c'est ma séance -->
+                                                            {% if is_my_session %}
+                                                                <button type="button" 
+                                                                        class="btn btn-light btn-sm presence-btn mt-2 w-100" 
+                                                                        data-groupe="{{ seance.groupe }}"
+                                                                        data-date="{{ seance.date }}"
+                                                                        data-heure="{{ seance.heure_debut.strftime('%H:%M') }}"
+                                                                        data-entraineur="{{ seance.entraineur }}"
+                                                                        data-seance-id="{{ seance.seance_id }}"
+                                                                        data-type-seance="{{ type_seance }}"
+                                                                        onclick="openPresenceModal(this)"
+                                                                        title="Gérer les présences">
+                                                                    <i class="fas fa-clipboard-check"></i> Présence
+                                                                </button>
+                                                            {% endif %}
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="text-center text-success p-2">
+                                                            <i class="fas fa-check-circle"></i> Disponible
+                                                        </div>
+                                                    {% endif %}
                                                 </td>
                                             {% endfor %}
                                         </tr>
@@ -305,7 +513,7 @@
                         <div class="modal fade" id="presenceModal" tabindex="-1">
                             <div class="modal-dialog modal-dialog-centered modal-lg">
                                 <div class="modal-content">
-                                    <div class="modal-header bg-warning">
+                                    <div class="modal-header" id="modalHeader">
                                         <h5 class="modal-title">
                                             <i class="fas fa-clipboard-check"></i>
                                             Gestion des Présences
@@ -314,6 +522,12 @@
                                     </div>
                                     <div class="modal-body">
                                         <div class="session-info mb-3">
+                                            <div class="alert" id="sessionTypeAlert">
+                                                <div class="d-flex align-items-center">
+                                                    <span id="sessionTypeIcon" class="me-2"></span>
+                                                    <strong id="sessionTypeName"></strong>
+                                                </div>
+                                            </div>
                                             <p><strong>Groupe:</strong> <span id="modalGroupe"></span></p>
                                             <p><strong>Date:</strong> <span id="modalDate"></span></p>
                                             <p><strong>Heure:</strong> <span id="modalHeure"></span></p>
@@ -392,7 +606,6 @@
 
         <!-- Back to Top -->
         <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
-    </div>
 
     <!-- JavaScript Libraries -->
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
@@ -410,6 +623,329 @@
     
     <!-- Custom JavaScript for this page -->
     <script src="{{ url_for('static', filename='js/entraineur.js') }}"></script>
+
+    <script>
+        // Fonction pour ouvrir le modal de présence avec support des types de séances
+        function openPresenceModal(button) {
+            const groupe = button.getAttribute('data-groupe');
+            const date = button.getAttribute('data-date');
+            const heure = button.getAttribute('data-heure');
+            const entraineur = button.getAttribute('data-entraineur');
+            const seanceId = button.getAttribute('data-seance-id');
+            const typeSeance = button.getAttribute('data-type-seance') || 'entrainement';
+            
+            // Mettre à jour les informations de la séance
+            document.getElementById('modalGroupe').textContent = groupe;
+            document.getElementById('modalDate').textContent = date;
+            document.getElementById('modalHeure').textContent = heure;
+            
+            // Mettre à jour l'affichage du type de séance
+            const sessionTypeAlert = document.getElementById('sessionTypeAlert');
+            const sessionTypeIcon = document.getElementById('sessionTypeIcon');
+            const sessionTypeName = document.getElementById('sessionTypeName');
+            const modalHeader = document.getElementById('modalHeader');
+            
+            // Configurer l'affichage selon le type de séance
+            switch(typeSeance) {
+                case 'prep_physique':
+                    sessionTypeAlert.className = 'alert alert-warning';
+                    sessionTypeIcon.innerHTML = '<i class="fas fa-dumbbell"></i>';
+                    sessionTypeName.textContent = 'Séance de Préparation Physique';
+                    modalHeader.className = 'modal-header bg-warning';
+                    break;
+                case 'match':
+                    sessionTypeAlert.className = 'alert alert-danger';
+                    sessionTypeIcon.innerHTML = '<i class="fas fa-trophy"></i>';
+                    sessionTypeName.textContent = 'Match';
+                    modalHeader.className = 'modal-header bg-danger text-white';
+                    break;
+                case 'stage':
+                    sessionTypeAlert.className = 'alert alert-info';
+                    sessionTypeIcon.innerHTML = '<i class="fas fa-graduation-cap"></i>';
+                    sessionTypeName.textContent = 'Stage';
+                    modalHeader.className = 'modal-header bg-info text-white';
+                    break;
+                case 'entrainement':
+                default:
+                    sessionTypeAlert.className = 'alert alert-success';
+                    sessionTypeIcon.innerHTML = '<i class="fas fa-running"></i>';
+                    sessionTypeName.textContent = 'Séance d\'Entraînement';
+                    modalHeader.className = 'modal-header bg-success text-white';
+                    break;
+            }
+            
+            // Charger la liste des adhérents pour ce groupe
+            loadAdherentsForGroup(groupe, seanceId);
+            
+            // Ouvrir le modal
+            const modal = new bootstrap.Modal(document.getElementById('presenceModal'));
+            modal.show();
+        }
+        
+        // Fonction pour charger les adhérents d'un groupe
+        function loadAdherentsForGroup(groupe, seanceId) {
+            // Cette fonction devrait faire un appel AJAX pour récupérer les adhérents
+            // Pour l'exemple, je simule des données
+            const adherentsList = document.getElementById('adherentsList');
+            adherentsList.innerHTML = '<tr><td colspan="4" class="text-center"><i class="fas fa-spinner fa-spin"></i> Chargement...</td></tr>';
+            
+            // Simulation d'un appel AJAX
+            fetch(`/api/adherents_groupe/${encodeURIComponent(groupe)}`)
+                .then(response => response.json())
+                .then(data => {
+                    adherentsList.innerHTML = '';
+                    if (data.adherents && data.adherents.length > 0) {
+                        data.adherents.forEach(adherent => {
+                            const row = `
+                                <tr>
+                                    <td>${adherent.matricule}</td>
+                                    <td>${adherent.nom}</td>
+                                    <td>${adherent.prenom}</td>
+                                    <td class="text-center">
+                                        <div class="btn-group" role="group">
+                                            <input type="radio" class="btn-check" name="presence_${adherent.matricule}" 
+                                                   id="present_${adherent.matricule}" value="O" required>
+                                            <label class="btn btn-outline-success btn-sm" for="present_${adherent.matricule}">
+                                                <i class="fas fa-check"></i>
+                                            </label>
+                                            
+                                            <input type="radio" class="btn-check" name="presence_${adherent.matricule}" 
+                                                   id="absent_${adherent.matricule}" value="N" required>
+                                            <label class="btn btn-outline-danger btn-sm" for="absent_${adherent.matricule}">
+                                                <i class="fas fa-times"></i>
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                            adherentsList.innerHTML += row;
+                        });
+                    } else {
+                        adherentsList.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Aucun adhérent trouvé pour ce groupe</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des adhérents:', error);
+                    adherentsList.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Erreur lors du chargement des adhérents</td></tr>';
+                });
+        }
+        
+function savePresences() {
+    const form = document.getElementById('presenceForm');
+    const trainerPresence = document.querySelector('input[name="trainerPresence"]:checked');
+    
+    if (!trainerPresence) {
+        alert('Veuillez marquer votre présence en tant qu\'entraîneur');
+        return;
+    }
+    
+    const presences = {
+        trainer_presence: trainerPresence.value,
+        adherents: []
+    };
+    
+    const adherentRows = document.querySelectorAll('#adherentsList tr');
+    
+    adherentRows.forEach((row, index) => {
+        const matriculeCell = row.querySelector('td:first-child');
+        if (matriculeCell && matriculeCell.textContent.trim() !== '') {
+            const matricule = matriculeCell.textContent.trim();
+            const presenceInput = document.querySelector(`input[name="presence_${matricule}"]:checked`);
+            
+            if (presenceInput) {
+                presences.adherents.push({
+                    matricule: matricule,
+                    presence: presenceInput.value
+                });
+            } else {
+                alert(`Veuillez sélectionner la présence pour l'adhérent ${matricule}`);
+                return;
+            }
+        }
+    });
+    
+    if (presences.adherents.length === 0) {
+        alert('Aucune présence d\'adhérent n\'a été sélectionnée');
+        return;
+    }
+    
+    const groupe = document.getElementById('modalGroupe').textContent.trim();
+    const date = document.getElementById('modalDate').textContent.trim();
+    const heure = document.getElementById('modalHeure').textContent.trim();
+    
+    // Récupérer automatiquement le type depuis l'élément global
+    const globalSeanceType = document.getElementById('globalSeanceType');
+    const seanceType = globalSeanceType ? globalSeanceType.value : 'entrainement';
+    
+    console.log(`Groupe: ${groupe}, Date: ${date}, Heure: ${heure}, Type: ${seanceType}`);
+    
+    const dataToSend = {
+        groupe: groupe,
+        date: date,
+        heure: heure,
+        seance_type: seanceType,  // Type automatique selon la route
+        presences: presences
+    };
+    
+    fetch('/api/save_presences', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Présences enregistrées avec succès');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('presenceModal'));
+            modal.hide();
+            location.reload();
+        } else {
+            alert('Erreur lors de l\'enregistrement: ' + (data.error || 'Erreur inconnue'));
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de l\'enregistrement des présences: ' + error.message);
+    });
+}
+// Fonction pour vérifier si toutes les présences sont sélectionnées avant la soumission
+function validateAllPresences() {
+    const adherentRows = document.querySelectorAll('#adherentsList tr');
+    let allSelected = true;
+    let unselectedCount = 0;
+    
+    adherentRows.forEach(row => {
+        const matriculeCell = row.querySelector('td:first-child');
+        if (matriculeCell && matriculeCell.textContent.trim() !== '') {
+            const matricule = matriculeCell.textContent.trim();
+            const presenceInput = document.querySelector(`input[name="presence_${matricule}"]:checked`);
+            if (!presenceInput) {
+                allSelected = false;
+                unselectedCount++;
+            }
+        }
+    });
+    
+    if (!allSelected) {
+        console.log(`${unselectedCount} adhérent(s) n'ont pas de présence sélectionnée`);
+        return false;
+    }
+    
+    return true;
+}
+        // Fonction pour les réservations (existante)
+        function soumettreReservation() {
+            const submitBtn = document.getElementById('submitBtn');
+            const normalState = submitBtn.querySelector('.normal-state');
+            const loadingState = submitBtn.querySelector('.loading-state');
+            
+            // Afficher l'état de chargement
+            normalState.style.display = 'none';
+            loadingState.style.display = 'inline';
+            submitBtn.disabled = true;
+            
+            const data = {
+                date: document.getElementById('dateReservation').value,
+                heure_debut: document.getElementById('heureDebut').value,
+                heure_fin: document.getElementById('heureFin').value,
+                numero_terrain: document.getElementById('numeroTerrain').value,
+                commentaire: document.getElementById('commentaire').value
+            };
+            
+            fetch('/api/reserver_terrain', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Réservation créée avec succès');
+                    document.getElementById('reservationForm').reset();
+                    chargerReservations();
+                } else {
+                    alert('Erreur: ' + (data.error || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la création de la réservation');
+            })
+            .finally(() => {
+                // Restaurer l'état normal du bouton
+                normalState.style.display = 'inline';
+                loadingState.style.display = 'none';
+                submitBtn.disabled = false;
+            });
+        }
+        
+        function chargerReservations() {
+            fetch('/api/mes_reservations')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('reservationsList');
+                    tableBody.innerHTML = '';
+                    
+                    if (data.success && data.reservations.length > 0) {
+                        data.reservations.forEach(reservation => {
+                            const statusClass = reservation.status === 'acceptée' ? 'success' : 
+                                               reservation.status === 'refusée' ? 'danger' : 'warning';
+                            const row = `
+                                <tr>
+                                    <td>${reservation.date}</td>
+                                    <td>${reservation.heure_debut} - ${reservation.heure_fin}</td>
+                                    <td>Terrain ${reservation.numero_terrain}</td>
+                                    <td><span class="badge bg-${statusClass}">${reservation.status}</span></td>
+                                    <td>${reservation.commentaire || '-'}</td>
+                                </tr>
+                            `;
+                            tableBody.innerHTML += row;
+                        });
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Aucune réservation trouvée</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    document.getElementById('reservationsList').innerHTML = 
+                        '<tr><td colspan="5" class="text-center text-danger">Erreur lors du chargement</td></tr>';
+                });
+        }
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Afficher/masquer la section réservation
+            document.getElementById('showReservationSection').addEventListener('click', function(e) {
+                e.preventDefault();
+                const section = document.getElementById('reservationSection');
+                if (section.style.display === 'none' || section.style.display === '') {
+                    section.style.display = 'block';
+                    chargerReservations();
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+            
+            // Charger les réservations au chargement de la page si la section est visible
+            if (document.getElementById('reservationSection').style.display === 'block') {
+                chargerReservations();
+            }
+        });
+        
+        // Fonctions d'exportation (à implémenter selon vos besoins)
+        function prepareExport(format) {
+            document.getElementById('exportScope').style.display = 'block';
+        }
+        
+        function triggerExport(scope) {
+            // Implémentation de l'exportation selon le format et la portée
+            console.log('Export:', scope);
+        }
+    </script>
 </body>
 
 </html>

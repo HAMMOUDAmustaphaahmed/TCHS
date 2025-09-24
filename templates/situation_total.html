@@ -52,36 +52,7 @@
             </style>
 
             <!-- Totaux généraux redesign -->
-            <div class="totaux-generaux mt-4 d-flex flex-wrap gap-3">
-                <div class="card totaux-card bg-primary text-white flex-fill">
-                    <div class="card-body d-flex align-items-center">
-                        <i class="fas fa-wallet fa-2x me-3"></i>
-                        <div>
-                            <h6 class="card-title">Total à payer</h6>
-                            <h4 id="total-a-payer-general">0 TND</h4>
-                        </div>
-                    </div>
-                </div>
-                <div class="card totaux-card bg-success text-white flex-fill">
-                    <div class="card-body d-flex align-items-center">
-                        <i class="fas fa-money-bill-wave fa-2x me-3"></i>
-                        <div>
-                            <h6 class="card-title">Total payé</h6>
-                            <h4 id="total-paye-general">0 TND</h4>
-                        </div>
-                    </div>
-                </div>
-               
-                <div class="card totaux-card bg-danger text-white flex-fill">
-                    <div class="card-body d-flex align-items-center">
-                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
-                        <div>
-                            <h6 class="card-title">Reste à payer</h6>
-                            <h4 id="reste-a-payer-general">0 TND</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
+           
 
             <style>
                 .totaux-generaux {
@@ -110,6 +81,43 @@
                     .totaux-generaux {
                         flex-direction: column;
                     }
+                }
+
+                /* Styles pour les détails des paiements */
+                .details-row {
+                    background-color: #f8f9fa;
+                    border-left: 3px solid #007bff;
+                }
+                .details-content {
+                    padding: 15px;
+                }
+                .toggle-btn {
+                    background: none;
+                    border: none;
+                    color: #007bff;
+                    cursor: pointer;
+                    font-size: 1.2em;
+                    transition: transform 0.3s ease;
+                }
+                .toggle-btn:hover {
+                    color: #0056b3;
+                }
+                .toggle-btn.rotated {
+                    transform: rotate(180deg);
+                }
+                .paiement-item {
+                    margin-bottom: 10px;
+                    padding: 8px;
+                    background-color: white;
+                    border-radius: 5px;
+                    border: 1px solid #dee2e6;
+                }
+                .paiement-total {
+                    font-weight: bold;
+                    color: #28a745;
+                    margin-top: 10px;
+                    padding-top: 10px;
+                    border-top: 2px solid #28a745;
                 }
             </style>
 
@@ -143,13 +151,15 @@
                 <th>Matricule</th>
                 <th>Nom</th>
                 <th>Prénom</th>
-                <th>Cotisation (TND)</th>
                 <th>Groupe</th>
                 <th>Type d'abonnement</th>
                 <th>Entraîneur</th>
+                <th>Cotisation (TND)</th>
+                <th>Montant Net (TND)</th>
                 <th>Total payé (TND)</th>
                 <th>Remise (%)</th>
                 <th>Reste à payer (TND)</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody></tbody>
@@ -196,6 +206,35 @@ $(document).ready(function () {
         }
     }
 
+    // Fonction pour basculer les détails des paiements
+    function toggleDetails(matricule) {
+        const detailsRow = $(`#details-${matricule}`);
+        const toggleBtn = $(`.toggle-btn[data-matricule="${matricule}"]`);
+        
+        if (detailsRow.is(':visible')) {
+            detailsRow.hide();
+            toggleBtn.removeClass('rotated');
+        } else {
+            detailsRow.show();
+            toggleBtn.addClass('rotated');
+        }
+    }
+
+    // Charger les détails des paiements pour un adhérent
+    async function loadPaiementDetails(matricule) {
+        try {
+            const saison = $('#filter-saison').val();
+            const url = saison ? `/api/adherent-paiements/${matricule}?saison=${saison}` : `/api/adherent-paiements/${matricule}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            return data;
+        } catch (error) {
+            console.error('Erreur chargement détails paiements:', error);
+            return { paiements: [], total_paye: 0 };
+        }
+    }
+
     // Charger la situation totale
     async function loadSituationTotale() {
         spinner.show();
@@ -207,29 +246,63 @@ $(document).ready(function () {
             spinner.hide();
 
             tableBody.empty();
-            data.situation_par_adherent.forEach(a => {
-                const resteClass = (!a.aucun_paiement && a.reste_a_payer > 0) ? 'text-danger fw-bold' : '';
+            
+            for (let a of data.situation_par_adherent) {
+                const resteClass = (a.reste_a_payer > 0) ? 'text-danger fw-bold' : '';
 
-                const cotisation = (a.cotisation === null) ? 0 : Number(a.cotisation).toFixed(2);
-                const totalPaye = (a.aucun_paiement || a.total_paye === null) ? 'Aucun paiement' : Number(a.total_paye).toFixed(2);
-                const totalRemise = (a.total_remise === null) ? 'Aucun paiement' : Number(a.total_remise).toFixed(2);
-                const reste = (a.aucun_paiement || a.reste_a_payer === null) ? 'Aucun paiement' : Number(a.reste_a_payer).toFixed(2);
+                const cotisation = (a.cotisation === null) ? 0 : Number(a.cotisation);
+                const totalPaye = (a.total_paye === null || a.total_paye === 0) ? 0 : Number(a.total_paye);
+                const totalRemiseValue = (a.total_remise === null || a.total_remise === 0) ? 0 : Number(a.total_remise);
+                const reste = (a.reste_a_payer === null) ? 0 : Number(a.reste_a_payer);
+                
+                // Formatage pour l'affichage
+                const cotisationAffichage = cotisation.toFixed(2);
+                const totalPayeAffichage = totalPaye.toFixed(2);
+                const totalRemiseAffichage = totalRemiseValue === 0 ? '0%' : totalRemiseValue.toFixed(0) + '%';
+                const resteAffichage = reste.toFixed(2);
+                
+                // Calcul du montant net (corrigé)
+                const montantNet = totalRemiseValue > 0 ? cotisation * (1 - totalRemiseValue/100) : cotisation;
 
+                // Ligne principale de l'adhérent
                 tableBody.append(`
-                    <tr>
+                    <tr data-matricule="${a.matricule}">
                         <td>${a.matricule}</td>
                         <td>${a.nom}</td>
                         <td>${a.prenom}</td>
-                        <td>${cotisation}</td>
                         <td>${a.groupe || ''}</td>
                         <td>${a.type_abonnement || ''}</td>
                         <td>${a.entraineur || ''}</td>
-                        <td>${totalPaye}</td>
-                        <td>${totalRemise}</td>
-                        <td class="${resteClass}">${reste}</td>
+                        <td>${cotisationAffichage}</td>
+                        <td>${montantNet.toFixed(2)}</td>
+                        <td>${totalPayeAffichage}</td>
+                        <td>${totalRemiseAffichage}</td>
+                        <td class="${resteClass}">${resteAffichage}</td>
+                        <td>
+                            <button class="toggle-btn" data-matricule="${a.matricule}" onclick="toggleDetailsAndLoad('${a.matricule}')">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </td>
                     </tr>
                 `);
-            });
+
+                // Ligne des détails (cachée par défaut)
+                tableBody.append(`
+                    <tr id="details-${a.matricule}" class="details-row" style="display: none;">
+                        <td colspan="11">
+                            <div class="details-content">
+                                <div id="details-content-${a.matricule}">
+                                    <div class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Chargement...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `);
+            }
 
             // Totaux généraux
             const totaux = data.totaux_generaux || {};
@@ -244,28 +317,118 @@ $(document).ready(function () {
         }
     }
 
+    // Fonction globale pour basculer et charger les détails
+    window.toggleDetailsAndLoad = async function(matricule) {
+        const detailsRow = $(`#details-${matricule}`);
+        const toggleBtn = $(`.toggle-btn[data-matricule="${matricule}"]`);
+        const detailsContent = $(`#details-content-${matricule}`);
+        
+        if (detailsRow.is(':visible')) {
+            detailsRow.hide();
+            toggleBtn.removeClass('rotated');
+        } else {
+            detailsRow.show();
+            toggleBtn.addClass('rotated');
+            
+            // Charger les détails si pas encore chargés
+            if (detailsContent.find('.spinner-border').length > 0) {
+                const paiementData = await loadPaiementDetails(matricule);
+                
+                let detailsHtml = '';
+                
+                if (paiementData.paiements && paiementData.paiements.length > 0) {
+                    detailsHtml = '<h6 class="mb-3">Détails des paiements :</h6>';
+                    
+                    paiementData.paiements.forEach(p => {
+                        const dateFormatted = new Date(p.date_paiement).toLocaleDateString('fr-FR');
+                        detailsHtml += `
+                            <div class="paiement-item">
+                                <div class="row">
+                                    <div class="col-md-2"><strong>Date:</strong> ${dateFormatted}</div>
+                                    <div class="col-md-2"><strong>Saison:</strong> ${p.code_saison || ''}</div>
+                                    <div class="col-md-2"><strong>Numéro Carnet:</strong> ${p.numero_carnet || ''}</div>
+                                    <div class="col-md-2"><strong>Numéro Bon:</strong> ${p.numero_bon || ''}</div>
+                                    <div class="col-md-2"><strong>Montant Payé:</strong> ${Number(p.montant_paye || 0).toFixed(2)} TND</div>
+                                    <div class="col-md-2"><strong>Type de Règlement:</strong> ${p.type_reglement || ''}</div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-6"><strong>Numéro Chèque:</strong> ${p.numero_cheque || '--'}</div>
+                                    <div class="col-md-6"><strong>Banque:</strong> ${p.banque || '--'}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    detailsHtml += `
+                        <div class="paiement-total">
+                            <strong>Total : ${Number(paiementData.total_paye || 0).toFixed(2)} TND</strong>
+                        </div>
+                    `;
+                } else {
+                    detailsHtml = '<p class="text-muted">Aucun paiement enregistré pour cet adhérent.</p>';
+                }
+                
+                detailsContent.html(detailsHtml);
+            }
+        }
+    };
+
     // Filtre par saison
     $('#filter-saison').on('change', loadSituationTotale);
 
     // Recherche texte
     $('#search-adherent-total').on('keyup', function () {
         const value = $(this).val().toLowerCase();
-        $('#table-situation-total tbody tr').filter(function () {
-            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        $('#table-situation-total tbody tr').each(function() {
+            const $row = $(this);
+            if ($row.hasClass('details-row')) {
+                return; // Skip details rows
+            }
+            
+            const text = $row.text().toLowerCase();
+            const shouldShow = text.indexOf(value) > -1;
+            $row.toggle(shouldShow);
+            
+            // Hide associated details row and reset toggle button
+            const matricule = $row.data('matricule');
+            if (matricule) {
+                const detailsRow = $(`#details-${matricule}`);
+                const toggleBtn = $(`.toggle-btn[data-matricule="${matricule}"]`);
+                
+                if (shouldShow) {
+                    // Hide details but keep them available
+                    detailsRow.hide();
+                    toggleBtn.removeClass('rotated');
+                } else {
+                    // Hide both main row and details
+                    detailsRow.hide();
+                    toggleBtn.removeClass('rotated');
+                }
+            }
         });
     });
 
     // Export XLSX
     $('#export-xlsx').click(function () {
+        // Créer une version simplifiée du tableau pour l'export (sans les détails)
+        const exportTable = $('#table-situation-total').clone();
+        exportTable.find('.details-row').remove();
+        exportTable.find('.toggle-btn').parent().remove();
+        
         const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.table_to_sheet(document.getElementById('table-situation-total'));
+        const ws = XLSX.utils.table_to_sheet(exportTable[0]);
         XLSX.utils.book_append_sheet(wb, ws, "SituationTotale");
         XLSX.writeFile(wb, "situation_totale.xlsx");
     });
 
     // Imprimer
     $('#print-table').click(function () {
-        const printContent = document.getElementById('table-situation-total').outerHTML;
+        // Créer une version simplifiée du tableau pour l'impression
+        const printTable = $('#table-situation-total').clone();
+        printTable.find('.details-row').remove();
+        printTable.find('.toggle-btn').parent().remove();
+        
+        const printContent = printTable[0].outerHTML;
         const win = window.open('', '', 'width=900,height=600');
         win.document.write('<html><head><title>Impression</title>');
         win.document.write('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">');
@@ -285,8 +448,6 @@ $(document).ready(function () {
     init();
 });
 </script>
-
-
     <!-- Template Javascript -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
