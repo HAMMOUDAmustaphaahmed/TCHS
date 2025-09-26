@@ -5,12 +5,7 @@ class SituationPaiement {
         this.setupEventListeners();
         this.currentPage = 1;
         this.itemsPerPage = 10;
-        
-        
-        
     }
-
-    
 
     initializeDatePickers() {
         const today = new Date();
@@ -64,21 +59,16 @@ class SituationPaiement {
 
             this.updateSummaryCards(data.summary);
             
-            
         } catch (error) {
             console.error('Error loading summary:', error);
             alert('Erreur lors du chargement du résumé');
         }
     }
 
-    
-
     updateSummaryCards(summary) {
         if (!summary) return;
         
-        //document.getElementById('total-a-payer').textContent = `${summary.total_a_payer.toLocaleString()} TND`;
         document.getElementById('total-paye').textContent = `${summary.total_paye.toLocaleString()} TND`;
-        //document.getElementById('total-remise').textContent = `${summary.total_remise.toLocaleString()} TND`;
         document.getElementById('reste-a-payer').textContent = `${summary.reste_a_payer.toLocaleString()} TND`;
     }
 
@@ -91,9 +81,8 @@ class SituationPaiement {
             
             const rows = [
                 [
-                    'Date', 'Matricule', 'Montant', 'Payé', 'Reste',
-                    'Type règlement', 'Banque', 'N° Chèque',
-                     'N° Bon', 'N° Carnet'
+                    'Date', 'Matricule', 'Nom', 'Prénom', 'Cotisation', 'Payé', 'Reste',
+                    'Type règlement', 'Banque', 'N° Chèque', 'N° Bon', 'N° Carnet'
                 ]
             ];
 
@@ -242,13 +231,14 @@ class SituationPaiement {
                 <tr class="${t.is_first_payment ? 'first-payment' : ''}">
                     <td>${new Date(t.date).toLocaleString()}</td>
                     <td>${t.matricule}</td>
+                    <td>${t.nom}</td>
+                    <td>${t.prenom}</td>
                     <td>${t.montant.toLocaleString()} TND</td>
                     <td>${t.montant_paye.toLocaleString()} TND</td>
                     <td>${t.montant_reste.toLocaleString()} TND</td>
                     <td>${t.type_reglement || '-'}</td>
                     <td>${t.banque || '-'}</td>
                     <td>${t.numero_cheque || '-'}</td>
-                    
                     <td>${t.numero_bon}</td>
                     <td>${t.numero_carnet}</td>
                 </tr>

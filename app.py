@@ -63,11 +63,7 @@ def admin():
     
     paiements_recent = Paiement.query.order_by(Paiement.date_paiement.desc()).limit(5).all()
 
-    print("[/admin] total_collecte:", total_collecte)
-    print("[/admin] total_reste:", total_reste)
-    print("[/admin] moyenne_paiement:", moyenne_paiement)
-    print("[/admin] paiements_count:", paiements_count)
-    print("[/admin] paiements_recent:", [p.id_paiement for p in paiements_recent])
+ 
 
     return render_template('admin.html',
         total_collecte=float(total_collecte),
@@ -123,9 +119,7 @@ def get_adherents_data():
         groupes_ordre = ['Poussin', 'Lutin', 'Benjamin', 'Minime', 'KD', 'Ecole', 'Non spécifié']
         groupes.sort(key=lambda x: groupes_ordre.index(x) if x in groupes_ordre else len(groupes_ordre))
 
-        print("[/api/adherents-data] Total adherents:", len(adherents_list))
-        print("[/api/adherents-data] Types abonnement:", types_abonnement)
-        print("[/api/adherents-data] Groupes:", groupes)
+      
 
         return jsonify({
             'success': True,
@@ -136,7 +130,6 @@ def get_adherents_data():
         })
 
     except Exception as e:
-        print(f"Erreur dans get_adherents_data: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/paiements-indicators')
@@ -145,7 +138,6 @@ def get_paiements_indicators():
         types_filter = request.args.getlist('types[]')
         groupes_filter = request.args.getlist('groupes[]')
 
-        print("[/api/paiements-indicators] Filters:", types_filter, groupes_filter)
 
         base_query = db.session.query(
             Paiement, Adherent.nom, Adherent.prenom, Adherent.type_abonnement,
@@ -159,7 +151,6 @@ def get_paiements_indicators():
             base_query = base_query.filter(Adherent.groupe.in_(groupes_filter))
 
         paiements_query = base_query.all()
-        print("[/api/paiements-indicators] Paiements found:", len(paiements_query))
 
         paiements_list = []
         statistics = {'complets': 0, 'partiels': 0, 'impayes': 0, 'montant_total': 0}
@@ -227,7 +218,6 @@ def get_paiements_indicators():
                 'adherent_paye_status': adherent_paye_status
             })
 
-        print("[/api/paiements-indicators] Statistics:", statistics)
 
         paiements_recents = sorted(
             [p for p in paiements_list if p['date_paiement']],
@@ -246,7 +236,6 @@ def get_paiements_indicators():
         })
 
     except Exception as e:
-        print(f"Erreur dans get_paiements_indicators: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/financial-indicators')
@@ -254,7 +243,6 @@ def get_financial_indicators():
     try:
         types = request.args.getlist('types[]')
         groupes = request.args.getlist('groupes[]')
-        print("[/api/financial-indicators] Filters:", types, groupes)
 
         query = db.session.query(Paiement)
         if types or groupes:
@@ -269,20 +257,17 @@ def get_financial_indicators():
             if matricules_filtres:
                 query = query.filter(Paiement.matricule_adherent.in_(matricules_filtres))
             else:
-                print("[/api/financial-indicators] No matching adherents, returning 0s.")
                 return jsonify({'success': True, 'total_collecte': 0, 'total_reste': 0})
 
         paiements = query.all()
         total_collecte = sum(float(p.montant_paye or 0) for p in paiements)
         total_reste = sum(float(p.montant_reste or 0) for p in paiements)
 
-        print("[/api/financial-indicators] total_collecte:", total_collecte)
-        print("[/api/financial-indicators] total_reste:", total_reste)
+
 
         return jsonify({'success': True, 'total_collecte': total_collecte, 'total_reste': total_reste})
 
     except Exception as e:
-        print(f"Erreur dans get_financial_indicators: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -413,7 +398,6 @@ def entraineur():
     nom_complet_entraineur = f"{nom} {prenom}".replace('\u00A0', ' ').strip()
 
     # Debug pour vérifier le nom complet envoyé au template
-    print(f"[DEBUG] Nom complet entraîneur connecté : '{nom_complet_entraineur}'")
 
     # Gestion de la navigation
     week_offset = request.args.get('week_offset', 0, type=int)
@@ -435,7 +419,6 @@ def entraineur():
 
         # Normalisation et debug de chaque entraîneur enregistré
         entraineur_seance_norm = seance.entraineur.replace('\u00A0', ' ').strip()
-        print(f"[DEBUG] Séance ID {seance.seance_id} → Entraîneur dans la DB : '{entraineur_seance_norm}'")
 
         seances_par_terrain_et_heure[key] = {
             'id': seance.seance_id,
@@ -488,7 +471,6 @@ def save_presences():
         seance_type = data.get('seance_type', 'entrainement')  # Récupérer le type
         presences_data = data.get('presences', {})
         
-        print(f"Données reçues - Groupe: {groupe}, Date: {date_str}, Heure: {heure_str}, Type: {seance_type}")
         
         # Convertir la date et l'heure
         date_seance = datetime.strptime(date_str, '%Y-%m-%d').date()
@@ -519,8 +501,7 @@ def save_presences():
             
             if not seance:
                 return jsonify({"error": "Séance non trouvée"}), 404
-            else:
-                print(f"Séance trouvée sans type spécifique, type actuel: {getattr(seance, 'type_seance', 'entrainement')}")
+            
         
         # 1. SAUVEGARDER LA PRÉSENCE DE L'ENTRAÎNEUR
         trainer_presence = presences_data.get('trainer_presence')
@@ -534,7 +515,6 @@ def save_presences():
             
             if presence_entraineur_existante:
                 presence_entraineur_existante.est_present = trainer_presence
-                print(f"Présence entraîneur mise à jour: {trainer_presence}")
             else:
                 nouvelle_presence_entraineur = PresenceEntraineur(
                     entraineur_nom=entraineur_nom,
@@ -545,11 +525,9 @@ def save_presences():
                     commentaire=seance_type
                 )
                 db.session.add(nouvelle_presence_entraineur)
-                print(f"Nouvelle présence entraîneur créée: {trainer_presence}")
         
         # 2. SAUVEGARDER LES PRÉSENCES DES ADHÉRENTS (format matricules séparés par virgules)
         adherents_data = presences_data.get('adherents', [])
-        print(f"Nombre d'adhérents à traiter: {len(adherents_data)}")
         
         # Préparer les listes de matricules par statut de présence
         matricules_presents = []
@@ -564,8 +542,7 @@ def save_presences():
             else:
                 matricules_absents.append(str(matricule))
         
-        print(f"Matricules présents: {matricules_presents}")
-        print(f"Matricules absents: {matricules_absents}")
+       
         
         # Sauvegarder les présents (une seule entrée avec tous les matricules)
         if matricules_presents:
@@ -582,7 +559,6 @@ def save_presences():
             
             if presence_existante_present:
                 presence_existante_present.adherent_matricule = matricules_presents_str
-                print(f"Présence présente mise à jour: {matricules_presents_str}")
             else:
                 nouvelle_presence_present = Presence(
                     groupe_nom=groupe,
@@ -595,7 +571,6 @@ def save_presences():
                     seance_type=seance_type
                 )
                 db.session.add(nouvelle_presence_present)
-                print(f"Nouvelle présence présente créée: {matricules_presents_str}")
         
         # Sauvegarder les absents (une seule entrée avec tous les matricules)
         if matricules_absents:
@@ -612,7 +587,6 @@ def save_presences():
             
             if presence_existante_absent:
                 presence_existante_absent.adherent_matricule = matricules_absents_str
-                print(f"Présence absente mise à jour: {matricules_absents_str}")
             else:
                 nouvelle_presence_absent = Presence(
                     groupe_nom=groupe,
@@ -625,7 +599,6 @@ def save_presences():
                     seance_type=seance_type
                 )
                 db.session.add(nouvelle_presence_absent)
-                print(f"Nouvelle présence absente créée: {matricules_absents_str}")
         
         # Supprimer les entrées si aucun présent/absent
         if not matricules_presents:
@@ -637,7 +610,6 @@ def save_presences():
                 seance_id=seance.seance_id,
                 est_present='O'
             ).delete()
-            print("Aucun présent, suppression de l'entrée présente")
         
         if not matricules_absents:
             Presence.query.filter_by(
@@ -648,10 +620,8 @@ def save_presences():
                 seance_id=seance.seance_id,
                 est_present='N'
             ).delete()
-            print("Aucun absent, suppression de l'entrée absente")
         
         db.session.commit()
-        print("Toutes les présences ont été sauvegardées avec succès")
         
         return jsonify({
             "success": True,
@@ -660,7 +630,6 @@ def save_presences():
     
     except Exception as e:
         db.session.rollback()
-        print(f"Erreur lors de la sauvegarde des présences: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
@@ -2547,8 +2516,8 @@ def paiement():
                         id_carnet=numero_carnet
                     )
                 except Exception as e:
-                    print(f"Erreur génération bon: {e}")
-
+                    print("Erreur dans la generation de bon de paiement:")
+                    print(matricule,montant_paye,type_reglement,code_saison,numero_bon,numero_carnet)
                 paiements = Paiement.query.filter_by(matricule_adherent=matricule)\
                                           .order_by(Paiement.id_paiement.asc()).all()
                 flash("Paiement enregistré avec succès.", "success")
@@ -3236,7 +3205,6 @@ def generer_bon_paiement(matricule_adherent, montant_paye, type_paiement, code_s
         pix.save(png_filename)
         pdf_document.close()
     except Exception as e:
-        print(f"Erreur lors de la conversion PDF vers PNG: {e}")
         # En cas d'échec de la conversion PNG, on retourne quand même le PDF
         return pdf_filename, None
 
@@ -4012,7 +3980,6 @@ from sqlalchemy import func, distinct, case
 from datetime import datetime, timedelta
 import pytz
 
-
 @app.route('/api/situation-paiement/summary')
 def get_paiement_summary():
     try:
@@ -4022,39 +3989,78 @@ def get_paiement_summary():
         start_date = datetime.strptime(date_start, '%Y-%m-%d')
         end_date = datetime.strptime(date_end, '%Y-%m-%d')
 
-        # Totaux généraux
-        totals = db.session.query(
-            func.sum(Paiement.montant).label('total_a_payer'),
-            func.sum(Paiement.montant_paye).label('total_paye'),
+        # Total payé - somme de tous les montants payés dans la période
+        total_paye = db.session.query(
+            func.sum(Paiement.montant_paye).label('total_paye')
         ).filter(
             Paiement.date_paiement.between(start_date, end_date + timedelta(days=1))
-        ).first()
+        ).scalar() or 0
 
-        # Calcul du total remise
-        adherents_remises = db.session.query(
+        # Pour le reste à payer, on doit prendre la dernière transaction de chaque adhérent
+        # et calculer son reste à payer actuel
+        
+        # Subquery pour obtenir la dernière transaction de chaque adhérent dans la période
+        subquery = db.session.query(
             Paiement.matricule_adherent,
-            func.max(Paiement.cotisation).label('cotisation'),
-            func.max(Paiement.remise).label('remise')
+            func.max(Paiement.date_paiement).label('derniere_date')
         ).filter(
             Paiement.date_paiement.between(start_date, end_date + timedelta(days=1))
-        ).group_by(Paiement.matricule_adherent).all()
+        ).group_by(Paiement.matricule_adherent).subquery()
 
-        total_remise = sum((a.cotisation * a.remise / 100.0) for a in adherents_remises)
+        # Jointure pour obtenir les détails de la dernière transaction de chaque adhérent
+        dernieres_transactions = db.session.query(
+            Paiement.matricule_adherent,
+            (Paiement.montant - Paiement.montant_paye).label('reste_individuel')
+        ).join(
+            subquery, 
+            and_(
+                Paiement.matricule_adherent == subquery.c.matricule_adherent,
+                Paiement.date_paiement == subquery.c.derniere_date
+            )
+        ).all()
 
-        reste_a_payer = (totals.total_a_payer or 0) - (totals.total_paye or 0) - total_remise
+        # Somme des restes à payer de tous les adhérants
+        reste_a_payer_total = sum(transaction.reste_individuel for transaction in dernieres_transactions)
+
+        # Calcul du total à payer (sum de tous les montants dans la période)
+        total_a_payer = db.session.query(
+            func.sum(Paiement.montant).label('total_a_payer')
+        ).filter(
+            Paiement.date_paiement.between(start_date, end_date + timedelta(days=1))
+        ).scalar() or 0
+
+        # Calcul du total remise (première transaction de chaque adhérent)
+        premieres_transactions = db.session.query(
+            Paiement.matricule_adherent,
+            func.min(Paiement.date_paiement).label('premiere_date')
+        ).filter(
+            Paiement.date_paiement.between(start_date, end_date + timedelta(days=1))
+        ).group_by(Paiement.matricule_adherent).subquery()
+
+        remises_data = db.session.query(
+            Paiement.cotisation,
+            Paiement.remise
+        ).join(
+            premieres_transactions,
+            and_(
+                Paiement.matricule_adherent == premieres_transactions.c.matricule_adherent,
+                Paiement.date_paiement == premieres_transactions.c.premiere_date
+            )
+        ).all()
+
+        total_remise = sum((r.cotisation * r.remise / 100.0) for r in remises_data if r.cotisation and r.remise)
 
         return jsonify({
             'summary': {
-                'total_a_payer': float(totals.total_a_payer or 0),
-                'total_paye': float(totals.total_paye or 0),
+                'total_a_payer': float(total_a_payer),
+                'total_paye': float(total_paye),
                 'total_remise': float(total_remise),
-                'reste_a_payer': float(reste_a_payer)
+                'reste_a_payer': float(reste_a_payer_total)
             }
         })
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/api/situation-paiement/transactions')
 def get_paiement_transactions():
@@ -4065,7 +4071,10 @@ def get_paiement_transactions():
         date_end = request.args.get('end_date')
         search_term = request.args.get('search', '')
 
-        query = db.session.query(Paiement)
+        # Jointure entre Paiement et Adherent
+        query = db.session.query(Paiement, Adherent).join(
+            Adherent, Paiement.matricule_adherent == Adherent.matricule
+        )
 
         if date_start and date_end:
             start_date = datetime.strptime(date_start, '%Y-%m-%d')
@@ -4077,7 +4086,9 @@ def get_paiement_transactions():
                 db.or_(
                     Paiement.matricule_adherent.ilike(f'%{search_term}%'),
                     Paiement.type_reglement.ilike(f'%{search_term}%'),
-                    Paiement.banque.ilike(f'%{search_term}%')
+                    Paiement.banque.ilike(f'%{search_term}%'),
+                    Adherent.nom.ilike(f'%{search_term}%'),
+                    Adherent.prenom.ilike(f'%{search_term}%')
                 )
             )
 
@@ -4088,29 +4099,32 @@ def get_paiement_transactions():
             .all()
 
         results = []
-        for t in transactions:
+        for paiement, adherent in transactions:
             # Remise sur le premier paiement de l'adhérent
             premier_paiement = db.session.query(Paiement).filter_by(
-                matricule_adherent=t.matricule_adherent
+                matricule_adherent=paiement.matricule_adherent
             ).order_by(Paiement.date_paiement.asc()).first()
+            
             montant_remise = (premier_paiement.cotisation * premier_paiement.remise / 100.0) if premier_paiement else 0
-            is_first_payment = (premier_paiement.id_paiement == t.id_paiement) if premier_paiement else False
+            is_first_payment = (premier_paiement.id_paiement == paiement.id_paiement) if premier_paiement else False
 
             results.append({
-                'id': t.id_paiement,
-                'matricule': t.matricule_adherent,
-                'date': t.date_paiement.strftime('%Y-%m-%d %H:%M:%S'),
-                'montant': float(t.montant),
-                'montant_paye': float(t.montant_paye),
-                'montant_reste': float(t.montant - t.montant_paye),
-                'type_reglement': t.type_reglement,
-                'numero_cheque': t.numero_cheque,
-                'banque': t.banque,
-                'remise': float(t.remise),
+                'id': paiement.id_paiement,
+                'matricule': paiement.matricule_adherent,
+                'nom': adherent.nom,
+                'prenom': adherent.prenom,
+                'date': paiement.date_paiement.strftime('%Y-%m-%d %H:%M:%S'),
+                'montant': float(paiement.montant),
+                'montant_paye': float(paiement.montant_paye),
+                'montant_reste': float(paiement.montant - paiement.montant_paye),
+                'type_reglement': paiement.type_reglement,
+                'numero_cheque': paiement.numero_cheque,
+                'banque': paiement.banque,
+                'remise': float(paiement.remise),
                 'montant_remise': float(montant_remise),
-                'cotisation': float(t.cotisation),
-                'numero_bon': t.numero_bon,
-                'numero_carnet': t.numero_carnet,
+                'cotisation': float(paiement.cotisation),
+                'numero_bon': paiement.numero_bon,
+                'numero_carnet': paiement.numero_carnet,
                 'is_first_payment': is_first_payment
             })
 
@@ -4123,7 +4137,6 @@ def get_paiement_transactions():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 from sqlalchemy import text, literal
 
 @app.route('/situation-terrains')
@@ -5015,7 +5028,6 @@ def search_adherent_presences(start_date, end_date, search_term):
         return list(adherent_dict.values())
         
     except Exception as e:
-        print(f"Erreur dans search_adherent_presences: {str(e)}")
         return []
 
 def search_entraineur_presences(start_date, end_date, search_term):
@@ -5064,7 +5076,6 @@ def search_entraineur_presences(start_date, end_date, search_term):
         return list(entraineur_dict.values())
         
     except Exception as e:
-        print(f"Erreur dans search_entraineur_presences: {str(e)}")
         return []
 
 def search_groupe_presences(start_date, end_date, search_term):
@@ -5119,12 +5130,9 @@ def search_groupe_presences(start_date, end_date, search_term):
         return list(groupe_dict.values())
         
     except Exception as e:
-        print(f"Erreur dans search_groupe_presences: {str(e)}")
         return []
 
-# ============================================================================
-# ROUTE CORRIGÉE POUR LES DÉTAILS D'ADHÉRENT
-# ============================================================================
+
 
 @app.route('/api/presences/adherent/<matricule>/details')
 def get_adherent_presence_details(matricule):
@@ -5580,7 +5588,6 @@ def get_financial_data():
         return jsonify(data)
         
     except Exception as e:
-        print(f"Erreur dans get_financial_data: {str(e)}")  # Pour déboguer
         return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500
 
 def calculate_stats(start_date, end_date, saison, data_type):
@@ -5674,7 +5681,6 @@ def calculate_stats(start_date, end_date, saison, data_type):
         }
         
     except Exception as e:
-        print(f"Erreur dans calculate_stats: {str(e)}")
         raise
 
 def get_monthly_data(start_date, end_date, saison):
@@ -5760,7 +5766,6 @@ def get_monthly_data(start_date, end_date, saison):
         }
         
     except Exception as e:
-        print(f"Erreur dans get_monthly_data: {str(e)}")
         # Retourner des données vides en cas d'erreur
         return {
             'labels': [],
@@ -5816,7 +5821,6 @@ def get_revenue_by_type(start_date, end_date, saison):
         }
         
     except Exception as e:
-        print(f"Erreur dans get_revenue_by_type: {str(e)}")
         return {
             'labels': ['Cotisations', 'Locations', 'Autres paiements'],
             'values': [0, 0, 0]
@@ -5875,7 +5879,6 @@ def get_recent_payments(start_date, end_date, saison, data_type, limit=10):
         return result
         
     except Exception as e:
-        print(f"Erreur dans get_recent_payments: {str(e)}")
         return []
 
 def get_recent_locations(start_date, end_date, saison, data_type, limit=10):
@@ -5925,7 +5928,6 @@ def get_recent_locations(start_date, end_date, saison, data_type, limit=10):
         return result
         
     except Exception as e:
-        print(f"Erreur dans get_recent_locations: {str(e)}")
         return []
 
 @app.route('/rh')
