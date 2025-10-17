@@ -262,6 +262,8 @@ def get_financial_indicators():
         paiements = query.all()
         total_collecte = sum(float(p.montant_paye or 0) for p in paiements)
         total_reste = sum(float(p.montant_reste or 0) for p in paiements)
+        print(total_collecte)
+        print(total_reste)
 
 
 
