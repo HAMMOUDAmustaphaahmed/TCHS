@@ -188,24 +188,108 @@ $(document).ready(function () {
     const tableBody = $('#table-situation-total tbody');
     const spinner = $('#spinner');
     let saisonsDisponibles = [];
+    let currentSessionSeason = null;
 
-    // Charger toutes les saisons
-    async function loadSaisons() {
+    // Charger la saison active de la session
+    async function loadCurrentSessionSeason() {
         try {
-            const response = await fetch('/api/saisons');
-            const saisons = await response.json();
-            saisonsDisponibles = saisons.map(s => s.code);
-
-            const select = $('#filter-saison');
-            select.find('option:not(:first)').remove();
-            saisonsDisponibles.forEach(saison => {
-                select.append(`<option value="${saison}">${saison}</option>`);
-            });
+            const response = await fetch('/api/current-season');
+            const seasonData = await response.json();
+            if (seasonData.success) {
+                currentSessionSeason = seasonData.saison_code;
+                console.log('Saison active de la session:', currentSessionSeason);
+                
+                // Mettre à jour l'affichage de la saison
+                updateSeasonDisplay();
+            }
         } catch (error) {
-            console.error('Erreur chargement saisons:', error);
+            console.error('Erreur chargement saison session:', error);
         }
     }
 
+    // Mettre à jour l'affichage de la saison
+    function updateSeasonDisplay() {
+        if (currentSessionSeason) {
+            // Option 1: Afficher la saison active au-dessus du tableau
+            if (!$('#currentSeasonDisplay').length) {
+                $('.dashboard-title').after(`
+                    <div id="currentSeasonDisplay" class="alert alert-info mb-3">
+                        <strong>Saison active :</strong> ${currentSessionSeason}
+                    </div>
+                `);
+            } else {
+                $('#currentSeasonDisplay').html(`<strong>Saison active :</strong> ${currentSessionSeason}`);
+            }
+
+            // Option 2: Sélectionner automatiquement la saison dans le dropdown
+            $('#filter-saison').val(currentSessionSeason);
+        }
+    }
+
+   // Charger les saisons de l'année courante seulement
+async function loadSaisons() {
+    try {
+        // Récupérer l'année de la session
+        const seasonResponse = await fetch('/api/current-season');
+        const seasonData = await seasonResponse.json();
+        
+        if (!seasonData.success) {
+            console.error('Erreur chargement saison courante:', seasonData.error);
+            return;
+        }
+
+        const currentYear = seasonData.saison_year;
+        const currentSeasonType = seasonData.saison_type;
+        
+        console.log('Année courante:', currentYear, 'Type:', currentSeasonType);
+
+        // Générer les codes de saison pour cette année
+        const seasonCodes = {
+            'normal': `S${currentYear}`,
+            'summer': `E${currentYear}`
+        };
+
+        // Vérifier quelles saisons existent dans la base de données
+        const response = await fetch('/api/saisons');
+        const allSaisons = await response.json();
+        const existingSaisons = allSaisons.map(s => s.code);
+        
+        console.log('Toutes les saisons disponibles:', existingSaisons);
+
+        // Filtrer pour ne garder que les saisons de l'année courante
+        const saisonsThisYear = [];
+        
+        // Vérifier si S{year} existe
+        if (existingSaisons.includes(seasonCodes.normal)) {
+            saisonsThisYear.push(seasonCodes.normal);
+        }
+        
+        // Vérifier si E{year} existe
+        if (existingSaisons.includes(seasonCodes.summer)) {
+            saisonsThisYear.push(seasonCodes.summer);
+        }
+
+        console.log('Saisons de l\'année courante:', saisonsThisYear);
+
+        const select = $('#filter-saison');
+        select.find('option:not(:first)').remove();
+        
+        saisonsThisYear.forEach(saison => {
+            select.append(`<option value="${saison}">${saison}</option>`);
+        });
+
+        // Sélectionner automatiquement la saison de la session si disponible
+        if (seasonData.saison_code && saisonsThisYear.includes(seasonData.saison_code)) {
+            select.val(seasonData.saison_code);
+        } else if (saisonsThisYear.length > 0) {
+            // Sélectionner la première saison disponible
+            select.val(saisonsThisYear[0]);
+        }
+
+    } catch (error) {
+        console.error('Erreur chargement saisons:', error);
+    }
+}
     // Fonction pour basculer les détails des paiements
     function toggleDetails(matricule) {
         const detailsRow = $(`#details-${matricule}`);
@@ -246,6 +330,17 @@ $(document).ready(function () {
             spinner.hide();
 
             tableBody.empty();
+            
+            if (!data.situation_par_adherent || data.situation_par_adherent.length === 0) {
+                tableBody.append(`
+                    <tr>
+                        <td colspan="12" class="text-center text-muted">
+                            Aucune donnée disponible pour la saison sélectionnée
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
             
             for (let a of data.situation_par_adherent) {
                 const resteClass = (a.reste_a_payer > 0) ? 'text-danger fw-bold' : '';
@@ -289,7 +384,7 @@ $(document).ready(function () {
                 // Ligne des détails (cachée par défaut)
                 tableBody.append(`
                     <tr id="details-${a.matricule}" class="details-row" style="display: none;">
-                        <td colspan="11">
+                        <td colspan="12">
                             <div class="details-content">
                                 <div id="details-content-${a.matricule}">
                                     <div class="text-center">
@@ -303,12 +398,6 @@ $(document).ready(function () {
                     </tr>
                 `);
             }
-
-            // Totaux généraux
-            const totaux = data.totaux_generaux || {};
-            $('#total-a-payer-general').text((totaux.total_a_payer || 0).toFixed(2) + ' TND');
-            $('#total-paye-general').text((totaux.total_paye || 0).toFixed(2) + ' TND');
-            $('#reste-a-payer-general').text((totaux.reste_a_payer || 0).toFixed(2) + ' TND');
 
         } catch (error) {
             spinner.hide();
@@ -441,6 +530,7 @@ $(document).ready(function () {
 
     // Initialisation
     async function init() {
+        await loadCurrentSessionSeason();
         await loadSaisons();
         await loadSituationTotale();
     }

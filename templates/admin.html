@@ -429,6 +429,9 @@
         let selectedGroupes = new Set();
         let paiementsData = [];
         let charts = {};
+        let currentSaison = null;
+        let saisonType = null;
+        let saisonYear = null;
 
         // Configuration Chart.js
         Chart.defaults.font.family = "'Heebo', sans-serif";
@@ -438,31 +441,80 @@
         document.addEventListener('DOMContentLoaded', function() {
             initializeApplication();
         });
-
+function updateSeasonDisplay() {
+    const seasonDisplay = document.getElementById('currentSeason');
+    if (seasonDisplay && currentSaison) {
+        seasonDisplay.textContent = `Saison: ${currentSaison}`;
+    }
+}
         async function initializeApplication() {
-            try {
-                await loadAdherentsData();
-                await loadPaiementsData();
-                updateAllIndicators();
-            } catch (error) {
-                console.error('Erreur initialisation:', error);
-            }
-        }
-
-        // Chargement des données adhérents
-        async function loadAdherentsData() {
-            const response = await fetch('/api/adherents-data');
-            const data = await response.json();
+    try {
+        // Get season information first
+        const response = await fetch('/api/current-season');
+        const seasonData = await response.json();
+        
+        if (seasonData.success) {
+            currentSaison = seasonData.saison_code;
+            saisonType = seasonData.saison_type;
+            saisonYear = seasonData.saison_year;
             
-            if (data.success) {
-                allAdherents = data.adherents;
-                adherentsData = [...allAdherents];
-                generateTypeFilters(data.types_abonnement);
-                generateGroupeFilters(data.groupes);
-            }
+            console.log('Season data loaded:', seasonData); // Debug line
+            
+            // Update season display
+            updateSeasonDisplay();
+            
+            // Load data with season information
+            await loadAdherentsData();
+            await loadPaiementsData();
+            updateAllIndicators();
+        } else {
+            console.error('Failed to load season data');
+            showError('filterStatus', 'Erreur de chargement des données de saison');
+        }
+    } catch (error) {
+        console.error('Erreur initialisation:', error);
+        showError('filterStatus', 'Erreur d\'initialisation');
+    }
+}// Chargement des données adhérents
+
+
+
+async function loadAdherentsData() {
+    try {
+        if (!currentSaison) {
+            console.error('No season selected');
+            return;
         }
 
-        // Générer filtres types
+        const response = await fetch(`/api/adherents-data?saison=${currentSaison}`);
+        const data = await response.json();
+        
+        console.log('Adherents data:', data); // Debug line
+        
+        if (data.success) {
+            allAdherents = data.adherents || [];
+            adherentsData = [...allAdherents];
+            generateTypeFilters(data.types_abonnement || []);
+            generateGroupeFilters(data.groupes || []);
+        } else {
+            console.error('Failed to load adherents data:', data);
+        }
+    } catch (error) {
+        console.error('Error loading adherents data:', error);
+    }
+}
+
+// Add this helper function
+function showError(elementId, message) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = message;
+        element.classList.add('text-danger');
+    }
+    console.error(message);
+}
+
+// Générer filtres types
         function generateTypeFilters(types) {
             const container = document.getElementById('typeAbonnementFilters');
             container.innerHTML = '';
@@ -640,35 +692,39 @@
         }
 
         // Indicateurs financiers
-        async function updateFinancialIndicators() {
-            try {
-                const params = new URLSearchParams();
-                selectedTypes.forEach(type => params.append('types[]', type));
-                selectedGroupes.forEach(groupe => params.append('groupes[]', groupe));
+async function updateFinancialIndicators() {
+    try {
+        const params = new URLSearchParams();
+        selectedTypes.forEach(type => params.append('types[]', type));
+        selectedGroupes.forEach(groupe => params.append('groupes[]', groupe));
+        params.append('saison', currentSaison);
 
-                const response = await fetch(`/api/financial-indicators?${params}`);
-                const data = await response.json();
+        const response = await fetch(`/api/financial-indicators?${params}`);
+        const data = await response.json();
 
-                if (data.success) {
-                    const totalCollecte = data.total_collecte;
-                    const totalRestant = data.total_reste;
-                    const totalGeneral = totalCollecte + totalRestant;
-                    const taux = totalGeneral > 0 ? (totalCollecte / totalGeneral * 100) : 0;
+        if (data.success) {
+            // Update displays with season information
+            document.getElementById('saisonInfo').textContent = `Saison ${data.saison_code}`;
+            
+            const totalCollecte = data.total_collecte;
+            const totalRestant = data.total_reste;
+            const totalGeneral = totalCollecte + totalRestant;
+            const taux = totalGeneral > 0 ? (totalCollecte / totalGeneral * 100) : 0;
 
-                    document.getElementById('totalCollecte').textContent = totalCollecte.toFixed(2) + ' TND';
-                    document.getElementById('totalRestant').textContent = totalRestant.toFixed(2) + ' TND';
-                    document.getElementById('tauxCollecte').textContent = taux.toFixed(1) + '%';
+            document.getElementById('totalCollecte').textContent = totalCollecte.toFixed(2) + ' TND';
+            document.getElementById('totalRestant').textContent = totalRestant.toFixed(2) + ' TND';
+            document.getElementById('tauxCollecte').textContent = taux.toFixed(1) + '%';
 
-                    // Barre de progression
-                    const progressBar = document.getElementById('progressBar');
-                    if (progressBar) {
-                        progressBar.style.width = taux.toFixed(1) + '%';
-                    }
-                }
-            } catch (error) {
-                console.error('Erreur indicateurs financiers:', error);
+            // Update progress bar
+            const progressBar = document.getElementById('progressBar');
+            if (progressBar) {
+                progressBar.style.width = taux.toFixed(1) + '%';
             }
         }
+    } catch (error) {
+        console.error('Erreur indicateurs financiers:', error);
+    }
+}
 
         // Chargement données paiements
         async function loadPaiementsData() {
@@ -676,26 +732,31 @@
         }
 
         // Indicateurs paiements
-        async function updatePaiementsIndicators() {
-            try {
-                const params = new URLSearchParams();
-                selectedTypes.forEach(type => params.append('types[]', type));
-                selectedGroupes.forEach(groupe => params.append('groupes[]', groupe));
+async function updatePaiementsIndicators() {
+    try {
+        const params = new URLSearchParams();
+        selectedTypes.forEach(type => params.append('types[]', type));
+        selectedGroupes.forEach(groupe => params.append('groupes[]', groupe));
+        params.append('saison', currentSaison);
 
-                const response = await fetch(`/api/paiements-indicators?${params}`);
-                const data = await response.json();
+        const response = await fetch(`/api/paiements-indicators?${params}`);
+        const data = await response.json();
 
-                if (data.success) {
-                    paiementsData = data.paiements;
-                    updatePaymentStats(data);
-                    updatePaymentTables(data);
-                    updateAdditionalCharts(data);
-                }
-            } catch (error) {
-                console.error('Erreur indicateurs paiements:', error);
+        if (data.success) {
+            paiementsData = data.paiements;
+            updatePaymentStats(data);
+            updatePaymentTables(data);
+            updateAdditionalCharts(data);
+            
+            // Update season information
+            if (data.saison_code) {
+                document.getElementById('saisonInfo').textContent = `Saison ${data.saison_code}`;
             }
         }
-
+    } catch (error) {
+        console.error('Erreur indicateurs paiements:', error);
+    }
+}
         // Mettre à jour stats paiements
         function updatePaymentStats(data) {
             const stats = data.statistics;

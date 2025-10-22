@@ -419,3 +419,153 @@ document.getElementById('submitMotDePasse').addEventListener('click', function()
 document.querySelectorAll('.closeSessionModal').forEach(btn => {
     btn.addEventListener('click', closeSessionModal);
 });
+
+
+
+// Variables globales pour les modals
+let currentGroupeId = null;
+let currentSessionType = null;
+
+// Initialisation du datepicker
+const sessionDatepicker = flatpickr("#sessionDate", {
+    locale: "fr",
+    dateFormat: "d/m/Y",
+    altInput: true,
+    altFormat: "j F Y",
+    disableMobile: true,
+    allowInput: true,
+    defaultDate: "today"
+});
+
+// Fonctions pour ouvrir le modal d'ajout de séance
+function openSessionModal(groupeId, typeSeance) {
+    currentGroupeId = groupeId;
+    currentSessionType = typeSeance || 'entrainement';
+    
+    // Pré-remplir le groupe
+    document.getElementById('sessionGroupe').value = groupeId;
+    
+    // Pré-remplir le type de séance
+    document.getElementById('sessionType').value = currentSessionType;
+    
+    // Définir les heures par défaut selon le type de séance
+    if (currentSessionType === 'prep_physique') {
+        document.getElementById('sessionHeureDebut').value = '17:00';
+        document.getElementById('sessionHeureFin').value = '18:00';
+    } else {
+        document.getElementById('sessionHeureDebut').value = '18:00';
+        document.getElementById('sessionHeureFin').value = '19:30';
+    }
+    
+    // Afficher le modal
+    document.getElementById('sessionModal').style.display = 'block';
+    document.getElementById('modalBackdrop').style.display = 'block';
+}
+
+function openPrepPhysiqueModal(groupeId, typeSeance) {
+    openSessionModal(groupeId, 'prep_physique');
+}
+
+function closeSessionModal() {
+    document.getElementById('sessionModal').style.display = 'none';
+    document.getElementById('modalBackdrop').style.display = 'none';
+    currentGroupeId = null;
+    currentSessionType = null;
+}
+
+// Fonction pour ajouter une séance
+function addSession() {
+    const groupeId = document.getElementById('sessionGroupe').value;
+    const typeSeance = document.getElementById('sessionType').value;
+    const date = document.getElementById('sessionDate').value;
+    const heureDebut = document.getElementById('sessionHeureDebut').value;
+    const heureFin = document.getElementById('sessionHeureFin').value;
+    const terrain = document.getElementById('sessionTerrain').value;
+    const repeatWeekly = document.getElementById('repeatWeekly').checked;
+
+    // Validation des champs
+    if (!groupeId || !date || !heureDebut || !heureFin || !terrain) {
+        alert("Veuillez remplir tous les champs obligatoires");
+        return;
+    }
+
+    // Validation que l'heure de fin est après l'heure de début
+    if (heureFin <= heureDebut) {
+        alert("L'heure de fin doit être après l'heure de début");
+        return;
+    }
+
+    const data = {
+        groupe_id: groupeId,
+        type_seance: typeSeance,
+        date: date,
+        heure_debut: heureDebut,
+        heure_fin: heureFin,
+        terrain: terrain,
+        repeat_weekly: repeatWeekly
+    };
+
+    // Envoyer la requête AJAX
+    fetch('/ajouter_seance', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erreur réseau');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+            closeSessionModal();
+            // Recharger la page pour voir la nouvelle séance
+            location.reload();
+        } else {
+            alert(data.error || "Erreur lors de l'ajout de la séance");
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert("Une erreur est survenue lors de l'ajout de la séance");
+    });
+}
+
+// Fonction pour fermer tous les modals
+function closeAllModals() {
+    closeSessionModal();
+    closeAddAdherentModal();
+    closeAdherentsListModal();
+}
+
+// Créer le backdrop modal s'il n'existe pas
+if (!document.getElementById('modalBackdrop')) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.id = 'modalBackdrop';
+    backdrop.style.display = 'none';
+    backdrop.onclick = closeAllModals;
+    document.body.appendChild(backdrop);
+}
+
+// Ajouter le CSS pour le backdrop
+const style = document.createElement('style');
+style.textContent = `
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 999;
+    }
+    #sessionModal {
+        z-index: 1000;
+    }
+`;
+document.head.appendChild(style);

@@ -401,34 +401,59 @@ function closeAdherentsListModal() {
     </div>
 </div>
 
-    </div>
+    
     
 
 <!-- Modal Ajout Séance -->
-<div id="sessionModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 350px;">
+<div id="sessionModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 400px;">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">Ajouter une séance</h4>
         <button type="button" class="btn-close" aria-label="Close" onclick="closeSessionModal()"></button>
     </div>
 
+    <!-- Groupe (pré-rempli selon le bouton cliqué) -->
+    <div class="mb-3">
+        <label for="sessionGroupe" class="form-label">Groupe :</label>
+        <select id="sessionGroupe" class="form-select" required>
+            <option value="">Sélectionner un groupe</option>
+            {% for groupe in groupes %}
+            <option value="{{ groupe.id_groupe }}">{{ groupe.nom_groupe }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Type de séance -->
+    <div class="mb-3">
+        <label for="sessionType" class="form-label">Type de séance :</label>
+        <select id="sessionType" class="form-select" required>
+            <option value="entrainement">Entraînement</option>
+            <option value="prep_physique">Préparation physique</option>
+        </select>
+    </div>
+
     <!-- Date -->
     <div class="mb-3">
         <label for="sessionDate" class="form-label">Date :</label>
-        <input type="date" id="sessionDate" class="form-control" required>
+        <input type="text" id="sessionDate" class="form-control" placeholder="JJ/MM/AAAA" required>
     </div>
 
-    <!-- Créneaux -->
-    <div class="mb-3">
-    <label for="sessionTime" class="form-label">Heure de début :</label>
-    <select id="sessionTime" class="form-select" required>
-        <!-- Options will be dynamically generated via JS -->
-    </select>
-</div>
+    <!-- Heures début et fin -->
+    <div class="row mb-3">
+        <div class="col-6">
+            <label for="sessionHeureDebut" class="form-label">Heure début :</label>
+            <input type="time" id="sessionHeureDebut" class="form-control" required>
+        </div>
+        <div class="col-6">
+            <label for="sessionHeureFin" class="form-label">Heure fin :</label>
+            <input type="time" id="sessionHeureFin" class="form-control" required>
+        </div>
+    </div>
 
     <!-- Terrain -->
     <div class="mb-3">
         <label for="sessionTerrain" class="form-label">Terrain :</label>
-        <select id="sessionTerrain" class="form-select">
+        <select id="sessionTerrain" class="form-select" required>
+            <option value="">Sélectionner un terrain</option>
             {% for terrain in terrains %}
             <option value="{{ terrain }}">Terrain {{ terrain }}</option>
             {% endfor %}
@@ -439,7 +464,7 @@ function closeAdherentsListModal() {
     <div class="mb-3 form-check">
         <input type="checkbox" class="form-check-input" id="repeatWeekly">
         <label class="form-check-label" for="repeatWeekly">
-            Répéter chaque semaine jusqu’à la fin de la saison (01/10 → 31/08)
+            Répéter chaque semaine jusqu'à la fin de la saison (01/10 → 31/08)
         </label>
     </div>
 

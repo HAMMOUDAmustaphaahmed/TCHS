@@ -3,19 +3,62 @@ class SituationTerrains {
         this.currentPage = 1;
         this.itemsPerPage = 10;
         this.charts = {};
+        this.currentSessionSeason = null;
         
         this.initializeDatePickers();
         this.setupEventListeners();
         this.initializeCharts();
         this.initializeStatsPickers();
-        this.loadStatistics(); // Chargement initial des statistiques
         this.initializeTerrainSelect();  
-        this.addExportButtons();  // Déplacé à l'intérieur du constructeur
+        this.addExportButtons();
 
-        // Chargement initial des données
-        this.checkAvailability();
-        this.loadStatistics();
-        this.setupOccupationNavigation();
+        // Charger d'abord la saison active
+        this.loadCurrentSessionSeason().then(() => {
+            // Ensuite charger les données initiales
+            this.checkAvailability();
+            this.loadStatistics();
+            // setupOccupationNavigation() sera appelé après updateCourtsDisplay()
+        });
+    }
+
+    // Fonction pour charger la saison active
+    async loadCurrentSessionSeason() {
+        try {
+            const response = await fetch('/api/current-season');
+            const seasonData = await response.json();
+            if (seasonData.success) {
+                this.currentSessionSeason = seasonData.saison_code;
+                console.log('Saison active de la session:', this.currentSessionSeason);
+                this.updateSeasonDisplay();
+            }
+        } catch (error) {
+            console.error('Erreur chargement saison session:', error);
+            this.showMessage('Erreur lors du chargement de la saison', 'error');
+        }
+    }
+
+    // Mettre à jour l'affichage de la saison
+    updateSeasonDisplay() {
+        if (this.currentSessionSeason) {
+            if (!$('#currentSeasonDisplay').length) {
+                $('h1.dashboard-title').after(`
+                    <div id="currentSeasonDisplay" class="alert alert-info mb-3">
+                        <strong>Saison active :</strong> ${this.currentSessionSeason}
+                        <br><small>Les données sont automatiquement filtrées pour cette saison</small>
+                    </div>
+                `);
+            } else {
+                $('#currentSeasonDisplay').html(`
+                    <strong>Saison active :</strong> ${this.currentSessionSeason}
+                    <br><small>Les données sont automatiquement filtrées pour cette saison</small>
+                `);
+            }
+        }
+    }
+
+    // Fonction showError manquante
+    showError(message) {
+        this.showMessage(message, 'error');
     }
 
     initializeTerrainSelect() {
@@ -103,44 +146,60 @@ class SituationTerrains {
     
     async checkAvailability() {
         try {
+            console.log('=== DEBUT checkAvailability ===');
+            
             const selectedDate = this.datePicker.selectedDates[0];
             const heureDebut = this.heureDebutPicker.selectedDates[0];
             const heureFin = this.heureFinPicker.selectedDates[0];
-    
+
+            console.log('Dates sélectionnées:', {
+                selectedDate,
+                heureDebut, 
+                heureFin
+            });
+
             if (!selectedDate || !heureDebut) {
                 this.showError("Veuillez sélectionner une date et une heure de début");
                 return;
             }
-    
-            // Création d'une nouvelle date sans décalage horaire
+
             const year = selectedDate.getFullYear();
             const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
             const day = String(selectedDate.getDate()).padStart(2, '0');
             const formattedDate = `${year}-${month}-${day}`;
-    
-            console.log('Date sélectionnée:', formattedDate); // Pour debug
-    
+
+            console.log('Date formatée:', formattedDate);
+
             const params = new URLSearchParams({
                 date: formattedDate,
                 heure_debut: heureDebut.toTimeString().slice(0, 5),
                 heure_fin: heureFin ? heureFin.toTimeString().slice(0, 5) : ''
             });
-    
-            console.log('Paramètres envoyés:', {
-                date: formattedDate,
-                heure_debut: heureDebut.toTimeString().slice(0, 5),
-                heure_fin: heureFin ? heureFin.toTimeString().slice(0, 5) : ''
-            });
-    
+
+            console.log('URL complète:', `/api/terrains/disponibilite?${params}`);
+
             const response = await fetch(`/api/terrains/disponibilite?${params}`);
-            if (!response.ok) throw new Error('Erreur lors de la vérification');
-    
+            console.log('Statut réponse:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Erreur réponse:', errorText);
+                throw new Error(`Erreur HTTP: ${response.status} - ${errorText}`);
+            }
+
             const data = await response.json();
+            console.log('Données reçues:', data);
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
             this.updateCourtsDisplay(data);
-    
+            console.log('=== FIN checkAvailability ===');
+
         } catch (error) {
-            this.showError("Erreur lors de la vérification de la disponibilité");
-            console.error(error);
+            console.error('Erreur complète:', error);
+            this.showError(`Erreur lors de la vérification: ${error.message}`);
         }
     }
 
@@ -157,6 +216,7 @@ class SituationTerrains {
         document.getElementById('export-excel')?.addEventListener('click', () => this.exportCurrentToExcel());
         document.getElementById('print-page')?.addEventListener('click', () => this.printPage());
     }
+
     initializeCharts() {
         // Graphique d'utilisation
         const usageCtx = document.getElementById('usage-chart').getContext('2d');
@@ -219,21 +279,26 @@ class SituationTerrains {
         });
     }
 
-    
     updateCourtsDisplay(data) {
         const container = document.querySelector('.courts-grid');
         container.innerHTML = '';
+        
+        if (!data.terrains || data.terrains.length === 0) {
+            container.innerHTML = '<div class="alert alert-warning">Aucune donnée disponible pour les critères sélectionnés</div>';
+            return;
+        }
+
         const template = document.getElementById('court-template');
 
-        data.forEach(terrain => {
+        data.terrains.forEach(terrain => {
             const clone = template.content.cloneNode(true);
             const card = clone.querySelector('.court-card');
 
             // Mise à jour du numéro et du statut
             card.querySelector('.court-number').textContent = terrain.numero;
             const badge = card.querySelector('.status-badge');
-            badge.textContent = terrain.disponible ? 'Disponible' : 'Occupé';
-            badge.classList.add(terrain.disponible ? 'available' : 'occupied');
+            badge.textContent = terrain.disponible ? 'Libre' : 'Occupé';
+            badge.className = 'status-badge ' + (terrain.disponible ? 'libre' : 'occupé');
 
             // Information d'occupation
             const occupationInfo = card.querySelector('.occupation-info');
@@ -251,7 +316,9 @@ class SituationTerrains {
 
             container.appendChild(clone);
         });
-        this.setupOccupationNavigation(); // Ajouter cette ligne à la fin
+
+        // Appeler setupOccupationNavigation APRÈS que les éléments sont créés
+        setTimeout(() => this.setupOccupationNavigation(), 100);
     }
 
     formatOccupationInfo(occupations) {
@@ -346,7 +413,6 @@ class SituationTerrains {
         `;
     }
 
-    
     initializeStatsPickers() {
         const defaultConfig = {
             locale: 'fr',
@@ -392,18 +458,25 @@ class SituationTerrains {
             });
 
             const response = await fetch(`/api/terrains/stats?${params}`);
-            if (!response.ok) throw new Error('Erreur lors du chargement des statistiques');
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Erreur HTTP: ${response.status}`);
+            }
 
             const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
             this.updateCharts(data);
 
-            // Masquer l'indicateur de chargement
-            this.hideLoadingStats();
-
         } catch (error) {
+            console.error('Erreur loadStatistics:', error);
+            this.showError(`Erreur lors du chargement des statistiques: ${error.message}`);
+        } finally {
             this.hideLoadingStats();
-            this.showError("Erreur lors du chargement des statistiques");
-            console.error(error);
         }
     }
 
@@ -470,30 +543,26 @@ class SituationTerrains {
         document.querySelector('.stats-container')?.appendChild(timestampDiv);
     }
 
-
     async loadHistory() {
         try {
-            const terrainNum = document.getElementById('terrain-select').value;
+            const terrainNum = document.getElementById('terrain-select')?.value;
             console.log('Selected terrain:', terrainNum);
-    
+
             if (!terrainNum) {
                 console.log('No terrain selected');
                 return;
             }
-    
+
             const dateStart = this.historyDateStart.selectedDates[0];
             const dateEnd = this.historyDateEnd.selectedDates[0];
             
-            console.log('Date range:', {
-                start: dateStart,
-                end: dateEnd
-            });
-    
+            console.log('Date range:', { start: dateStart, end: dateEnd });
+
             if (!dateStart || !dateEnd) {
                 this.showError("Veuillez sélectionner une période");
                 return;
             }
-    
+
             const params = new URLSearchParams({
                 terrain: terrainNum,
                 start_date: dateStart.toISOString().split('T')[0],
@@ -501,24 +570,26 @@ class SituationTerrains {
                 page: this.currentPage,
                 per_page: this.itemsPerPage
             });
-    
+
             console.log('Fetching history with params:', params.toString());
             
             const response = await fetch(`/api/terrains/historique?${params}`);
+            
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Erreur HTTP: ${response.status}`);
             }
             
             const data = await response.json();
             console.log('Received history data:', data);
-    
+
             if (data.error) {
                 throw new Error(data.error);
             }
-    
+
             this.updateHistoryTable(data);
             this.updatePagination(data);
-    
+
         } catch (error) {
             console.error('Error in loadHistory:', error);
             this.showError(`Erreur lors du chargement de l'historique: ${error.message}`);
@@ -602,6 +673,7 @@ class SituationTerrains {
         const date = new Date().toISOString().split('T')[0];
         XLSX.writeFile(wb, `situation_terrains_${date}.xlsx`);
     }
+
     exportHistoryToExcel() {
         try {
             const content = document.querySelector('.history-table');
@@ -707,11 +779,11 @@ class SituationTerrains {
                             border-radius: 15px;
                             font-size: 0.9em;
                         }
-                        .status-badge.available {
+                        .status-badge.libre {
                             background-color: #e8f5e9;
                             color: #2e7d32;
                         }
-                        .status-badge.occupied {
+                        .status-badge.occupé {
                             background-color: #ffebee;
                             color: #c62828;
                         }
@@ -864,6 +936,7 @@ class SituationTerrains {
         document.getElementById('export-history-excel')?.addEventListener('click', () => this.exportHistoryToExcel());
         document.getElementById('print-history')?.addEventListener('click', () => this.printHistory());
     }
+
     async exportToPDF() {
         try {
             const content = document.querySelector('.history-table');
@@ -950,7 +1023,7 @@ class SituationTerrains {
         }
     }
     
-    // Ajouter cette nouvelle méthode pour les messages
+    // Méthode pour les messages
     showMessage(message, type = 'info') {
         let notification = document.getElementById('notification');
         if (!notification) {
@@ -999,9 +1072,6 @@ class SituationTerrains {
             }, 300);
         }, 3000);
     }
-
-    
-
 }
 
 // Initialisation
