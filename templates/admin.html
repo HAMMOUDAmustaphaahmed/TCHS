@@ -81,6 +81,13 @@
             padding: 0.5em 0.75em;
             border-radius: 20px;
         }
+        .season-badge {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -100,10 +107,14 @@
             <a href="#" class="sidebar-toggler flex-shrink-0">
                 <i class="fa fa-bars"></i>
             </a>
+            <div class="navbar-nav align-items-center ms-auto">
+                <span class="season-badge">
+                    <i class="fa fa-calendar me-2"></i>
+                    <span id="currentSeason">Chargement...</span>
+                </span>
+            </div>
         </nav>
         <!-- Navbar End -->
-
-      
 
         <!-- Section Filtres -->
         <div class="container-fluid pt-4 px-4">
@@ -133,7 +144,8 @@
                 </div>
             </div>
         </div>
-  <!-- Indicateurs Financiers Principaux -->
+
+        <!-- Indicateurs Financiers Principaux -->
         <div class="container-fluid pt-4 px-4">
             <div class="row g-4">
                 <div class="col-sm-6 col-xl-3">
@@ -146,9 +158,10 @@
                             <i class="fa fa-wallet fa-3x opacity-50"></i>
                         </div>
                         <div class="mt-3">
-                            <div id="paymentStatusGauge" class="progress" style="height: 8px;">
+                            <div class="progress" style="height: 8px;">
                                 <div class="progress-bar bg-black" role="progressbar" style="width: 0%" id="progressBar"></div>
                             </div>
+                            <small class="text-black-50" id="progressText">0% collecté</small>
                         </div>
                     </div>
                 </div>
@@ -175,10 +188,19 @@
                     </div>
                 </div>
                 <div class="col-sm-6 col-xl-3">
-                    
+                    <div class="indicator-card bg-gradient-success text-white p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-black-50 mb-2">Taux de Collecte</h6>
+                                <h3 class="mb-0" id="tauxCollecte">0%</h3>
+                            </div>
+                            <i class="fa fa-chart-line fa-3x opacity-50"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
         <!-- Graphiques Répartition -->
         <div class="container-fluid pt-4 px-4">
             <div class="row g-4">
@@ -332,7 +354,7 @@
                             <div class="progress mb-2" style="height: 15px;">
                                 <div class="progress-bar bg-success" role="progressbar" id="financialProgress" style="width: 0%"></div>
                             </div>
-                            <small class="text-muted" id="progressText">0% collecté</small>
+                            <small class="text-muted" id="globalProgressText">0% collecté</small>
                         </div>
                     </div>
                 </div>
@@ -363,15 +385,19 @@
                         <tbody>
                             {% for p in paiements_recent %}
                             <tr>
-                                <td>{{ p.date_paiement.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ p.date_paiement.strftime('%d/%m/%Y') if p.date_paiement else 'N/A' }}</td>
                                 <td><span class="badge badge-custom bg-primary">{{ p.matricule_adherent }}</span></td>
                                 <td><strong class="text-success">{{ p.montant_paye }} TND</strong></td>
                                 <td>{{ p.type_reglement or 'Non spécifié' }}</td>
                                 <td>{{ p.code_saison }}</td>
                                 <td>
-                                    <a class="btn btn-sm btn-outline-primary" href="/static/bons_paiements/paiement_{{p.numero_bon}}.pdf">
+                                    {% if p.numero_bon %}
+                                    <a class="btn btn-sm btn-outline-primary" href="/static/bons_paiements/paiement_{{p.numero_bon}}.pdf" target="_blank">
                                         <i class="fa fa-file-pdf me-1"></i>PDF
                                     </a>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
@@ -433,80 +459,72 @@
         document.addEventListener('DOMContentLoaded', function() {
             initializeApplication();
         });
-function updateSeasonDisplay() {
-    const seasonDisplay = document.getElementById('currentSeason');
-    if (seasonDisplay && currentSaison) {
-        seasonDisplay.textContent = `Saison: ${currentSaison}`;
-    }
-}
+
+        function updateSeasonDisplay() {
+            const seasonDisplay = document.getElementById('currentSeason');
+            if (seasonDisplay && currentSaison) {
+                seasonDisplay.textContent = `${currentSaison}`;
+            }
+        }
+
         async function initializeApplication() {
-    try {
-        // Get season information first
-        const response = await fetch('/api/current-season');
-        const seasonData = await response.json();
-        
-        if (seasonData.success) {
-            currentSaison = seasonData.saison_code;
-            saisonType = seasonData.saison_type;
-            saisonYear = seasonData.saison_year;
-            
-            console.log('Season data loaded:', seasonData); // Debug line
-            
-            // Update season display
-            updateSeasonDisplay();
-            
-            // Load data with season information
-            await loadAdherentsData();
-            await loadPaiementsData();
-            updateAllIndicators();
-        } else {
-            console.error('Failed to load season data');
-            showError('filterStatus', 'Erreur de chargement des données de saison');
-        }
-    } catch (error) {
-        console.error('Erreur initialisation:', error);
-        showError('filterStatus', 'Erreur d\'initialisation');
-    }
-}// Chargement des données adhérents
-
-
-
-async function loadAdherentsData() {
-    try {
-        if (!currentSaison) {
-            console.error('No season selected');
-            return;
+            try {
+                // Get season information first
+                const response = await fetch('/api/current-season');
+                const seasonData = await response.json();
+                
+                if (seasonData.success) {
+                    currentSaison = seasonData.saison_code;
+                    saisonType = seasonData.saison_type;
+                    saisonYear = seasonData.saison_year;
+                    
+                    console.log('Season data loaded:', seasonData);
+                    
+                    // Update season display
+                    updateSeasonDisplay();
+                    
+                    // Load data with season information
+                    await loadAdherentsData();
+                    await loadPaiementsData();
+                    await updateAllIndicators();
+                } else {
+                    console.error('Failed to load season data');
+                    showError('filterStatus', 'Erreur de chargement des données de saison');
+                }
+            } catch (error) {
+                console.error('Erreur initialisation:', error);
+                showError('filterStatus', 'Erreur d\'initialisation');
+            }
         }
 
-        const response = await fetch(`/api/adherents-data?saison=${currentSaison}`);
-        const data = await response.json();
-        
-        console.log('Adherents data:', data); // Debug line
-        
-        if (data.success) {
-            allAdherents = data.adherents || [];
-            adherentsData = [...allAdherents];
-            generateTypeFilters(data.types_abonnement || []);
-            generateGroupeFilters(data.groupes || []);
-        } else {
-            console.error('Failed to load adherents data:', data);
+        // Chargement des données adhérents
+        async function loadAdherentsData() {
+            try {
+                if (!currentSaison) {
+                    console.error('No season selected');
+                    return;
+                }
+
+                const response = await fetch(`/api/adherents-data?saison=${currentSaison}`);
+                const data = await response.json();
+                
+                console.log('Adherents data:', data);
+                
+                if (data.success) {
+                    allAdherents = data.adherents || [];
+                    adherentsData = [...allAdherents];
+                    generateTypeFilters(data.types_abonnement || []);
+                    generateGroupeFilters(data.groupes || []);
+                    updateBasicStats();
+                } else {
+                    console.error('Failed to load adherents data:', data);
+                }
+            } catch (error) {
+                console.error('Error loading adherents data:', error);
+            }
         }
-    } catch (error) {
-        console.error('Error loading adherents data:', error);
-    }
-}
 
-// Add this helper function
-function showError(elementId, message) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.textContent = message;
-        element.classList.add('text-danger');
-    }
-    console.error(message);
-}
-
-// Générer filtres types
+        // Générer filtres types
         function generateTypeFilters(types) {
             const container = document.getElementById('typeAbonnementFilters');
             container.innerHTML = '';
@@ -684,39 +702,40 @@ function showError(elementId, message) {
         }
 
         // Indicateurs financiers
-async function updateFinancialIndicators() {
-    try {
-        const params = new URLSearchParams();
-        selectedTypes.forEach(type => params.append('types[]', type));
-        selectedGroupes.forEach(groupe => params.append('groupes[]', groupe));
-        params.append('saison', currentSaison);
+        async function updateFinancialIndicators() {
+            try {
+                const params = new URLSearchParams();
+                selectedTypes.forEach(type => params.append('types[]', type));
+                selectedGroupes.forEach(groupe => params.append('groupes[]', groupe));
+                params.append('saison', currentSaison);
 
-        const response = await fetch(`/api/financial-indicators?${params}`);
-        const data = await response.json();
+                const response = await fetch(`/api/financial-indicators?${params}`);
+                const data = await response.json();
 
-        if (data.success) {
-            // Update displays with season information
-            document.getElementById('saisonInfo').textContent = `Saison ${data.saison_code}`;
-            
-            const totalCollecte = data.total_collecte;
-            const totalRestant = data.total_reste;
-            const totalGeneral = totalCollecte + totalRestant;
-            const taux = totalGeneral > 0 ? (totalCollecte / totalGeneral * 100) : 0;
+                if (data.success) {
+                    const totalCollecte = data.total_collecte;
+                    const totalRestant = data.total_reste;
+                    const totalGeneral = totalCollecte + totalRestant;
+                    const taux = totalGeneral > 0 ? (totalCollecte / totalGeneral * 100) : 0;
 
-            document.getElementById('totalCollecte').textContent = totalCollecte.toFixed(2) + ' TND';
-            document.getElementById('totalRestant').textContent = totalRestant.toFixed(2) + ' TND';
-            document.getElementById('tauxCollecte').textContent = taux.toFixed(1) + '%';
+                    document.getElementById('totalCollecte').textContent = totalCollecte.toFixed(2) + ' TND';
+                    document.getElementById('totalRestant').textContent = totalRestant.toFixed(2) + ' TND';
+                    document.getElementById('tauxCollecte').textContent = taux.toFixed(1) + '%';
 
-            // Update progress bar
-            const progressBar = document.getElementById('progressBar');
-            if (progressBar) {
-                progressBar.style.width = taux.toFixed(1) + '%';
+                    // Update progress bars
+                    const progressBar = document.getElementById('progressBar');
+                    const progressText = document.getElementById('progressText');
+                    if (progressBar) {
+                        progressBar.style.width = taux.toFixed(1) + '%';
+                    }
+                    if (progressText) {
+                        progressText.textContent = taux.toFixed(1) + '% collecté';
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur indicateurs financiers:', error);
             }
         }
-    } catch (error) {
-        console.error('Erreur indicateurs financiers:', error);
-    }
-}
 
         // Chargement données paiements
         async function loadPaiementsData() {
@@ -724,31 +743,27 @@ async function updateFinancialIndicators() {
         }
 
         // Indicateurs paiements
-async function updatePaiementsIndicators() {
-    try {
-        const params = new URLSearchParams();
-        selectedTypes.forEach(type => params.append('types[]', type));
-        selectedGroupes.forEach(groupe => params.append('groupes[]', groupe));
-        params.append('saison', currentSaison);
+        async function updatePaiementsIndicators() {
+            try {
+                const params = new URLSearchParams();
+                selectedTypes.forEach(type => params.append('types[]', type));
+                selectedGroupes.forEach(groupe => params.append('groupes[]', groupe));
+                params.append('saison', currentSaison);
 
-        const response = await fetch(`/api/paiements-indicators?${params}`);
-        const data = await response.json();
+                const response = await fetch(`/api/paiements-indicators?${params}`);
+                const data = await response.json();
 
-        if (data.success) {
-            paiementsData = data.paiements;
-            updatePaymentStats(data);
-            updatePaymentTables(data);
-            updateAdditionalCharts(data);
-            
-            // Update season information
-            if (data.saison_code) {
-                document.getElementById('saisonInfo').textContent = `Saison ${data.saison_code}`;
+                if (data.success) {
+                    paiementsData = data.paiements;
+                    updatePaymentStats(data);
+                    updatePaymentTables(data);
+                    updateAdditionalCharts(data);
+                }
+            } catch (error) {
+                console.error('Erreur indicateurs paiements:', error);
             }
         }
-    } catch (error) {
-        console.error('Erreur indicateurs paiements:', error);
-    }
-}
+
         // Mettre à jour stats paiements
         function updatePaymentStats(data) {
             const stats = data.statistics;
@@ -760,13 +775,12 @@ async function updatePaiementsIndicators() {
             // Mise à jour du résumé financier
             const totalCollecte = parseFloat(document.getElementById('totalCollecte').textContent.replace(' TND', '').replace(/\s/g, ''));
             const totalRestant = parseFloat(document.getElementById('totalRestant').textContent.replace(' TND', '').replace(/\s/g, ''));
-            document.getElementById('totalMontantPercu').textContent = totalCollecte.toLocaleString('fr-FR') + ' TND';
             const totalGeneral = totalCollecte + totalRestant;
             
             if (totalGeneral > 0) {
                 const progress = (totalCollecte / totalGeneral) * 100;
                 const progressBar = document.getElementById('financialProgress');
-                const progressText = document.getElementById('progressText');
+                const progressText = document.getElementById('globalProgressText');
                 
                 if (progressBar) progressBar.style.width = progress.toFixed(1) + '%';
                 if (progressText) progressText.textContent = progress.toFixed(1) + '% collecté';
@@ -779,13 +793,13 @@ async function updatePaiementsIndicators() {
             const typeMontants = data.type_abonnement_montants || {};
 
             // Tableau paiements complets
-            updatePaymentTable('completPaymentDetails', typeStats, typeMontants, 'complets');
+            updatePaymentTable('completPaymentDetails', typeStats, typeMontants, 'complet');
             
             // Tableau paiements partiels
-            updatePaymentTable('partialPaymentDetails', typeStats, typeMontants, 'partiels');
+            updatePaymentTable('partialPaymentDetails', typeStats, typeMontants, 'partiel');
             
             // Tableau impayés
-            updatePaymentTable('unpaidPaymentDetails', typeStats, typeMontants, 'impayes');
+            updatePaymentTable('unpaidPaymentDetails', typeStats, typeMontants, 'impaye');
         }
 
         function updatePaymentTable(tableId, typeStats, typeMontants, status) {
@@ -819,7 +833,6 @@ async function updatePaiementsIndicators() {
                 row.innerHTML = `
                     <td>
                         <strong>${type}</strong>
-                        <br><small class="text-muted">${((count / Object.values(typeStats).reduce((sum, s) => sum + s[status], 0)) * 100).toFixed(1)}% du total</small>
                     </td>
                     <td class="text-center">
                         <span class="badge bg-primary">${count}</span>
@@ -832,7 +845,7 @@ async function updatePaiementsIndicators() {
             });
 
             // Ligne total
-            const totalCount = Object.values(typeStats).reduce((sum, stat) => sum + stat[status], 0);
+            const totalCount = Object.values(typeStats).reduce((sum, stat) => sum + (stat[status] || 0), 0);
             const totalMontant = Object.values(typeMontants).reduce((sum, montant) => sum + (montant[status] || 0), 0);
             
             if (totalCount > 0) {

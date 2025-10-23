@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -30,6 +31,61 @@
     <!-- Template Stylesheet -->
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 
+<style>
+#autocomplete-list {
+    position: absolute;
+    top: 100% !important; /* S'assurer qu'elle soit juste en dessous */
+    left: 0;
+    right: 0;
+    z-index: 9999 !important; /* Priorité maximale */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+    border-top: none;
+    background-color: white;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none; /* Cachée par défaut */
+}
+
+#autocomplete-list .list-group-item {
+    cursor: pointer;
+    border-left: none;
+    border-right: none;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+}
+
+#autocomplete-list .list-group-item:hover,
+#autocomplete-list .list-group-item.active {
+    background-color: #0d6efd;
+    color: white;
+}
+
+#autocomplete-list .list-group-item:hover .autocomplete-name,
+#autocomplete-list .list-group-item.active .autocomplete-name {
+    color: white;
+}
+
+#autocomplete-list .list-group-item:hover .autocomplete-matricule,
+#autocomplete-list .list-group-item.active .autocomplete-matricule {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.autocomplete-name {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+.autocomplete-matricule {
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
+/* S'assurer que le conteneur parent a position relative */
+.input-group {
+    position: relative !important;
+}
+</style>
 </head>
 
 <body>
@@ -69,33 +125,23 @@
                 
                 <!-- Formulaire de recherche d'adhérent -->
                 <form method="POST" class="mb-4" id="searchForm">
-                    <div class="input-group">
-                        <input 
-                            type="text" 
-                            name="matricule" 
-                            id="matriculeInput"
-                            class="form-control" 
-                            placeholder="Matricule de l'adhérent" 
-                            required>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-search me-2"></i>Rechercher
-                        </button>
-                    </div>
-                    <small class="text-muted mt-2 d-block">
-                        <i class="bi bi-filter-circle me-1"></i>
-                        Recherche dans la saison {{ code_saison }}
-                    </small>
-                </form>
-
-                <script>
-                    // Soumission avec Entrée
-                    document.getElementById('matriculeInput').addEventListener('keypress', function(e) {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            document.getElementById('searchForm').submit();
-                        }
-                    });
-                </script>
+    <div class="input-group position-relative">
+        <input 
+            type="text" 
+            name="matricule" 
+            id="matriculeInput"
+            class="form-control" 
+            placeholder="Nom, Prénom ou Matricule de l'adhérent" 
+            autocomplete="off"
+            required>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-search me-2"></i>Rechercher
+        </button>
+        
+        <!-- La liste DOIT être à l'intérieur du input-group -->
+        <div id="autocomplete-list" class="list-group position-absolute w-100"></div>
+    </div>
+</form>
 
                 {% if adherent %}
                     <!-- Infos adhérent -->
@@ -448,6 +494,147 @@
     <!-- Template Javascript -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
+    <!-- Script Autocomplete - DOIT ÊTRE APRÈS jQuery -->
+<script>
+$(document).ready(function() {
+    console.log("=== INIT AUTCOMPLETE ===");
+    
+    const adherentsList = {{ adherents_list|tojson|safe }};
+    console.log("Adhérents chargés:", adherentsList.length);
+    
+    const matriculeInput = $('#matriculeInput');
+    const autocompleteList = $('#autocomplete-list');
+    
+    console.log("Éléments trouvés - Input:", matriculeInput.length, "Liste:", autocompleteList.length);
+    
+    // Fonction de recherche
+    function rechercherAdherents(terme) {
+        console.log("Recherche terme:", terme);
+        
+        if (terme.length < 2) {
+            autocompleteList.hide().empty();
+            return;
+        }
+        
+        const termeMin = terme.toLowerCase();
+        const resultats = [];
+        
+        for (const adherent of adherentsList) {
+            const nomMatch = adherent.nom.toLowerCase().includes(termeMin);
+            const prenomMatch = adherent.prenom.toLowerCase().includes(termeMin);
+            const matriculeMatch = adherent.matricule.toString().includes(terme);
+            const nomComplet = `${adherent.nom} ${adherent.prenom}`.toLowerCase().includes(termeMin);
+            
+            if (nomMatch || prenomMatch || matriculeMatch || nomComplet) {
+                resultats.push(adherent);
+                if (resultats.length >= 8) break; // Limiter à 8 résultats
+            }
+        }
+        
+        afficherResultats(resultats);
+    }
+    
+    // Fonction d'affichage
+    function afficherResultats(resultats) {
+        autocompleteList.empty();
+        
+        if (resultats.length === 0) {
+            autocompleteList.append(`
+                <li class="list-group-item text-muted">
+                    <i class="bi bi-search me-2"></i>Aucun adhérent trouvé
+                </li>
+            `);
+        } else {
+            resultats.forEach(adherent => {
+                const item = $(`
+                    <li class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="autocomplete-name">${adherent.nom} ${adherent.prenom}</div>
+                                <small class="autocomplete-matricule">Matricule: ${adherent.matricule}</small>
+                            </div>
+                        </div>
+                    </li>
+                `);
+                
+                item.on('click', function() {
+                    console.log("Adhérent sélectionné:", adherent.matricule);
+                    matriculeInput.val(adherent.matricule);
+                    autocompleteList.hide();
+                    // Soumettre automatiquement
+                    $('#searchForm').submit();
+                });
+                
+                autocompleteList.append(item);
+            });
+        }
+        
+        autocompleteList.show();
+        console.log("Résultats affichés:", resultats.length);
+    }
+    
+    // Événements
+    matriculeInput.on('input', function() {
+        const terme = $(this).val().trim();
+        rechercherAdherents(terme);
+    });
+    
+    matriculeInput.on('focus', function() {
+        const terme = $(this).val().trim();
+        if (terme.length >= 2) {
+            rechercherAdherents(terme);
+        }
+    });
+    
+    // Cacher au clic externe
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#matriculeInput, #autocomplete-list').length) {
+            autocompleteList.hide();
+        }
+    });
+    
+    // Navigation clavier
+    matriculeInput.on('keydown', function(e) {
+        const items = autocompleteList.find('.list-group-item');
+        if (items.length === 0) return;
+        
+        const actif = autocompleteList.find('.list-group-item.active');
+        
+        switch(e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                if (actif.length === 0) {
+                    items.first().addClass('active');
+                } else {
+                    actif.removeClass('active').next().addClass('active');
+                }
+                break;
+                
+            case 'ArrowUp':
+                e.preventDefault();
+                if (actif.length === 0) {
+                    items.last().addClass('active');
+                } else {
+                    actif.removeClass('active').prev().addClass('active');
+                }
+                break;
+                
+            case 'Enter':
+                if (actif.length) {
+                    e.preventDefault();
+                    actif.click();
+                }
+                break;
+                
+            case 'Escape':
+                autocompleteList.hide();
+                break;
+        }
+    });
+    
+    console.log("Autocomplete initialisé avec succès");
+});
+</script>
 </body>
 
 </html>

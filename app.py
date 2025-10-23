@@ -320,10 +320,6 @@ def admin():
     payment_season = SeasonContext(Paiement)
     adherent_season = SeasonContext(Adherent)
     
-    # Get base queries
-    paiements_query = Paiement.query
-    adherents_query = Adherent.query
-    
     # Get current season code from session
     current_season_code = session.get('saison_code')
     if not current_season_code:
@@ -332,11 +328,11 @@ def admin():
     
     # Apply season filters using session's season code
     paiements = payment_season.filter_query(
-        paiements_query.filter(Paiement.code_saison == current_season_code)
+        Paiement.query.filter(Paiement.code_saison == current_season_code)
     ).all()
     
     adherents = adherent_season.filter_query(
-        adherents_query.filter(Adherent.code_saison == current_season_code)
+        Adherent.query.filter(Adherent.code_saison == current_season_code)
     ).all()
     
     # Calculate statistics
@@ -362,6 +358,8 @@ def admin():
         saison_type=session.get('saison_type'),
         saison_year=session.get('saison'))
 
+
+
 @app.route('/api/adherents-data')
 def get_adherents_data():
     try:
@@ -384,12 +382,14 @@ def get_adherents_data():
         groupes = set()
 
         for a in all_adherents:
-            # Process adherent data...
             adherent_data = {
                 'id': a.adherent_id,
+                'matricule': a.matricule,
                 'nom': a.nom,
+                'prenom': a.prenom,
                 'type_abonnement': a.type_abonnement or 'N/D',
-                'groupe': a.groupe or 'Non spécifié'
+                'groupe': a.groupe or 'Non spécifié',
+                'paye': a.paye
             }
             adherents_list.append(adherent_data)
             
@@ -408,11 +408,12 @@ def get_adherents_data():
         })
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
             'error': str(e)
         }), 500
-
 
 @app.route('/api/paiements-indicators')
 @season_required
@@ -428,8 +429,8 @@ def get_paiements_indicators():
         # Base query with season filter
         base_query = db.session.query(
             Paiement, Adherent.nom, Adherent.prenom, Adherent.type_abonnement,
-            Adherent.groupe, Adherent.paye.label('adherent_paye_status')
-        ).outerjoin(
+            Adherent.groupe, Adherent.paye
+        ).join(
             Adherent, 
             Paiement.matricule_adherent == Adherent.matricule
         ).filter(Paiement.code_saison == current_season_code)
@@ -439,28 +440,23 @@ def get_paiements_indicators():
         if groupes_filter:
             base_query = base_query.filter(Adherent.groupe.in_(groupes_filter))
 
-        paiements_query = base_query.all()
+        paiements_data = base_query.all()
 
         paiements_list = []
         statistics = {'complets': 0, 'partiels': 0, 'impayes': 0, 'montant_total': 0}
         reglement_stats = {}
-        reglement_montants = {}
         type_abonnement_payment_stats = {}
         type_abonnement_montants = {}
-        montant_par_abonnement = {}
 
-        for paiement_data in paiements_query:
-            paiement = paiement_data[0]
-            nom = paiement_data[1] or 'Inconnu'
-            prenom = paiement_data[2] or ''
-            type_abonnement = paiement_data[3] or 'Non spécifié'
-            groupe = paiement_data[4] or 'Non spécifié'
-            adherent_paye_status = paiement_data[5]
-
+        for paiement, nom, prenom, type_abonnement, groupe, adherent_paye in paiements_data:
+            type_abonnement = type_abonnement or 'Non spécifié'
+            groupe = groupe or 'Non spécifié'
+            
             montant_reste = float(paiement.montant_reste or 0)
-            montant_paye = float(paiement.total_montant_paye or paiement.montant_paye or 0)
+            montant_paye = float(paiement.montant_paye or 0)
             montant_total = float(paiement.montant or 0)
 
+            # Determine payment status
             if montant_reste <= 0 and montant_paye >= montant_total:
                 status_paiement = 'complet'
                 statistics['complets'] += 1
@@ -472,24 +468,132 @@ def get_paiements_indicators():
                 statistics['impayes'] += 1
 
             statistics['montant_total'] += montant_paye
-            montant_par_abonnement[type_abonnement] = montant_par_abonnement.get(type_abonnement, 0) + montant_paye
 
+            # Update payment type stats
             type_reglement = paiement.type_reglement or 'Non spécifié'
             reglement_stats[type_reglement] = reglement_stats.get(type_reglement, 0) + 1
-            reglement_montants[type_reglement] = reglement_montants.get(type_reglement, 0) + montant_paye
 
+            # CORRECTION: Initialiser les stats avec les bonnes clés (singulier)
+            if type_abonnement not in type_abonnement_payment_stats:
+                type_abonnement_payment_stats[type_abonnement] = {'complet': 0, 'partiel': 0, 'impaye': 0}
+                type_abonnement_montants[type_abonnement] = {'complet': 0, 'partiel': 0, 'impaye': 0}
+
+            # CORRECTION: Utiliser les mêmes clés que dans l'initialisation
+            type_abonnement_payment_stats[type_abonnement][status_paiement] += 1
+
+            # Update amounts by subscription type and status
+            if status_paiement == 'complet':
+                type_abonnement_montants[type_abonnement]['complet'] += montant_paye
+            elif status_paiement == 'partiel':
+                type_abonnement_montants[type_abonnement]['partiel'] += montant_paye
+            else:  # impaye
+                type_abonnement_montants[type_abonnement]['impaye'] += montant_total
+
+            paiements_list.append({
+                'id_paiement': paiement.id_paiement,
+                'matricule_adherent': paiement.matricule_adherent,
+                'nom_adherent': f"{nom} {prenom}".strip(),
+                'date_paiement': paiement.date_paiement.isoformat() if paiement.date_paiement else None,
+                'montant': montant_total,
+                'montant_paye': montant_paye,
+                'montant_reste': montant_reste,
+                'type_reglement': type_reglement,
+                'type_abonnement': type_abonnement,
+                'groupe': groupe,
+                'status_paiement': status_paiement,
+                'adherent_paye_status': adherent_paye
+            })
+
+        # Get recent payments
+        paiements_recents = sorted(
+            [p for p in paiements_list if p['date_paiement']],
+            key=lambda x: x['date_paiement'], 
+            reverse=True
+        )[:10]
+
+        return jsonify({
+            'success': True,
+            'paiements': paiements_list,
+            'statistics': statistics,
+            'reglement_stats': reglement_stats,
+            'type_abonnement_payment_stats': type_abonnement_payment_stats,
+            'type_abonnement_montants': type_abonnement_montants,
+            'paiements_recents': paiements_recents,
+            'saison_code': current_season_code
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+    try:
+        current_season_code = session.get('saison_code')
+        if not current_season_code:
+            return jsonify({'error': 'Aucune saison sélectionnée'}), 400
+
+        types_filter = request.args.getlist('types[]')
+        groupes_filter = request.args.getlist('groupes[]')
+
+        # Base query with season filter
+        base_query = db.session.query(
+            Paiement, Adherent.nom, Adherent.prenom, Adherent.type_abonnement,
+            Adherent.groupe, Adherent.paye
+        ).join(
+            Adherent, 
+            Paiement.matricule_adherent == Adherent.matricule
+        ).filter(Paiement.code_saison == current_season_code)
+
+        if types_filter:
+            base_query = base_query.filter(Adherent.type_abonnement.in_(types_filter))
+        if groupes_filter:
+            base_query = base_query.filter(Adherent.groupe.in_(groupes_filter))
+
+        paiements_data = base_query.all()
+
+        paiements_list = []
+        statistics = {'complets': 0, 'partiels': 0, 'impayes': 0, 'montant_total': 0}
+        reglement_stats = {}
+        type_abonnement_payment_stats = {}
+        type_abonnement_montants = {}
+
+        for paiement, nom, prenom, type_abonnement, groupe, adherent_paye in paiements_data:
+            type_abonnement = type_abonnement or 'Non spécifié'
+            groupe = groupe or 'Non spécifié'
+            
+            montant_reste = float(paiement.montant_reste or 0)
+            montant_paye = float(paiement.montant_paye or 0)
+            montant_total = float(paiement.montant or 0)
+
+            # Determine payment status
+            if montant_reste <= 0 and montant_paye >= montant_total:
+                status_paiement = 'complet'
+                statistics['complets'] += 1
+            elif montant_paye > 0:
+                status_paiement = 'partiel'
+                statistics['partiels'] += 1
+            else:
+                status_paiement = 'impaye'
+                statistics['impayes'] += 1
+
+            statistics['montant_total'] += montant_paye
+
+            # Update payment type stats
+            type_reglement = paiement.type_reglement or 'Non spécifié'
+            reglement_stats[type_reglement] = reglement_stats.get(type_reglement, 0) + 1
+
+            # Update subscription type stats
             if type_abonnement not in type_abonnement_payment_stats:
                 type_abonnement_payment_stats[type_abonnement] = {'complets': 0, 'partiels': 0, 'impayes': 0}
                 type_abonnement_montants[type_abonnement] = {'complets': 0, 'partiels': 0, 'impayes': 0}
 
-            type_abonnement_payment_stats[type_abonnement][status_paiement + 's'] += 1
+            type_abonnement_payment_stats[type_abonnement][status_paiement] += 1
 
+            # Update amounts by subscription type and status
             if status_paiement == 'complet':
                 type_abonnement_montants[type_abonnement]['complets'] += montant_paye
             elif status_paiement == 'partiel':
                 type_abonnement_montants[type_abonnement]['partiels'] += montant_paye
-                type_abonnement_montants[type_abonnement]['impayes'] += montant_reste
-            else:
+            else:  # impaye
                 type_abonnement_montants[type_abonnement]['impayes'] += montant_total
 
             paiements_list.append({
@@ -504,24 +608,63 @@ def get_paiements_indicators():
                 'type_abonnement': type_abonnement,
                 'groupe': groupe,
                 'status_paiement': status_paiement,
-                'adherent_paye_status': adherent_paye_status
+                'adherent_paye_status': adherent_paye
             })
 
-        # Get recent payments (filtered by season)
+        # Get recent payments
         paiements_recents = sorted(
             [p for p in paiements_list if p['date_paiement']],
-            key=lambda x: x['date_paiement'], reverse=True)[:10]
+            key=lambda x: x['date_paiement'], 
+            reverse=True
+        )[:10]
 
         return jsonify({
             'success': True,
             'paiements': paiements_list,
             'statistics': statistics,
             'reglement_stats': reglement_stats,
-            'reglement_montants': reglement_montants,
             'type_abonnement_payment_stats': type_abonnement_payment_stats,
             'type_abonnement_montants': type_abonnement_montants,
             'paiements_recents': paiements_recents,
-            'montant_par_abonnement': montant_par_abonnement,
+            'saison_code': current_season_code
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/financial-indicators')
+@season_required
+def get_financial_indicators():
+    try:
+        current_season_code = session.get('saison_code')
+        if not current_season_code:
+            return jsonify({'error': 'Aucune saison sélectionnée'}), 400
+
+        types_filter = request.args.getlist('types[]')
+        groupes_filter = request.args.getlist('groupes[]')
+
+        # Base query with season filter
+        base_query = Paiement.query.filter(Paiement.code_saison == current_season_code)
+
+        # If filters are applied, join with Adherent table
+        if types_filter or groupes_filter:
+            base_query = base_query.join(Adherent, Paiement.matricule_adherent == Adherent.matricule)
+            if types_filter:
+                base_query = base_query.filter(Adherent.type_abonnement.in_(types_filter))
+            if groupes_filter:
+                base_query = base_query.filter(Adherent.groupe.in_(groupes_filter))
+
+        paiements = base_query.all()
+
+        total_collecte = sum(float(p.montant_paye or 0) for p in paiements)
+        total_reste = sum(float(p.montant_reste or 0) for p in paiements)
+
+        return jsonify({
+            'success': True, 
+            'total_collecte': total_collecte, 
+            'total_reste': total_reste,
             'saison_code': current_season_code,
             'saison_type': session.get('saison_type'),
             'saison_year': session.get('saison')
@@ -531,67 +674,6 @@ def get_paiements_indicators():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
-
-
-@app.route('/api/financial-indicators')
-@season_required
-def get_financial_indicators():
-    try:
-        # Get season information from session
-        year = session.get('saison')
-        season_type = session.get('saison_type')
-        
-        if not year:
-            return jsonify({'error': 'Aucune saison sélectionnée'}), 400
-
-        # Generate season codes
-        from filter_functions import get_season_codes
-        season_codes = get_season_codes(year)
-        
-        types = request.args.getlist('types[]')
-        groupes = request.args.getlist('groupes[]')
-
-        # Determine which season codes to filter by
-        if season_type == 'S':
-            season_codes_to_use = [season_codes['normal']]
-        elif season_type == 'E':
-            season_codes_to_use = [season_codes['summer']]
-        else:
-            season_codes_to_use = [season_codes['normal'], season_codes['summer']]
-
-        # Base query with season filter
-        query = db.session.query(Paiement).filter(Paiement.code_saison.in_(season_codes_to_use))
-
-        if types or groupes:
-            adherents_query = Adherent.query.filter(Adherent.code_saison.in_(season_codes_to_use))
-            if types:
-                adherents_query = adherents_query.filter(Adherent.type_abonnement.in_(types))
-            if groupes:
-                adherents_query = adherents_query.filter(Adherent.groupe.in_(groupes))
-            
-            adherents_filtres = adherents_query.all()
-            matricules_filtres = [str(a.matricule) for a in adherents_filtres]
-
-            if matricules_filtres:
-                query = query.filter(Paiement.matricule_adherent.in_(matricules_filtres))
-            else:
-                return jsonify({'success': True, 'total_collecte': 0, 'total_reste': 0})
-
-        total_collecte = float(query.with_entities(func.sum(Paiement.montant_paye)).scalar() or 0)
-        total_reste = float(query.with_entities(func.sum(Paiement.montant_reste)).scalar() or 0)
-
-        return jsonify({
-            'success': True, 
-            'total_collecte': total_collecte, 
-            'total_reste': total_reste,
-            'saison_code': season_codes_to_use[0] if len(season_codes_to_use) == 1 else f"All_{year}",
-            'saison_type': season_type,
-            'saison_year': year
-        })
-
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 from sqlalchemy import func, or_
 
 # Route pour l'emploi du temps de préparation physique
@@ -2555,18 +2637,16 @@ def gerer_adherent():
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
     
-    # Create season context
-    season = SeasonContext(Adherent)
-    
     # Get current season code from session
-    current_season_code = session.get('saison_code')
+    current_season_code = session.get('saison_code')  # Ex: 'S2025' ou 'E2025'
     if not current_season_code:
         flash("Veuillez sélectionner une saison.", "warning")
         return redirect(url_for('login'))
     
-    # Apply season filter using session's season code
-    adherents = season.filter_query(
-        Adherent.query.filter(Adherent.code_saison == current_season_code)
+    # Filter adherents by exact season code
+    adherents = Adherent.query.filter(
+        Adherent.code_saison == current_season_code,
+        Adherent.status == 'Actif'  # Optionnel: filtrer aussi par statut
     ).order_by(Adherent.nom).all()
     
     return render_template('gerer_adherent.html',
@@ -2574,7 +2654,6 @@ def gerer_adherent():
                          saison_code=current_season_code,
                          saison_type=session.get('saison_type'),
                          saison_year=session.get('saison'))
-
 @app.route('/modifier_adherent/<int:id>', methods=['GET', 'POST'])
 def modifier_adherent(id):
     if 'user_id' not in session or session.get('role') != 'admin':
@@ -2834,6 +2913,27 @@ def paiement():
         code_saison = f"S{saison_year}"  # Ex: S2025
         saison_type = 'annuel'
     
+    # Récupérer TOUS les adhérents de la saison pour l'autocomplete
+    adherents_search_data = Adherent.query.filter_by(
+        code_saison=code_saison,
+        status='Actif'
+    ).with_entities(
+        Adherent.matricule,
+        Adherent.nom,
+        Adherent.prenom
+    ).all()
+    
+    # Convertir en liste de dictionnaires pour le JS
+    adherents_list = [
+        {
+            'matricule': adh.matricule,
+            'nom': adh.nom,
+            'prenom': adh.prenom,
+        }
+        for adh in adherents_search_data
+    ]
+    
+    
     adherent = None
     paiements = []
     cotisations = []
@@ -2856,12 +2956,13 @@ def paiement():
                                  cotisations=[],
                                  saison_type=saison_type,
                                  code_saison=code_saison,
-                                 saison_year=saison_year)
+                                 saison_year=saison_year,
+                                 adherents_list=adherents_list)
         
         # Rechercher l'adhérent avec le code saison correspondant
         adherent = Adherent.query.filter_by(
             matricule=matricule,
-            code_saison=code_saison,  # Filtre par code_saison exact (S2025 ou E2025)
+            code_saison=code_saison,
             status='Actif'
         ).first()
 
@@ -2873,7 +2974,8 @@ def paiement():
                                  cotisations=[],
                                  saison_type=saison_type,
                                  code_saison=code_saison,
-                                 saison_year=saison_year)
+                                 saison_year=saison_year,
+                                 adherents_list=adherents_list)
 
         # Récupérer les paiements existants pour cet adhérent dans la saison actuelle
         paiements = Paiement.query.filter_by(
@@ -2947,7 +3049,6 @@ def paiement():
                 db.session.commit()
                 
                 flash("Paiement enregistré avec succès.", "success")
-                # Rediriger avec le paramètre type pour maintenir le contexte
                 return redirect(url_for('paiement', type=type_param))
                 
             except ValueError as e:
@@ -2975,7 +3076,11 @@ def paiement():
         if numero_bon > 50:
             numero_carnet += 1
             numero_bon = 1
-
+    print("=== DEBUG AUTCOMPLETE ===")
+    print(f"Type de adherents_list: {type(adherents_list)}")
+    print(f"Nombre d'éléments: {len(adherents_list)}")
+    for i, adh in enumerate(adherents_list[:5]):
+        print(f"  {i+1}. {adh}")
     return render_template('paiement.html',
                          adherent=adherent,
                          paiements=paiements,
@@ -2990,6 +3095,7 @@ def paiement():
                          saison_type=saison_type,
                          code_saison=code_saison,
                          saison_year=saison_year,
+                         adherents_list=adherents_list,
                          reste_a_payer=max(0, montant_net - total_montant_paye))
 
 @app.route('/cotisations', methods=['GET', 'POST'])
