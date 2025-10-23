@@ -222,6 +222,8 @@
         <option value="{{ prep_physique.id_entraineur }}">{{ prep_physique.nom }} {{ prep_physique.prenom }}</option>
         {% endfor %}
     </select>
+    <input type="number" step="0.01" id="groupCotisation" class="form-control mt-2" 
+           placeholder="Cotisation (TND) - optionnel">
     <button class="btn btn-success mt-2" onclick="confirmGroupAdd()">Confirmer</button>
 </div>
     
@@ -288,6 +290,9 @@
                     </button>
                 </td>
                 <td>
+                    <button class="btn btn-sm btn-warning me-1" onclick="openEditGroupModal({{ groupe.id_groupe }})">
+                        <i class="fas fa-edit"></i>
+                    </button>
                     <button class="btn btn-sm btn-danger" onclick="deleteGroup({{ groupe.id_groupe }})">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -552,9 +557,106 @@ function closeAdherentsListModal() {
 
 
 
+<!-- Modal Éditer Groupe -->
+<div id="editGroupModal" class="modal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 700px; max-height: 90vh; overflow-y: auto;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">
+            <i class="fas fa-edit text-primary me-2"></i>
+            Éditer le Groupe
+        </h4>
+        <button type="button" class="btn-close" onclick="closeEditGroupModal()"></button>
+    </div>
+    
+    <form id="editGroupForm">
+        <input type="hidden" id="edit_groupe_id">
+        
+        <!-- Nom du groupe -->
+        <div class="mb-3">
+            <label class="form-label">Nom du Groupe</label>
+            <input type="text" id="edit_groupe_nom" class="form-control" readonly>
+        </div>
+        
+        <!-- Entraîneur -->
+        <div class="mb-3">
+            <label class="form-label">Entraîneur</label>
+            <select id="edit_entraineur" class="form-select">
+                {% for entraineur in entraineurs %}
+                <option value="{{ entraineur.id_entraineur }}">
+                    {{ entraineur.nom }} {{ entraineur.prenom }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- Préparateur Physique -->
+        <div class="mb-3">
+            <label class="form-label">Préparateur Physique (optionnel)</label>
+            <select id="edit_prep_physique" class="form-select">
+                <option value="">Aucun</option>
+                {% for prep in prep_physiques %}
+                <option value="{{ prep.id_entraineur }}">
+                    {{ prep.nom }} {{ prep.prenom }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- Cotisation -->
+        <div class="mb-3">
+            <label class="form-label">Cotisation (TND)</label>
+            <input type="number" step="0.01" id="edit_cotisation" class="form-control" placeholder="Ex: 500.00">
+            <small class="text-muted">Cette cotisation sera appliquée aux adhérents ajoutés à ce groupe</small>
+        </div>
+        
+        <!-- Adhérents actuels -->
+        <div class="mb-3">
+            <label class="form-label">
+                <i class="fas fa-users me-2"></i>
+                Adhérents actuels
+            </label>
+            <div id="edit_adherents_list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                <!-- Chargé dynamiquement -->
+            </div>
+        </div>
+        
+        <!-- Boutons -->
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <button type="button" class="btn btn-secondary" onclick="closeEditGroupModal()">
+                Annuler
+            </button>
+            <button type="button" class="btn btn-primary" onclick="saveGroupEdit()">
+                <i class="fas fa-save me-2"></i>
+                Enregistrer
+            </button>
+        </div>
+    </form>
+</div>
 
+<div id="editGroupBackdrop" class="modal-backdrop" style="display:none;" onclick="closeEditGroupModal()"></div>
 
+<style>
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
 
+#editGroupModal {
+    z-index: 1000 !important;
+}
+
+/* S'assurer que le modal est au-dessus du backdrop */
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+</style>
 
 
 

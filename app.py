@@ -959,25 +959,57 @@ def save_presences():
 def get_adherents_groupe(nom_groupe):
     if 'user_id' not in session:
         return jsonify({"error": "Non autorisé"}), 403
-
+    
     try:
-        adherents = Adherent.query.filter_by(groupe=nom_groupe).all()
-
+        # Récupérer le code saison de la session
+        current_season_code = session.get('saison_code')
+        if not current_season_code:
+            return jsonify({"error": "Aucune saison sélectionnée"}), 400
+        
+        print(f"Recherche groupe: '{nom_groupe}' pour la saison: {current_season_code}")
+        
+        # Essayer de chercher par ID d'abord
+        try:
+            groupe_id = int(nom_groupe)
+            groupe = Groupe.query.get(groupe_id)
+            if groupe:
+                nom_groupe = groupe.nom_groupe
+                print(f"Groupe trouvé par ID: {nom_groupe}")
+        except ValueError:
+            pass
+        
+        # Chercher les adhérents avec filtre de saison ET statut actif
+        adherents = Adherent.query.filter_by(
+            groupe=nom_groupe,
+            code_saison=current_season_code,
+            status='Actif'
+        ).order_by(Adherent.nom, Adherent.prenom).all()
+        
+        print(f"Adhérents trouvés: {len(adherents)} pour la saison {current_season_code}")
+        
+        for a in adherents:
+            print(f"  - {a.matricule}: {a.nom} {a.prenom} (Saison: {a.code_saison})")
+        
         adherents_list = [{
             'matricule': a.matricule,
             'nom': a.nom,
             'prenom': a.prenom,
-            'groupe': a.groupe
+            'groupe': a.groupe,
+            'code_saison': a.code_saison
         } for a in adherents]
-
+        
         return jsonify({
             "success": True,
-            "adherents": adherents_list
+            "adherents": adherents_list,
+            "groupe_recherche": nom_groupe,
+            "saison_code": current_season_code
         })
-
+        
     except Exception as e:
+        print(f"Erreur: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 400
-
 
 
 # Route pour récupérer les statistiques des présences par type de séance
@@ -1288,61 +1320,283 @@ def supprimer_location(id):
     flash("Réservation supprimée avec succès", "success")
     return redirect(url_for('locations_terrains'))
 
+# Routes pour la gestion des groupes (à ajouter dans app.py)
 
 @app.route('/ajouter_groupe', methods=['POST'])
 def ajouter_groupe():
+    # --- Vérification d'accès ---
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
-        flash("Accès non autorisé.", "danger")
-        return redirect(url_for('login'))
-    
+        return jsonify({"error": "Accès non autorisé"}), 403
+
+    current_season_code = session.get('saison_code')
+    if not current_season_code:
+        return jsonify({"error": "Aucune saison active"}), 400
+
     data = request.get_json()
-    
-    # Récupérer les données avec les bons noms de clés
     group_name = data.get('groupName')
     entraineur_id = data.get('entraineurId')
-    prep_physique_id = data.get('prepPhysiqueId')  # Nouveau champ
+    prep_physique_id = data.get('prepPhysiqueId')
+    cotisation = data.get('cotisation')
 
+    # --- Validation des champs obligatoires ---
     if not group_name or not entraineur_id:
-        return "Le nom du groupe ou l'entraîneur est manquant.", 400
+        return jsonify({"error": "Nom et entraîneur requis"}), 400
 
-    # Vérifier l'existence du groupe
-    if Groupe.query.filter_by(nom_groupe=group_name).first():
-        return "Un groupe avec ce nom existe déjà.", 400
+    # --- Vérifier l'existence du groupe dans la saison courante ---
+    existing_group = Groupe.query.filter_by(nom_groupe=group_name, saison_code=current_season_code).first()
+    if existing_group:
+        return jsonify({"error": f"Groupe '{group_name}' existe déjà dans la saison {current_season_code}"}), 400
 
     try:
-        # Récupérer l'entraîneur par ID
+        # --- Récupérer l'entraîneur ---
         entraineur = Entraineur.query.get(entraineur_id)
         if not entraineur:
-            return "Entraîneur introuvable.", 404
-        
-        # Récupérer le préparateur physique si fourni
+            return jsonify({"error": "Entraîneur introuvable"}), 404
+
+        # --- Récupérer le préparateur physique ---
         prep_physique_nom = None
         if prep_physique_id:
             prep_physique = Entraineur.query.get(prep_physique_id)
             if prep_physique and prep_physique.type_abonnement == "prep_physique":
                 prep_physique_nom = f"{prep_physique.nom} {prep_physique.prenom}"
 
-        # Créer le groupe avec les bonnes données
+        # --- Création du nouveau groupe ---
         nouveau_groupe = Groupe(
             nom_groupe=group_name,
             entraineur_nom=f"{entraineur.nom} {entraineur.prenom}",
             type_abonnement=entraineur.type_abonnement,
             categorie=group_name.split('-')[0],
-            preparateur_physique=prep_physique_nom  # Nouveau champ
+            preparateur_physique=prep_physique_nom,
+            saison_code=current_season_code,           # 🆕 Saison actuelle
+            date_creation=datetime.utcnow()             # 🆕 Date automatique
         )
-        
+
         db.session.add(nouveau_groupe)
+        db.session.flush()  # Permet de récupérer l'ID avant le commit
+
+        # --- Création de la cotisation liée (si fournie) ---
+        if cotisation:
+            nouvelle_cotisation = Cotisation(
+                nom_cotisation=group_name,
+                montant_cotisation=float(cotisation)
+            )
+            db.session.add(nouvelle_cotisation)
+
         db.session.commit()
-        return "Groupe ajouté avec succès.", 200
+        return jsonify({
+            "message": f"Groupe '{group_name}' ajouté avec succès pour la saison {current_season_code}",
+            "groupe_id": nouveau_groupe.id_groupe
+        }), 200
 
     except Exception as e:
         db.session.rollback()
-        return f"Erreur lors de l'ajout du groupe : {str(e)}", 500
+        return jsonify({"error": f"Erreur lors de la création du groupe : {str(e)}"}), 500
 
+# Route avec le bon nom pour correspondre au JS
+@app.route('/api/get_groupe_details/<int:groupe_id>', methods=['GET'])
+def get_groupe_details(groupe_id):
+    """Récupérer les détails d'un groupe pour l'édition"""
+    if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
+        return jsonify({"success": False, "error": "Accès non autorisé"}), 403
+    
+    try:
+        groupe = Groupe.query.get_or_404(groupe_id)
+        
+        # Récupérer la cotisation associée
+        cotisation = Cotisation.query.filter_by(nom_cotisation=groupe.nom_groupe).first()
+        
+        # Récupérer les adhérents du groupe
+        current_season_code = session.get('saison_code')
+        adherents = Adherent.query.filter_by(
+            groupe=groupe.nom_groupe,
+            code_saison=current_season_code,
+            status='Actif'
+        ).all()
+        
+        # Récupérer l'ID de l'entraîneur
+        entraineur = Entraineur.query.filter(
+            db.func.concat(Entraineur.nom, ' ', Entraineur.prenom) == groupe.entraineur_nom
+        ).first()
+        
+        # Récupérer l'ID du préparateur physique
+        prep_physique_id = None
+        if groupe.preparateur_physique:
+            prep_physique = Entraineur.query.filter(
+                db.func.concat(Entraineur.nom, ' ', Entraineur.prenom) == groupe.preparateur_physique
+            ).first()
+            if prep_physique:
+                prep_physique_id = prep_physique.id_entraineur
+        
+        return jsonify({
+            "success": True,
+            "groupe": {
+                "id_groupe": groupe.id_groupe,
+                "nom_groupe": groupe.nom_groupe,
+                "entraineur_id": entraineur.id_entraineur if entraineur else None,
+                "entraineur_nom": groupe.entraineur_nom,
+                "prep_physique_id": prep_physique_id,
+                "prep_physique_nom": groupe.preparateur_physique
+            },
+            "cotisation": float(cotisation.montant_cotisation) if cotisation else None,
+            "adherents": [{
+                "matricule": a.matricule,
+                "nom": a.nom,
+                "prenom": a.prenom
+            } for a in adherents]
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/update_groupe/<int:groupe_id>', methods=['POST'])
+def update_groupe(groupe_id):
+    """Mettre à jour un groupe"""
+    if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
+        return jsonify({"success": False, "error": "Accès non autorisé"}), 403
+    
+    try:
+        data = request.get_json()
+        groupe = Groupe.query.get_or_404(groupe_id)
+        
+        # Mettre à jour l'entraîneur
+        if data.get('entraineur_id'):
+            entraineur = Entraineur.query.get(data['entraineur_id'])
+            if entraineur:
+                ancien_entraineur = groupe.entraineur_nom
+                nouveau_nom = f"{entraineur.nom} {entraineur.prenom}"
+                
+                # Mettre à jour le groupe
+                groupe.entraineur_nom = nouveau_nom
+                
+                # Mettre à jour tous les adhérents du groupe
+                current_season_code = session.get('saison_code')
+                adherents = Adherent.query.filter_by(
+                    groupe=groupe.nom_groupe,
+                    entraineur=ancien_entraineur,
+                    code_saison=current_season_code
+                ).all()
+                
+                for adherent in adherents:
+                    adherent.entraineur = nouveau_nom
+        
+        # Mettre à jour le préparateur physique
+        if 'prep_physique_id' in data:
+            if data['prep_physique_id']:
+                prep = Entraineur.query.get(data['prep_physique_id'])
+                if prep:
+                    groupe.preparateur_physique = f"{prep.nom} {prep.prenom}"
+            else:
+                groupe.preparateur_physique = None
+        
+        # Mettre à jour la cotisation
+        if 'cotisation' in data:
+            cotisation = Cotisation.query.filter_by(nom_cotisation=groupe.nom_groupe).first()
+            
+            if data['cotisation']:
+                nouveau_montant = float(data['cotisation'])
+                
+                if cotisation:
+                    # Mettre à jour
+                    ancienne_cotisation = cotisation.montant_cotisation
+                    cotisation.montant_cotisation = nouveau_montant
+                    
+                    # Mettre à jour tous les adhérents qui ont l'ancienne cotisation
+                    current_season_code = session.get('saison_code')
+                    adherents = Adherent.query.filter_by(
+                        groupe=groupe.nom_groupe,
+                        cotisation=ancienne_cotisation,
+                        code_saison=current_season_code
+                    ).all()
+                    
+                    for adherent in adherents:
+                        adherent.cotisation = nouveau_montant
+                else:
+                    # Créer
+                    nouvelle_cotisation = Cotisation(
+                        nom_cotisation=groupe.nom_groupe,
+                        montant_cotisation=nouveau_montant
+                    )
+                    db.session.add(nouvelle_cotisation)
+                    
+                    # Appliquer aux adhérents du groupe qui n'ont pas de cotisation
+                    current_season_code = session.get('saison_code')
+                    adherents = Adherent.query.filter_by(
+                        groupe=groupe.nom_groupe,
+                        code_saison=current_season_code
+                    ).filter(
+                        or_(Adherent.cotisation == None, Adherent.cotisation == 0)
+                    ).all()
+                    
+                    for adherent in adherents:
+                        adherent.cotisation = nouveau_montant
+            else:
+                # Supprimer la cotisation si mise à 0 ou vide
+                if cotisation:
+                    db.session.delete(cotisation)
+        
+        db.session.commit()
+        return jsonify({"success": True, "message": "Groupe mis à jour avec succès"}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/retirer_adherent_groupe/<int:groupe_id>', methods=['POST'])
+def retirer_adherent_groupe(groupe_id):
+    """Retirer un adhérent d'un groupe et réinitialiser ses champs"""
+    if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
+        return jsonify({"error": "Accès non autorisé"}), 403
+    
+    try:
+        current_season_code = session.get('saison_code')
+        if not current_season_code:
+            return jsonify({"error": "Aucune saison sélectionnée"}), 400
+        
+        data = request.get_json()
+        matricule = data.get('matricule')
+        
+        if not matricule:
+            return jsonify({"error": "Matricule non fourni"}), 400
+        
+        groupe = Groupe.query.get_or_404(groupe_id)
+        
+        # Trouver l'adhérent
+        adherent = Adherent.query.filter_by(
+            matricule=matricule,
+            groupe=groupe.nom_groupe,
+            code_saison=current_season_code
+        ).first()
+        
+        if not adherent:
+            return jsonify({"error": "Adhérent non trouvé dans ce groupe"}), 404
+        
+        # Réinitialiser tous les champs liés au groupe
+        adherent.groupe = None
+        adherent.entraineur = None
+        adherent.cotisation = None
+        adherent.remise = None
+        
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": "Adhérent retiré et champs réinitialisés avec succès"
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400
 
 @app.route('/directeur_technique', methods=['GET', 'POST'])
 @season_required
 def directeur_technique():
+    # Vérification des droits d’accès
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
@@ -1352,19 +1606,18 @@ def directeur_technique():
         flash("Veuillez sélectionner une saison.", "warning")
         return redirect(url_for('login'))
 
+    # Contexts saisonniers
     seance_season = SeasonContext(Seance)
     adherent_season = SeasonContext(Adherent)
-    
-    # Créneaux de 30 minutes
-    creneaux = []
-    for hour in range(8, 21):  # 8h à 21h
-        for minute in [0, 30]:
-            start_time = time(hour, minute)
-            end_hour = hour if minute == 0 else hour + 1
-            end_minute = 30 if minute == 0 else 0
-            end_time = time(end_hour, end_minute)
-            creneaux.append({'start': start_time, 'end': end_time})
 
+    # Création des créneaux de 30 minutes
+    creneaux = [
+        {'start': time(hour, minute), 'end': time(hour if minute == 0 else hour + 1, 30 if minute == 0 else 0)}
+        for hour in range(8, 21)
+        for minute in [0, 30]
+    ]
+
+    # --- GESTION DES ACTIONS POST ---
     if request.method == 'POST':
         action = request.form.get('action')
 
@@ -1374,12 +1627,12 @@ def directeur_technique():
             groupe = Groupe.query.get(groupe_id)
             ancien_entraineur = groupe.entraineur_nom
             nouveau_entraineur = Entraineur.query.get(nouvel_entraineur_id)
-            
+
             seance_season.filter_query(
                 Seance.query.filter_by(entraineur=ancien_entraineur)
-            ).update({'entraineur': nouveau_entraineur.nom + ' ' + nouveau_entraineur.prenom})
-            
-            groupe.entraineur_nom = nouveau_entraineur.nom + ' ' + nouveau_entraineur.prenom
+            ).update({'entraineur': f"{nouveau_entraineur.nom} {nouveau_entraineur.prenom}"})
+
+            groupe.entraineur_nom = f"{nouveau_entraineur.nom} {nouveau_entraineur.prenom}"
             db.session.commit()
             flash("Entraîneur modifié avec succès", "success")
 
@@ -1387,16 +1640,17 @@ def directeur_technique():
             groupe_id = request.form.get('groupe_id')
             nouveau_prep_id = request.form.get('prep_physique_id')
             groupe = Groupe.query.get(groupe_id)
-            
+
             if nouveau_prep_id:
                 nouveau_prep = Entraineur.query.get(nouveau_prep_id)
-                if nouveau_prep and nouveau_prep.type_abonnement == "prep_physique":
-                    groupe.preparateur_physique = nouveau_prep.nom + ' ' + nouveau_prep.prenom
-                else:
-                    groupe.preparateur_physique = None
+                groupe.preparateur_physique = (
+                    f"{nouveau_prep.nom} {nouveau_prep.prenom}"
+                    if nouveau_prep and nouveau_prep.type_abonnement == "prep_physique"
+                    else None
+                )
             else:
                 groupe.preparateur_physique = None
-                
+
             db.session.commit()
             flash("Préparateur physique modifié avec succès", "success")
 
@@ -1407,49 +1661,48 @@ def directeur_technique():
                 db.session.delete(seance)
                 db.session.commit()
                 flash("Séance supprimée", "success")
-    
+
+    # --- LOGIQUE D’AFFICHAGE DES DONNÉES ---
     week_offset = request.args.get('week_offset', 0, type=int)
-    day_offset = request.args.get('day_offset', 0, type=int)
-    
+    day_offset = max(0, min(6, request.args.get('day_offset', 0, type=int)))
+
     today = datetime.today()
     start_of_week = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
-    day_offset = max(0, min(6, day_offset))
     current_day = start_of_week + timedelta(days=day_offset)
 
-    groupes = Groupe.query.all()
+    # 🧩 Filtrage par saison courante
+    groupes = Groupe.query.filter_by(saison_code=current_season_code).all()
+
     entraineurs = Entraineur.query.filter_by(status='Actif').all()
-    prep_physiques = Entraineur.query.filter_by(
-        type_abonnement="prep_physique",
-        status='Actif'
-    ).all()
-    
+    prep_physiques = Entraineur.query.filter_by(type_abonnement="prep_physique", status='Actif').all()
+
     seances_week = seance_season.filter_query(
         Seance.query.filter(
             Seance.date >= start_of_week.date(),
             Seance.date <= (start_of_week + timedelta(days=6)).date()
         )
     ).all()
-    
+
     seances_day = seance_season.filter_query(
         Seance.query.filter(Seance.date == current_day.date())
     ).all()
 
+    # Comptage des séances par groupe
     seances_par_groupe = {}
     for seance in seances_week:
-        if seance.groupe not in seances_par_groupe:
-            seances_par_groupe[seance.groupe] = 0
-        seances_par_groupe[seance.groupe] += 1
+        seances_par_groupe[seance.groupe] = seances_par_groupe.get(seance.groupe, 0) + 1
 
+    # Liste des adhérents actifs de la saison
     all_adherents = adherent_season.filter_query(
         Adherent.query.filter_by(status='Actif')
     ).all()
-    
-    adherents_list = [{
-        'matricule': a.matricule,
-        'nom': a.nom,
-        'prenom': a.prenom
-    } for a in all_adherents]
-    
+
+    adherents_list = [
+        {'matricule': a.matricule, 'nom': a.nom, 'prenom': a.prenom}
+        for a in all_adherents
+    ]
+
+    # Rendu de la page
     return render_template(
         'gestion_groupes.html',
         current_day=current_day,
@@ -1469,7 +1722,6 @@ def directeur_technique():
         saison_type=session.get('saison_type'),
         saison_year=session.get('saison')
     )
-
 
 @app.route('/planning_prep_physique', methods=['GET', 'POST'])
 @season_required
@@ -2147,6 +2399,7 @@ def login():
     return render_template('signin.html', 
                          default_season=default_season,
                          current_year=current_year)
+
 @app.route('/ajouter_utilisateur', methods=['GET', 'POST'])
 def ajouter_utilisateur():
     if 'user_id' not in session or session.get('role') != 'admin':
@@ -2250,32 +2503,17 @@ def ajouter_adherent():
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
     
-    groupes = Groupe.query.all()
-    cotisations = {c.nom_cotisation: c.montant_cotisation for c in Cotisation.query.all()}
-    entraineurs = Entraineur.query.all()
+    code_saison_defaut = session.get('saison_code')
     
-    # Générer le code saison par défaut
-    code_saison_defaut = generer_code_saison()
-
     if request.method == 'POST':
-        nom_groupe = request.form.get('groupe') or None
-        entraineur_nom = request.form.get('entraineur') or None
-        type_abonnement = request.form.get('type_abonnement') or None
-        code_saison = request.form.get('code_saison', code_saison_defaut)
-
-        # Calculer le matricule de l'adhérent
+        # Calculer le matricule
         dernier_adherent = Adherent.query.order_by(Adherent.matricule.desc()).first()
         matricule = dernier_adherent.matricule + 1 if dernier_adherent else 1
         
-        # Handle empty values for remise and cotisation
-        remise_str = request.form.get('remise', '0')
-        cotisation_str = request.form.get('cotisation', '0')
+        # Code saison depuis le formulaire
+        code_saison = request.form.get('code_saison', code_saison_defaut)
         
-        # Convert to float, default to 0 if empty
-        remise = float(remise_str) if remise_str != '' else 0.0
-        cotisation = float(cotisation_str) if cotisation_str != '' else 0.0
-        
-        # Ajouter un nouvel adhérent
+        # Plus besoin de categorie - on utilise type_abonnement
         nouveau_adherent = Adherent(
             nom=request.form['Nom'],
             prenom=request.form['Prénom'],
@@ -2284,34 +2522,30 @@ def ajouter_adherent():
             sexe=request.form['sexe'],
             tel1=request.form['tel1'],
             tel2=request.form.get('tel2'),
-            type_abonnement=type_abonnement,
-            categorie=request.form['categorie'],
+            type_abonnement=request.form['type_abonnement'],
+            categorie=request.form['type_abonnement'],  # Utiliser type_abonnement comme catégorie
             matricule=matricule,
-            groupe=nom_groupe,
-            entraineur=entraineur_nom,
             email=request.form.get('email'),
             code_saison=code_saison,
             paye='N',
             status='Actif',
-            cotisation=cotisation,
-            remise=remise,
+            groupe=None,
+            entraineur=None,
+            cotisation=None,
+            remise=None
         )
 
         try:
             db.session.add(nouveau_adherent)
             db.session.commit()
-            generate_abonnement(nouveau_adherent)
-            flash('Adhérent ajouté avec succès.', 'success')
-            return redirect(url_for('admin'))
+            flash(f'Adhérent {nouveau_adherent.nom} {nouveau_adherent.prenom} ajouté avec succès (Matricule: {matricule})', 'success')
+            return redirect(url_for('gerer_adherent'))
         except Exception as e:
             db.session.rollback()
-            flash(f"Erreur lors de l'ajout : {str(e)}", 'danger')
+            flash(f"Erreur : {str(e)}", 'danger')
 
     return render_template('ajouter_adherent.html', 
-                         entraineurs=entraineurs, 
-                         groupes=groupes,
-                         code_saison_defaut=code_saison_defaut,
-                         cotisations=cotisations)
+                         code_saison_defaut=code_saison_defaut)
 
 
 @app.route('/gerer_adherent')
@@ -2574,6 +2808,8 @@ def repondre(id):
 
 from datetime import datetime
 from flask import render_template, request, redirect, url_for, flash, session
+
+
 @app.route('/paiement', methods=['GET', 'POST'])
 @season_required
 def paiement():
@@ -2581,54 +2817,180 @@ def paiement():
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
 
-    season = SeasonContext(Paiement)
+    # Récupérer l'année de la saison depuis la session
+    saison_year = session.get('saison')  # Ex: 2025
+    if not saison_year:
+        flash("Veuillez sélectionner une saison.", "warning")
+        return redirect(url_for('login'))
+    
+    # Récupérer le type depuis l'URL (annuel ou ete)
+    type_param = request.args.get('type', 'annuel')  # Par défaut: annuel
+    
+    # Déterminer le code saison selon le type
+    if type_param == 'ete':
+        code_saison = f"E{saison_year}"  # Ex: E2025
+        saison_type = 'ete'
+    else:
+        code_saison = f"S{saison_year}"  # Ex: S2025
+        saison_type = 'annuel'
+    
     adherent = None
     paiements = []
+    cotisations = []
+    numero_carnet = 1
+    numero_bon = 1
+    cotisation = 0
+    remise = 0
+    montant_net = 0
+    remise_montant = 0
+    total_montant_paye = 0
 
     if request.method == 'POST':
         matricule = request.form.get('matricule', '').strip()
-        adherent = Adherent.query.filter_by(matricule=matricule).first()
+        
+        if not matricule:
+            flash("Veuillez saisir un matricule.", "warning")
+            return render_template('paiement.html',
+                                 adherent=None,
+                                 paiements=[],
+                                 cotisations=[],
+                                 saison_type=saison_type,
+                                 code_saison=code_saison,
+                                 saison_year=saison_year)
+        
+        # Rechercher l'adhérent avec le code saison correspondant
+        adherent = Adherent.query.filter_by(
+            matricule=matricule,
+            code_saison=code_saison,  # Filtre par code_saison exact (S2025 ou E2025)
+            status='Actif'
+        ).first()
 
-        if adherent:
-            # Filter payments by season
-            query = Paiement.query.filter_by(matricule_adherent=matricule)
-            paiements = season.filter_query(query).order_by(Paiement.id_paiement.asc()).all()
+        if not adherent:
+            flash(f"Aucun adhérent trouvé avec le matricule {matricule} pour la saison {code_saison}.", "danger")
+            return render_template('paiement.html',
+                                 adherent=None,
+                                 paiements=[],
+                                 cotisations=[],
+                                 saison_type=saison_type,
+                                 code_saison=code_saison,
+                                 saison_year=saison_year)
 
-            if request.form.get('montant_paye'):
-                try:
-                    montant_paye = float(request.form.get('montant_paye', 0))
-                    type_reglement = request.form.get('type_reglement')
-                    numero_cheque = request.form.get('numero_cheque')
-                    banque = request.form.get('banque')
+        # Récupérer les paiements existants pour cet adhérent dans la saison actuelle
+        paiements = Paiement.query.filter_by(
+            matricule_adherent=str(matricule),
+            code_saison=code_saison
+        ).order_by(Paiement.date_paiement.asc()).all()
+
+        # Traitement du paiement si montant_paye est fourni
+        if request.form.get('montant_paye'):
+            try:
+                montant_paye = float(request.form.get('montant_paye', 0))
+                type_reglement = request.form.get('type_reglement')
+                numero_cheque = request.form.get('numero_cheque')
+                banque = request.form.get('banque')
+                
+                # Premier paiement : définir la cotisation et la remise
+                if not adherent.cotisation:
+                    cotisation_select = request.form.get('cotisation_select')
+                    if cotisation_select:
+                        cot = Cotisation.query.get(cotisation_select)
+                        if cot:
+                            adherent.cotisation = cot.montant_cotisation
                     
-                    # Get current season codes
-                    active_codes = season.get_active_codes()
-                    if not active_codes:
-                        flash("Erreur: Aucune saison active", "danger")
-                        return redirect(url_for('paiement'))
+                    remise_input = request.form.get('remise_input', 0)
+                    adherent.remise = float(remise_input) if remise_input else 0
                     
-                    nouveau_paiement = Paiement(
-                        matricule_adherent=matricule,
-                        montant_paye=montant_paye,
-                        type_reglement=type_reglement,
-                        numero_cheque=numero_cheque,
-                        banque=banque,
-                        code_saison=active_codes['normal']  # Use normal season by default
-                    )
-                    
-                    db.session.add(nouveau_paiement)
                     db.session.commit()
-                    
-                    flash("Paiement enregistré avec succès.", "success")
-                    return redirect(url_for('paiement'))
-                    
-                except ValueError:
-                    flash("Montant invalide", "danger")
+                
+                # Calculer le montant restant
+                cotisation = float(adherent.cotisation or 0)
+                remise_pourcentage = float(adherent.remise or 0)
+                remise_montant = (cotisation * remise_pourcentage) / 100
+                montant_net = cotisation - remise_montant
+                
+                total_deja_paye = sum(float(p.montant_paye or 0) for p in paiements)
+                montant_reste = max(0, montant_net - total_deja_paye - montant_paye)
+                
+                # Calculer le numéro de bon
+                dernier_paiement = Paiement.query.order_by(Paiement.id_paiement.desc()).first()
+                numero_carnet = dernier_paiement.numero_carnet if dernier_paiement else 1
+                numero_bon = (dernier_paiement.numero_bon + 1) if dernier_paiement else 1
+                
+                if numero_bon > 50:
+                    numero_carnet += 1
+                    numero_bon = 1
+                
+                # Créer le nouveau paiement
+                nouveau_paiement = Paiement(
+                    matricule_adherent=str(matricule),
+                    montant=montant_net,
+                    montant_paye=montant_paye,
+                    montant_reste=montant_reste,
+                    type_reglement=type_reglement,
+                    numero_cheque=numero_cheque,
+                    banque=banque,
+                    cotisation=cotisation,
+                    remise=remise_pourcentage,
+                    numero_bon=numero_bon,
+                    numero_carnet=numero_carnet,
+                    code_saison=code_saison
+                )
+                
+                db.session.add(nouveau_paiement)
+                
+                # Mettre à jour le statut de paiement de l'adhérent
+                if montant_reste <= 0:
+                    adherent.paye = 'O'
+                else:
+                    adherent.paye = 'N'
+                
+                db.session.commit()
+                
+                flash("Paiement enregistré avec succès.", "success")
+                # Rediriger avec le paramètre type pour maintenir le contexte
+                return redirect(url_for('paiement', type=type_param))
+                
+            except ValueError as e:
+                flash(f"Montant invalide: {str(e)}", "danger")
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Erreur lors de l'enregistrement: {str(e)}", "danger")
+        
+        # Calculer les informations financières
+        if adherent.cotisation:
+            cotisation = float(adherent.cotisation)
+            remise = float(adherent.remise or 0)
+            remise_montant = (cotisation * remise) / 100
+            montant_net = cotisation - remise_montant
+            total_montant_paye = sum(float(p.montant_paye or 0) for p in paiements)
+        
+        # Récupérer les cotisations disponibles pour le premier paiement
+        cotisations = Cotisation.query.all()
+        
+        # Calculer le prochain numéro de bon
+        dernier_paiement = Paiement.query.order_by(Paiement.id_paiement.desc()).first()
+        numero_carnet = dernier_paiement.numero_carnet if dernier_paiement else 1
+        numero_bon = (dernier_paiement.numero_bon + 1) if dernier_paiement else 1
+        
+        if numero_bon > 50:
+            numero_carnet += 1
+            numero_bon = 1
 
-    return render_template('paiement.html', 
+    return render_template('paiement.html',
                          adherent=adherent,
                          paiements=paiements,
-                         active_season=session.get('saison'))
+                         cotisations=cotisations,
+                         cotisation=cotisation,
+                         remise=remise,
+                         remise_montant=remise_montant,
+                         montant_net=montant_net,
+                         total_montant_paye=total_montant_paye,
+                         numero_carnet=numero_carnet,
+                         numero_bon=numero_bon,
+                         saison_type=saison_type,
+                         code_saison=code_saison,
+                         saison_year=saison_year,
+                         reste_a_payer=max(0, montant_net - total_montant_paye))
 
 @app.route('/cotisations', methods=['GET', 'POST'])
 def gestion_cotisations():
@@ -2964,6 +3326,8 @@ class Groupe(db.Model):
     type_abonnement = db.Column(db.String(50), nullable=False)
     categorie = db.Column(db.String(50), nullable=False)
     preparateur_physique = db.Column(db.String(100), nullable=True)  # Nouvelle colonne
+    saison_code = db.Column(db.String(10), nullable=False)  # ex: 'S2025'
+    date_creation = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return f'<Groupe {self.nom_groupe} géré par {self.entraineur_nom}>'
@@ -3962,42 +4326,118 @@ def show_situation_adherent():
     return render_template('situation-adherent.html')
 
 
+
+@app.route('/ajouter_adherents_groupe/<int:groupe_id>', methods=['POST'])
+def ajouter_adherents_groupe(groupe_id):
+    if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
+        return jsonify({"error": "Accès non autorisé"}), 403
+    
+    try:
+        current_season_code = session.get('saison_code')
+        if not current_season_code:
+            return jsonify({"error": "Aucune saison sélectionnée"}), 400
+        
+        data = request.get_json()
+        matricules = data.get('matricules', [])
+        
+        if not matricules:
+            return jsonify({"error": "Aucun matricule fourni"}), 400
+        
+        groupe = Groupe.query.get_or_404(groupe_id)
+        
+        # Récupérer la cotisation associée au groupe
+        cotisation_groupe = Cotisation.query.filter_by(
+            nom_cotisation=groupe.nom_groupe
+        ).first()
+        
+        added_count = 0
+        
+        for matricule in matricules:
+            adherent = Adherent.query.filter_by(
+                matricule=matricule,
+                code_saison=current_season_code,
+                status='Actif'
+            ).first()
+            
+            if adherent:
+                # Vérifier qu'il n'est pas déjà dans un autre groupe
+                if adherent.groupe and adherent.groupe != groupe.nom_groupe:
+                    print(f"Adhérent {matricule} déjà dans le groupe {adherent.groupe}")
+                    continue
+                
+                # Affecter le groupe, l'entraîneur ET la cotisation
+                adherent.groupe = groupe.nom_groupe
+                adherent.entraineur = groupe.entraineur_nom
+                
+                # Définir la cotisation depuis le groupe
+                if cotisation_groupe:
+                    adherent.cotisation = cotisation_groupe.montant_cotisation
+                    print(f"Cotisation {cotisation_groupe.montant_cotisation} affectée à {matricule}")
+                else:
+                    # Cotisation par défaut si pas trouvée
+                    adherent.cotisation = 0
+                    print(f"Aucune cotisation trouvée pour le groupe {groupe.nom_groupe}")
+                
+                # La remise sera définie lors du premier paiement
+                if adherent.remise is None:
+                    adherent.remise = 0
+                
+                added_count += 1
+                print(f"Adhérent {matricule} ajouté au groupe {groupe.nom_groupe}")
+            else:
+                print(f"Adhérent {matricule} non trouvé pour la saison {current_season_code}")
+        
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "added_count": added_count,
+            "saison_code": current_season_code
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erreur: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 400
+
+
 @app.route('/api/search-adherent')
-@season_required
 def search_adherent():
     search_term = request.args.get('term', '')
     if not search_term:
         return jsonify([])
     
-    # Get current season information
+    # Récupérer le code saison de la session
     current_season_code = session.get('saison_code')
     if not current_season_code:
         return jsonify({'error': 'Aucune saison sélectionnée'}), 400
-
-    # Create season context
-    season = SeasonContext(Adherent)
     
-    # Apply season filter and search criteria
-    adherents = season.filter_query(
-        Adherent.query.filter(
-            and_(
-                Adherent.code_saison == current_season_code,
-                or_(
-                    Adherent.matricule.cast(db.String).like(f'%{search_term}%'),
-                    Adherent.nom.ilike(f'%{search_term}%'),
-                    Adherent.prenom.ilike(f'%{search_term}%')
-                ),
-                Adherent.status == 'Actif'  # Only show active adherents
+    print(f"Recherche adhérent: '{search_term}' pour la saison: {current_season_code}")
+    
+    # Rechercher avec filtre de saison
+    adherents = Adherent.query.filter(
+        and_(
+            Adherent.code_saison == current_season_code,
+            Adherent.status == 'Actif',
+            or_(
+                Adherent.matricule.cast(db.String).like(f'%{search_term}%'),
+                Adherent.nom.ilike(f'%{search_term}%'),
+                Adherent.prenom.ilike(f'%{search_term}%')
             )
         )
-    ).limit(10).all()
+    ).order_by(Adherent.nom, Adherent.prenom).limit(10).all()
+    
+    print(f"Adhérents trouvés: {len(adherents)}")
     
     return jsonify([{
         'id': a.adherent_id,
         'matricule': a.matricule,
         'nom': a.nom,
         'prenom': a.prenom,
-        'label': f"{a.matricule} - {a.nom} {a.prenom}"
+        'label': f"{a.matricule} - {a.nom} {a.prenom}",
+        'code_saison': a.code_saison
     } for a in adherents])
 
 @app.route('/api/situation-adherent/<int:matricule>')
@@ -6074,64 +6514,72 @@ try:
     locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
 except:
     pass
-
 @app.route('/api/financial-data')
+@season_required
 def get_financial_data():
-    start_date = request.args.get('startDate')
-    end_date = request.args.get('endDate')
-    saison = request.args.get('saison')
-    data_type = request.args.get('dataType', 'all')
-    
-    # Convertir les dates en objets datetime si elles sont fournies
+    """Récupérer les données financières complètes pour le dashboard"""
     try:
-        start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else None
-        end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else None
-    except ValueError:
-        return jsonify({'error': 'Format de date invalide'}), 400
-    
-    try:
-        # 1. Calculer les statistiques globales
-        stats = calculate_stats(start_date_obj, end_date_obj, saison, data_type)
+        # Get current season information
+        current_season_code = session.get('saison_code')
+        year = session.get('saison')
         
-        # 2. Obtenir les données mensuelles pour le graphique
-        monthly_data = get_monthly_data(start_date_obj, end_date_obj, saison)
-        
-        # 3. Calculer la répartition des revenus par type
-        revenue_by_type = get_revenue_by_type(start_date_obj, end_date_obj, saison)
-        
-        # 4. Obtenir les derniers paiements
-        recent_payments = get_recent_payments(start_date_obj, end_date_obj, saison, data_type)
-        
-        # 5. Obtenir les locations récentes
-        recent_locations = get_recent_locations(start_date_obj, end_date_obj, saison, data_type)
-        
-        data = {
+        if not current_season_code:
+            return jsonify({'error': 'Aucune saison sélectionnée'}), 400
+
+        # Get filter parameters
+        start_date = request.args.get('startDate')
+        end_date = request.args.get('endDate')
+        saison_filter = request.args.get('saison', current_season_code)
+        data_type = request.args.get('dataType', 'all')
+
+        # Set default dates if not provided
+        if not start_date:
+            start_date = datetime.now().replace(day=1).strftime('%Y-%m-%d')
+        if not end_date:
+            end_date = datetime.now().strftime('%Y-%m-%d')
+
+        # Convert dates
+        start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+
+        # Validate dates
+        if start_date_obj > end_date_obj:
+            return jsonify({'error': 'La date de début ne peut pas être après la date de fin'}), 400
+
+        # Calculate all financial data
+        stats = calculate_financial_stats(start_date_obj, end_date_obj, saison_filter, data_type)
+        monthly_data = get_monthly_data(start_date_obj, end_date_obj, saison_filter)
+        revenue_by_type = get_revenue_by_type(start_date_obj, end_date_obj, saison_filter)
+        recent_payments = get_recent_payments(start_date_obj, end_date_obj, saison_filter, data_type, 10)
+        recent_locations = get_recent_locations(start_date_obj, end_date_obj, saison_filter, data_type, 10)
+
+        return jsonify({
             'stats': stats,
             'monthlyData': monthly_data,
             'revenueByType': revenue_by_type,
             'recentPayments': recent_payments,
-            'recentLocations': recent_locations
-        }
-        
-        return jsonify(data)
-        
-    except Exception as e:
-        return jsonify({'error': f'Erreur serveur: {str(e)}'}), 500
+            'recentLocations': recent_locations,
+            'saison_code': current_season_code,
+            'saison_year': year
+        })
 
-def calculate_stats(start_date, end_date, saison, data_type):
+    except Exception as e:
+        logger.error(f"Erreur dans get_financial_data: {str(e)}")
+        return jsonify({'error': 'Erreur interne du serveur'}), 500
+
+def calculate_financial_stats(start_date, end_date, saison, data_type):
     """Calculer les statistiques financières globales"""
     try:
-        # Calculer le total des revenus (cotisations + autres paiements + locations)
         total_revenus = 0
         
+        # Revenus des paiements (cotisations et autres)
         if data_type in ['all', 'paiements']:
-            # Revenus des cotisations
+            # Cotisations des adhérents
             cotisations_query = db.session.query(func.coalesce(func.sum(Paiement.montant_paye), 0))
             
             if start_date and end_date:
                 cotisations_query = cotisations_query.filter(
-                    Paiement.date_paiement >= start_date,
-                    Paiement.date_paiement <= end_date
+                    Paiement.date_paiement.between(start_date, end_date)
                 )
             
             if saison:
@@ -6139,92 +6587,98 @@ def calculate_stats(start_date, end_date, saison, data_type):
                 
             revenus_cotisations = float(cotisations_query.scalar() or 0)
 
-            
-            # Revenus des autres paiements
+            # Autres paiements
             autres_query = db.session.query(func.coalesce(func.sum(AutresPaiements.montant), 0))
             
             if start_date and end_date:
                 autres_query = autres_query.filter(
-                    AutresPaiements.date_paiement >= start_date,
-                    AutresPaiements.date_paiement <= end_date
+                    AutresPaiements.date_paiement.between(start_date, end_date)
                 )
             
             if saison:
                 autres_query = autres_query.filter(AutresPaiements.code_saison == saison)
                 
             revenus_autres = float(autres_query.scalar() or 0)
-
             
             total_revenus += revenus_cotisations + revenus_autres
         
+        # Revenus des locations
         if data_type in ['all', 'locations']:
-            # Revenus des locations
             locations_query = db.session.query(func.coalesce(func.sum(LocationTerrain.montant_location), 0))
             
             if start_date and end_date:
                 locations_query = locations_query.filter(
-                    LocationTerrain.date_location >= start_date,
-                    LocationTerrain.date_location <= end_date
+                    LocationTerrain.date_location.between(start_date, end_date)
                 )
             
             revenus_locations = float(locations_query.scalar() or 0)
-            total_revenus =revenus_cotisations + revenus_autres + revenus_locations
+            total_revenus += revenus_locations
         
-        # Calculer le total des dépenses
+        # Dépenses
         total_depenses = 0
-        
         if data_type in ['all', 'depenses']:
             depenses_query = db.session.query(func.coalesce(func.sum(Depense.montant), 0))
             
             if start_date and end_date:
                 depenses_query = depenses_query.filter(
-                    Depense.date >= start_date,
-                    Depense.date <= end_date
+                    Depense.date.between(start_date, end_date)
                 )
             
             total_depenses = float(depenses_query.scalar() or 0)
         
-        # Calculer le bénéfice net
+        # Bénéfice net
         benefice_net = total_revenus - total_depenses
         
-        # Calculer le nombre d'adhérents actifs
-        adherents_query = db.session.query(func.count(Adherent.adherent_id)).filter(
-            Adherent.status == 'Actif'
-        )
-        
+        # Adhérents actifs (uniquement si on filtre par saison)
+        adherents_actifs = 0
         if saison:
-            adherents_query = adherents_query.filter(Adherent.code_saison == saison)
-            
-        adherents_actifs = adherents_query.scalar() or 0
+            adherents_query = db.session.query(func.count(Adherent.matricule)).filter(
+                Adherent.status == 'Actif',
+                Adherent.code_saison == saison
+            )
+            adherents_actifs = adherents_query.scalar() or 0
         
+        # Calcul des variations (comparaison avec période précédente)
+        previous_stats = get_previous_period_stats(start_date, end_date, saison, data_type)
+        
+        revenus_change = calculate_percentage_change(total_revenus, previous_stats['previous_revenus'])
+        depenses_change = calculate_percentage_change(total_depenses, previous_stats['previous_depenses'])
+        benefice_change = calculate_percentage_change(benefice_net, previous_stats['previous_benefice'])
+        adherents_change = calculate_percentage_change(adherents_actifs, previous_stats['previous_adherents'])
+
         return {
-            'totalRevenus': float(total_revenus),
-            'totalDepenses': float(total_depenses),
-            'beneficeNet': float(benefice_net),
+            'totalRevenus': round(total_revenus, 2),
+            'totalDepenses': round(total_depenses, 2),
+            'beneficeNet': round(benefice_net, 2),
             'adherentsActifs': adherents_actifs,
-            'revenusChange': 0,  # À implémenter selon vos besoins
+            'revenusChange': round(revenus_change, 1),
+            'depensesChange': round(depenses_change, 1),
+            'beneficeChange': round(benefice_change, 1),
+            'adherentsChange': round(adherents_change, 1)
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur dans calculate_financial_stats: {str(e)}")
+        return {
+            'totalRevenus': 0,
+            'totalDepenses': 0,
+            'beneficeNet': 0,
+            'adherentsActifs': 0,
+            'revenusChange': 0,
             'depensesChange': 0,
             'beneficeChange': 0,
             'adherentsChange': 0
         }
-        
-    except Exception as e:
-        raise
 
 def get_monthly_data(start_date, end_date, saison):
     """Obtenir les données mensuelles pour le graphique d'évolution"""
     try:
-        # Définir la plage de dates par défaut si non spécifiée
-        if not start_date or not end_date:
-            end_date = datetime.now().date()
-            start_date = end_date.replace(month=1, day=1)  # Début de l'année
-        
         # Limiter à 24 mois maximum pour éviter les problèmes de performance
         months_diff = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
         if months_diff > 24:
             start_date = end_date.replace(year=end_date.year - 2, month=end_date.month, day=1)
         
-        # Générer les mois avec une approche plus sûre
+        # Générer les mois
         labels = []
         revenues = []
         expenses = []
@@ -6242,32 +6696,33 @@ def get_monthly_data(start_date, end_date, saison):
             
             # Calculer le dernier jour du mois
             if current_date.month == 12:
-                next_month = current_date.replace(year=current_date.year + 1, month=1)
+                next_month = current_date.replace(year=current_date.year + 1, month=1, day=1)
             else:
-                next_month = current_date.replace(month=current_date.month + 1)
+                next_month = current_date.replace(month=current_date.month + 1, day=1)
             month_end = next_month - timedelta(days=1)
             
-            # Revenus du mois en une seule requête combinée
+            # Revenus du mois
             monthly_revenue = 0
             
             # Cotisations du mois
             cotisations_month = db.session.query(func.coalesce(func.sum(Paiement.montant_paye), 0)).filter(
-                Paiement.date_paiement >= current_date,
-                Paiement.date_paiement <= month_end,
-                Paiement.code_saison == saison if saison else True
-            ).scalar() or 0
+                Paiement.date_paiement.between(current_date, month_end)
+            )
+            if saison:
+                cotisations_month = cotisations_month.filter(Paiement.code_saison == saison)
+            cotisations_month = cotisations_month.scalar() or 0
             
             # Autres paiements du mois
             autres_month = db.session.query(func.coalesce(func.sum(AutresPaiements.montant), 0)).filter(
-                AutresPaiements.date_paiement >= current_date,
-                AutresPaiements.date_paiement <= month_end,
-                AutresPaiements.code_saison == saison if saison else True
-            ).scalar() or 0
+                AutresPaiements.date_paiement.between(current_date, month_end)
+            )
+            if saison:
+                autres_month = autres_month.filter(AutresPaiements.code_saison == saison)
+            autres_month = autres_month.scalar() or 0
             
             # Locations du mois
             locations_month = db.session.query(func.coalesce(func.sum(LocationTerrain.montant_location), 0)).filter(
-                LocationTerrain.date_location >= current_date,
-                LocationTerrain.date_location <= month_end
+                LocationTerrain.date_location.between(current_date, month_end)
             ).scalar() or 0
             
             monthly_revenue = cotisations_month + autres_month + locations_month
@@ -6275,17 +6730,13 @@ def get_monthly_data(start_date, end_date, saison):
             
             # Dépenses du mois
             monthly_expenses = db.session.query(func.coalesce(func.sum(Depense.montant), 0)).filter(
-                Depense.date >= current_date,
-                Depense.date <= month_end
+                Depense.date.between(current_date, month_end)
             ).scalar() or 0
             
             expenses.append(float(monthly_expenses))
             
             # Passer au mois suivant
-            if current_date.month == 12:
-                current_date = current_date.replace(year=current_date.year + 1, month=1)
-            else:
-                current_date = current_date.replace(month=current_date.month + 1)
+            current_date = next_month
         
         return {
             'labels': labels,
@@ -6294,7 +6745,7 @@ def get_monthly_data(start_date, end_date, saison):
         }
         
     except Exception as e:
-        # Retourner des données vides en cas d'erreur
+        logger.error(f"Erreur dans get_monthly_data: {str(e)}")
         return {
             'labels': [],
             'revenues': [],
@@ -6309,8 +6760,7 @@ def get_revenue_by_type(start_date, end_date, saison):
         
         if start_date and end_date:
             cotisations_query = cotisations_query.filter(
-                Paiement.date_paiement >= start_date,
-                Paiement.date_paiement <= end_date
+                Paiement.date_paiement.between(start_date, end_date)
             )
         
         if saison:
@@ -6323,8 +6773,7 @@ def get_revenue_by_type(start_date, end_date, saison):
         
         if start_date and end_date:
             autres_query = autres_query.filter(
-                AutresPaiements.date_paiement >= start_date,
-                AutresPaiements.date_paiement <= end_date
+                AutresPaiements.date_paiement.between(start_date, end_date)
             )
         
         if saison:
@@ -6337,18 +6786,39 @@ def get_revenue_by_type(start_date, end_date, saison):
         
         if start_date and end_date:
             locations_query = locations_query.filter(
-                LocationTerrain.date_location >= start_date,
-                LocationTerrain.date_location <= end_date
+                LocationTerrain.date_location.between(start_date, end_date)
             )
         
         locations = locations_query.scalar() or 0
         
+        # Préparer les données pour le graphique
+        labels = []
+        values = []
+        
+        if cotisations > 0:
+            labels.append('Cotisations')
+            values.append(float(cotisations))
+        
+        if locations > 0:
+            labels.append('Locations')
+            values.append(float(locations))
+        
+        if autres > 0:
+            labels.append('Autres paiements')
+            values.append(float(autres))
+        
+        # Si aucune donnée, créer des données par défaut
+        if not labels:
+            labels = ['Cotisations', 'Locations', 'Autres paiements']
+            values = [0, 0, 0]
+        
         return {
-            'labels': ['Cotisations', 'Locations', 'Autres paiements'],
-            'values': [float(cotisations), float(locations), float(autres)]
+            'labels': labels,
+            'values': values
         }
         
     except Exception as e:
+        logger.error(f"Erreur dans get_revenue_by_type: {str(e)}")
         return {
             'labels': ['Cotisations', 'Locations', 'Autres paiements'],
             'values': [0, 0, 0]
@@ -6366,6 +6836,7 @@ def get_recent_payments(start_date, end_date, saison, data_type, limit=10):
             Paiement.matricule_adherent,
             Paiement.montant_paye,
             Paiement.code_saison,
+            Paiement.type_reglement,
             Adherent.nom,
             Adherent.prenom
         ).outerjoin(
@@ -6378,8 +6849,7 @@ def get_recent_payments(start_date, end_date, saison, data_type, limit=10):
         # Appliquer les filtres
         if start_date and end_date:
             query = query.filter(
-                Paiement.date_paiement >= start_date,
-                Paiement.date_paiement <= end_date
+                Paiement.date_paiement.between(start_date, end_date)
             )
         
         if saison:
@@ -6400,13 +6870,14 @@ def get_recent_payments(start_date, end_date, saison, data_type, limit=10):
                 'date': payment.date_paiement.strftime('%Y-%m-%d') if payment.date_paiement else '',
                 'adherent': adherent_name,
                 'montant': float(payment.montant_paye) if payment.montant_paye else 0,
-                'type': 'Cotisation',
-                'saison': payment.code_saison or ''
+                'type': payment.type_reglement or 'Cotisation',
+                'saison': payment.code_saison or saison or ''
             })
         
         return result
         
     except Exception as e:
+        logger.error(f"Erreur dans get_recent_payments: {str(e)}")
         return []
 
 def get_recent_locations(start_date, end_date, saison, data_type, limit=10):
@@ -6424,8 +6895,7 @@ def get_recent_locations(start_date, end_date, saison, data_type, limit=10):
         # Appliquer les filtres de date
         if start_date and end_date:
             query = query.filter(
-                LocationTerrain.date_location >= start_date,
-                LocationTerrain.date_location <= end_date
+                LocationTerrain.date_location.between(start_date, end_date)
             )
         
         # Ordonner par date décroissante et limiter
@@ -6433,16 +6903,18 @@ def get_recent_locations(start_date, end_date, saison, data_type, limit=10):
         
         result = []
         for location in locations:
-            # Calculer la durée de manière sécurisée
+            # Calculer la durée
             duree = "N/A"
             try:
                 if location.heure_debut and location.heure_fin:
-                    debut = datetime.combine(datetime.min, location.heure_debut)
-                    fin = datetime.combine(datetime.min, location.heure_fin)
+                    debut = datetime.combine(datetime.min.date(), location.heure_debut)
+                    fin = datetime.combine(datetime.min.date(), location.heure_fin)
+                    if fin < debut:
+                        fin = fin.replace(day=fin.day + 1)
                     duree_seconds = (fin - debut).total_seconds()
-                    duree_hours = int(duree_seconds // 3600)
-                    duree = f"{duree_hours}h"
-            except:
+                    duree_hours = duree_seconds / 3600
+                    duree = f"{duree_hours:.1f}h"
+            except Exception:
                 duree = "N/A"
             
             result.append({
@@ -6456,7 +6928,86 @@ def get_recent_locations(start_date, end_date, saison, data_type, limit=10):
         return result
         
     except Exception as e:
+        logger.error(f"Erreur dans get_recent_locations: {str(e)}")
         return []
+
+def get_previous_period_stats(start_date, end_date, saison, data_type):
+    """Obtenir les statistiques de la période précédente pour le calcul des variations"""
+    try:
+        # Calculer la durée de la période actuelle
+        period_days = (end_date - start_date).days
+        
+        # Calculer les dates de la période précédente
+        previous_end_date = start_date - timedelta(days=1)
+        previous_start_date = previous_end_date - timedelta(days=period_days)
+        
+        # Recalculer les stats pour la période précédente
+        previous_revenus = 0
+        
+        if data_type in ['all', 'paiements']:
+            # Cotisations période précédente
+            cotisations_prev = db.session.query(func.coalesce(func.sum(Paiement.montant_paye), 0)).filter(
+                Paiement.date_paiement.between(previous_start_date, previous_end_date)
+            )
+            if saison:
+                cotisations_prev = cotisations_prev.filter(Paiement.code_saison == saison)
+            cotisations_prev = cotisations_prev.scalar() or 0
+            
+            # Autres paiements période précédente
+            autres_prev = db.session.query(func.coalesce(func.sum(AutresPaiements.montant), 0)).filter(
+                AutresPaiements.date_paiement.between(previous_start_date, previous_end_date)
+            )
+            if saison:
+                autres_prev = autres_prev.filter(AutresPaiements.code_saison == saison)
+            autres_prev = autres_prev.scalar() or 0
+            
+            previous_revenus += cotisations_prev + autres_prev
+        
+        if data_type in ['all', 'locations']:
+            # Locations période précédente
+            locations_prev = db.session.query(func.coalesce(func.sum(LocationTerrain.montant_location), 0)).filter(
+                LocationTerrain.date_location.between(previous_start_date, previous_end_date)
+            ).scalar() or 0
+            previous_revenus += locations_prev
+        
+        # Dépenses période précédente
+        previous_depenses = 0
+        if data_type in ['all', 'depenses']:
+            previous_depenses = db.session.query(func.coalesce(func.sum(Depense.montant), 0)).filter(
+                Depense.date.between(previous_start_date, previous_end_date)
+            ).scalar() or 0
+        
+        previous_benefice = previous_revenus - previous_depenses
+        
+        # Adhérents période précédente
+        previous_adherents = 0
+        if saison:
+            previous_adherents = db.session.query(func.count(Adherent.matricule)).filter(
+                Adherent.status == 'Actif',
+                Adherent.code_saison == saison
+            ).scalar() or 0
+        
+        return {
+            'previous_revenus': previous_revenus,
+            'previous_depenses': previous_depenses,
+            'previous_benefice': previous_benefice,
+            'previous_adherents': previous_adherents
+        }
+        
+    except Exception as e:
+        logger.error(f"Erreur dans get_previous_period_stats: {str(e)}")
+        return {
+            'previous_revenus': 0,
+            'previous_depenses': 0,
+            'previous_benefice': 0,
+            'previous_adherents': 0
+        }
+
+def calculate_percentage_change(current_value, previous_value):
+    """Calculer le pourcentage de changement entre deux valeurs"""
+    if previous_value == 0:
+        return 0 if current_value == 0 else 100
+    return ((current_value - previous_value) / abs(previous_value)) * 100
 
 @app.route('/rh')
 def rh():
