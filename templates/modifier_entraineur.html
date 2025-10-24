@@ -56,19 +56,52 @@
                                 </select>
                                 <label for="sexe">Sexe</label>
                             </div>
+
                             <div class="form-floating mb-3">
-                                <select id="type_abonnement" name="type_abonnement" class="form-control">
-                                    <option value="" disabled {% if not entraineur.type_abonnement %}selected{% endif %}></option>
-                                    <option value="Loisir" {% if entraineur.type_abonnement == 'Loisir' %}selected{% endif %}>Loisir</option>
-                                    <option value="Ecole" {% if entraineur.type_abonnement == 'Ecole' %}selected{% endif %}>Ecole</option>
-                                    <option value="Compétitif" {% if entraineur.type_abonnement == 'Compétitif' %}selected{% endif %}>Compétitif</option>
-                                    <option value="Pré-Compétitif" {% if entraineur.type_abonnement == 'Pré-Compétitif' %}selected{% endif %}>Pré-Compétitif</option>
-                                    <option value="Ecole d'été" {% if entraineur.type_abonnement == "Ecole d'été" %}selected{% endif %}>Ecole d'été</option>
-                                    <option value="Adulte" {% if entraineur.type_abonnement == 'Adulte' %}selected{% endif %}>Adulte</option>
-                                    <option value="prep_physique" {% if entraineur.type_abonnement == 'prep_physique' %}selected{% endif %}>Prep Physique</option>
-                                </select>
-                                <label for="type_abonnement">Type d'abonnement</label>
-                            </div>
+        <select id="role_technique" name="role_technique" class="form-control" onchange="toggleCategorieModif()" required>
+            <option value="" disabled>Rôle Technique</option>
+            <option value="Entraineur" {% if entraineur.role_technique == 'Entraineur' %}selected{% endif %}>Entraineur</option>
+            <option value="Prep Physique" {% if entraineur.role_technique == 'Prep Physique' %}selected{% endif %}>Prep Physique</option>
+            <option value="Directeur Technique" {% if entraineur.role_technique == 'Directeur Technique' %}selected{% endif %}>Directeur Technique</option>
+            <option value="Adjoint" {% if entraineur.role_technique == 'Adjoint' %}selected{% endif %}>Adjoint</option>
+        </select>
+        <label for="role_technique">Rôle Technique</label>
+    </div>
+    
+    <!-- ← MODIFIÉ : Catégorie (seulement si Entraineur) -->
+    <div class="form-floating mb-3" id="categorie-container-modif">
+        <select id="type_abonnement" name="type_abonnement" class="form-control">
+            <option value="">Aucune catégorie</option>
+            <option value="Loisir" {% if entraineur.type_abonnement == 'Loisir' %}selected{% endif %}>Loisir</option>
+            <option value="Ecole" {% if entraineur.type_abonnement == 'Ecole' %}selected{% endif %}>Ecole</option>
+            <option value="Compétitif" {% if entraineur.type_abonnement == 'Compétitif' %}selected{% endif %}>Compétitif</option>
+            <option value="Pré-Compétitif" {% if entraineur.type_abonnement == 'Pré-Compétitif' %}selected{% endif %}>Pré-Compétitif</option>
+            <option value="Ecole d'été" {% if entraineur.type_abonnement == "Ecole d'été" %}selected{% endif %}>Ecole d'été</option>
+            <option value="Adulte" {% if entraineur.type_abonnement == 'Adulte' %}selected{% endif %}>Adulte</option>
+        </select>
+        <label for="type_abonnement">Catégorie à Entraîner</label>
+    </div>
+    <script>
+function toggleCategorieModif() {
+    const roleTechnique = document.getElementById('role_technique').value;
+    const categorieContainer = document.getElementById('categorie-container-modif');
+    const categorieSelect = document.getElementById('type_abonnement');
+    
+    if (roleTechnique === 'Entraineur') {
+        categorieContainer.style.display = 'block';
+        categorieSelect.required = true;
+    } else {
+        categorieContainer.style.display = 'none';
+        categorieSelect.required = false;
+        categorieSelect.value = '';
+    }
+}
+
+// Initialiser au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    toggleCategorieModif();
+});
+</script>
                             <div class="form-floating mb-3">
                                 <select class="form-control" id="enfant" name="enfant" required>
                                     <option value="Oui" {% if entraineur.enfant == 'Oui' %}selected{% endif %}>Oui</option>
@@ -83,6 +116,19 @@
                                 </select>
                                 <label for="status">Status</label>
                             </div>
+                            <div class="form-floating mb-3">
+    <select class="form-control" id="saison_type" name="saison_type" required>
+        <option value="S" {% if saison_type == 'S' %}selected{% endif %}>Saison Normale (S)</option>
+        <option value="E" {% if saison_type == 'E' %}selected{% endif %}>École d'été (E)</option>
+    </select>
+    <label for="saison_type">Type de Saison</label>
+</div>
+
+<div class="form-floating mb-3">
+    <input type="number" class="form-control" id="annee_saison" name="annee_saison" 
+           value="{{ annee_saison }}" min="2020" max="2030" required>
+    <label for="annee_saison">Année de Saison</label>
+</div>
                             <button type="submit" class="btn btn-primary py-3 w-100">Mettre à jour</button>
                         </form>
                     </div>

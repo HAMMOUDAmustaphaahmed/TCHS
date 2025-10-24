@@ -87,7 +87,10 @@
                 <th onclick="sortTable(1)">Nom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
                 <th onclick="sortTable(2)">Prénom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
                 <th onclick="sortTable(3)">Sexe<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
-                <th onclick="sortTable(4)">Catégorie<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(4)">Rôle Technique</th> 
+                <th onclick="sortTable(5)">Catégorie</th> 
+                <th onclick="sortTable(5)">Saison<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th> 
+
                 <th scope="col">Actions</th>
             </tr>
         </thead>
@@ -120,10 +123,23 @@
                 <td>{{ entraineur.nom }}</td>
                 <td>{{ entraineur.prenom }}</td>
                 <td>{{ entraineur.sexe }}</td>
-                <td>{{ entraineur.type_abonnement }}</td>
+                <td>{{ entraineur.role_technique or 'N/D' }}</td> 
+                <td>{{ entraineur.type_abonnement or '-' }}</td>
+                <td>{{ entraineur.code_saison or 'N/D' }}</td>
                 <td>
                     <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_entraineur', id=entraineur.id_entraineur) }}">Modifier</a>
-                    <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_entraineur', id=entraineur.id_entraineur) }}">Supprimer</a>
+                    <a href="javascript:void(0)" 
+   onclick="confirmerSuppression('{{ entraineur.nom }}', {{ entraineur.id }})" 
+   class="btn btn-danger btn-sm">
+    <i class="bi bi-trash"></i> Supprimer
+</a>
+<script>
+function confirmerSuppression(nom, id) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer l'entraîneur "${nom}" ?\n\nCette action supprimera également toutes ses références dans les adhérents, groupes et séances.`)) {
+        window.location.href = `/supprimer_entraineur/${id}`;
+    }
+}
+</script>
                 </td>
             </tr>
             {% endfor %}

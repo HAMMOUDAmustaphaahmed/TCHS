@@ -90,21 +90,48 @@
                                 </div>
                                 
                                 <div class="form mb-3">
-                                    <label for="type_abonnement" class="form-label">Catégorie<span class="text-danger">*</span></label>
-                                    <select id="type_abonnement" name="type_abonnement" class="form-control" required>
-                                        <option value="" disabled selected>Sélectionner...</option>
-                                        <option value="Adjoint">Adjoint</option>
-                                        <option value="Directeur Technique">Directeur Technique</option>
-                                        <option value="prep_physique">Prep Physique</option>
-                                        <option value="Loisir">Loisir</option>
-                                        <option value="Ecole">Ecole</option>
-                                        <option value="Compétitif">Compétitif</option>
-                                        <option value="Pré-Compétitif">Pré-Compétitif</option>
-                                        <option value="Ecole d'été">Ecole d'été</option>
-                                        <option value="Adulte">Adulte</option>
-                                        <option value="N/D">N/D</option>
-                                    </select>
-                                </div>
+        <label for="role_technique" class="form-label">Rôle Technique<span class="text-danger">*</span></label>
+        <select id="role_technique" name="role_technique" class="form-control" onchange="toggleCategorie()" required>
+            <option value="" disabled selected>Sélectionner...</option>
+            <option value="Entraineur">Entraineur</option>
+            <option value="Prep Physique">Prep Physique</option>
+            <option value="Directeur Technique">Directeur Technique</option>
+            <option value="Adjoint">Adjoint</option>
+        </select>
+    </div>
+    <script>
+function toggleCategorie() {
+    const roleTechnique = document.getElementById('role_technique').value;
+    const categorieContainer = document.getElementById('categorie-container');
+    const categorieSelect = document.getElementById('type_abonnement');
+    
+    if (roleTechnique === 'Entraineur') {
+        categorieContainer.style.display = 'block';
+        categorieSelect.required = true;
+    } else {
+        categorieContainer.style.display = 'none';
+        categorieSelect.required = false;
+        categorieSelect.value = ''; // Réinitialiser la valeur
+    }
+}
+
+// Initialiser au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    toggleCategorie();
+});
+</script>
+    <div class="form mb-3" id="categorie-container" style="display: none;">
+        <label for="type_abonnement" class="form-label">Catégorie à Entraîner</label>
+        <select id="type_abonnement" name="type_abonnement" class="form-control">
+            <option value="">Aucune</option>
+            <option value="Loisir">Loisir</option>
+            <option value="Ecole">Ecole</option>
+            <option value="Compétitif">Compétitif</option>
+            <option value="Pré-Compétitif">Pré-Compétitif</option>
+            <option value="Ecole d'été">Ecole d'été</option>
+            <option value="Adulte">Adulte</option>
+        </select>
+    </div>
                             </div>
                             
                             <!-- Colonne de droite -->
@@ -123,6 +150,19 @@
                                     <input type="text" class="form-control" name="compte_bancaire" id="compte_bancaire" placeholder="Compte Bancaire" required>
                                     <label for="compte_bancaire">Compte Bancaire<span class="text-danger">*</span></label>
                                 </div>
+                                <div class="form mb-3">
+        <label for="saison_type" class="form-label">Type de Saison<span class="text-danger">*</span></label>
+        <select id="saison_type" name="saison_type" class="form-control" required>
+            <option value="S" {% if current_season_type == 'S' %}selected{% endif %}>Saison Normale (S)</option>
+            <option value="E" {% if current_season_type == 'E' %}selected{% endif %}>École d'été (E)</option>
+        </select>
+    </div>
+    
+    <div class="form-floating mb-3">
+        <input type="number" class="form-control" name="annee_saison" id="annee_saison" 
+               placeholder="Année" value="{{ current_season_year }}" min="2020" max="2030" required>
+        <label for="annee_saison">Année de Saison<span class="text-danger">*</span></label>
+    </div>
                             </div>
                         </div>
                         

@@ -2714,60 +2714,58 @@ def ajouter_entraineur():
 
     if request.method == 'POST':
         try:
+            # Récupérer le code saison
+            saison_type = request.form.get('saison_type')
+            annee_saison = request.form.get('annee_saison')
+            code_saison = f"{saison_type}{annee_saison}"
+            
+            # Récupérer le rôle et la catégorie
+            role_technique = request.form.get('role_technique')
+            type_abonnement = request.form.get('type_abonnement') if role_technique == 'Entraineur' else None
+            
             # Création d'un nouvel entraîneur
             nouveau_entraineur = Entraineur(
                 nom=request.form['nom'],
                 prenom=request.form['prenom'],
                 sexe=request.form['sexe'],
-                type_abonnement=request.form['type_abonnement'],
+                role_technique=role_technique,  # ← AJOUTER
+                type_abonnement=type_abonnement,  # ← Catégorie (peut être None)
                 tel=request.form.get('tel'),
-                addresse =request.form.get('addresse'),
+                addresse=request.form.get('addresse'),
                 compte_bancaire=request.form.get('compte_bancaire'),
                 status='Actif',
+                code_saison=code_saison
             )
-           
 
-            # Mot de passe par défaut pour l'entraîneur
+            # Créer l'utilisateur
             password = 'entraineur'
-            user_nom = nouveau_entraineur.nom
-            user_nom=user_nom.replace(" ", "").lower()
-            user_prenom = nouveau_entraineur.prenom
-            user_prenom=user_prenom.replace(" ", "").lower()
-            user = str(user_nom) + '.' + str(user_prenom)
+            user_nom = nouveau_entraineur.nom.replace(" ", "").lower()
+            user_prenom = nouveau_entraineur.prenom.replace(" ", "").lower()
+            user = f"{user_nom}.{user_prenom}"
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
 
-            # Assignation du rôle
-            role = 'entraineur'
+            new_utilisateur = User(utilisateur=user, password=hashed_password, role='entraineur')
 
-            # Création de l'utilisateur associé à l'entraîneur
-            new_utilisateur = User(utilisateur=user, password=hashed_password, role=role)
-
-            # Ajout de l'utilisateur et de l'entraîneur à la base de données
             db.session.add(new_utilisateur)
             db.session.add(nouveau_entraineur)
-            db.session.commit()  # Commit pour enregistrer dans la base de données
+            db.session.commit()
 
-            # Confirmation de l'ajout
-            flash("Utilisateur ajouté avec succès.", "success")
-            flash('L\'entraîneur a été ajouté avec succès !', 'success')
-
-            return redirect(url_for('admin'))  # Redirection vers la page d'administration
+            flash("Entraîneur ajouté avec succès.", "success")
+            return redirect(url_for('admin'))
 
         except Exception as e:
-            db.session.rollback()  # Annule les modifications en cas d'erreur
-            flash(f"Erreur lors de l'ajout de l'entraîneur ou de l'utilisateur : {str(e)}", 'danger')
+            db.session.rollback()
+            flash(f"Erreur lors de l'ajout : {str(e)}", 'danger')
 
-    return render_template('ajouter_entraineur.html')
+    current_season_code = session.get('saison_code', 'S2025')
+    current_season_type = session.get('saison_type', 'S')
+    current_season_year = session.get('saison', 2025)
+    
+    return render_template('ajouter_entraineur.html',
+                         current_season_code=current_season_code,
+                         current_season_type=current_season_type,
+                         current_season_year=current_season_year)
 
-
-
-@app.route('/gerer_entraineur',methods=['POST','GET'])
-def gerer_entraineur():
-    if 'user_id' not in session or session.get('role') != 'admin':
-        flash("Accès non autorisé.", "danger")
-        return redirect(url_for('login'))
-    entraineurs=Entraineur.query.all()
-    return render_template('gerer_entraineur.html',entraineurs=entraineurs)
 
 @app.route('/modifier_entraineur/<int:id>', methods=['GET', 'POST'])
 def modifier_entraineur(id):
@@ -2777,14 +2775,26 @@ def modifier_entraineur(id):
     
     entraineur = Entraineur.query.get_or_404(id)
     
-    
     if request.method == 'POST':
         entraineur.nom = request.form['nom']
         entraineur.prenom = request.form['prenom']
         entraineur.sexe = request.form['sexe']
-        entraineur.type_abonnement = request.form['type_abonnement']
+        entraineur.role_technique = request.form['role_technique']  # ← AJOUTER
+        
+        # Si le rôle est "Entraineur", on garde la catégorie, sinon on la met à None
+        if request.form['role_technique'] == 'Entraineur':
+            entraineur.type_abonnement = request.form.get('type_abonnement')
+        else:
+            entraineur.type_abonnement = None
+        
         entraineur.enfant = request.form['enfant']
         entraineur.status = request.form['status']
+        
+        # Mettre à jour le code saison
+        saison_type = request.form.get('saison_type')
+        annee_saison = request.form.get('annee_saison')
+        if saison_type and annee_saison:
+            entraineur.code_saison = f"{saison_type}{annee_saison}"
         
         try:
             db.session.commit()
@@ -2794,7 +2804,43 @@ def modifier_entraineur(id):
             flash(f"Erreur lors de la mise à jour : {str(e)}", "danger")
         return redirect(url_for('gerer_entraineur'))
     
-    return render_template('modifier_entraineur.html', entraineur=entraineur)
+    # Extraire type et année de la saison
+    if entraineur.code_saison:
+        saison_type = entraineur.code_saison[0]
+        annee_saison = entraineur.code_saison[1:]
+    else:
+        saison_type = session.get('saison_type', 'S')
+        annee_saison = session.get('saison', 2025)
+    
+    return render_template('modifier_entraineur.html',
+                         entraineur=entraineur,
+                         saison_type=saison_type,
+                         annee_saison=annee_saison)
+
+@app.route('/gerer_entraineur', methods=['POST', 'GET'])
+@season_required
+def gerer_entraineur():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        flash("Accès non autorisé.", "danger")
+        return redirect(url_for('login'))
+    
+    # Récupérer l'année de la saison
+    current_season_year = session.get('saison')
+    if not current_season_year:
+        flash("Veuillez sélectionner une saison.", "warning")
+        return redirect(url_for('login'))
+    
+    # Filtrer tous les entraîneurs dont le code_saison contient l'année
+    # Ex: Si année = 2025, on récupère S2025 ET E2025
+    entraineurs = Entraineur.query.filter(
+        Entraineur.code_saison.like(f"%{current_season_year}")
+    ).all()
+    
+    return render_template('gerer_entraineur.html',
+                         entraineurs=entraineurs,
+                         saison_code=session.get('saison_code'),
+                         saison_type=session.get('saison_type'),
+                         saison_year=current_season_year)
 
 @app.route('/supprimer_entraineur/<int:id>', methods=['POST', 'GET'])
 def supprimer_entraineur(id):
@@ -2803,17 +2849,38 @@ def supprimer_entraineur(id):
         return redirect(url_for('login'))
     
     entraineur = Entraineur.query.get_or_404(id)
+    nom_entraineur = entraineur.nom  # Sauvegarder le nom avant suppression
     
     try:
+        # 1. Mettre à jour les adhérents qui ont cet entraîneur
+        adherents_a_modifier = Adherent.query.filter(Adherent.entraineur == nom_entraineur).all()
+        for adherent in adherents_a_modifier:
+            adherent.entraineur = None  # ou "" selon votre préférence
+        
+        # 2. Mettre à jour les groupes qui ont cet entraîneur
+        groupes_a_modifier = Groupe.query.filter(Groupe.entraineur_nom == nom_entraineur).all()
+        for groupe in groupes_a_modifier:
+            groupe.entraineur_nom = None
+        
+        # 3. Mettre à jour les séances qui ont cet entraîneur
+        seances_a_modifier = Seance.query.filter(Seance.entraineur == nom_entraineur).all()
+        for seance in seances_a_modifier:
+            seance.entraineur = None
+        
+        # 4. Maintenant supprimer l'entraîneur
         db.session.delete(entraineur)
+        
+        # 5. Commit toutes les modifications
         db.session.commit()
-        flash("L'entraîneur a été supprimé avec succès.", "success")
+        
+        flash(f"L'entraîneur {nom_entraineur} a été supprimé avec succès. Les références dans les adhérents, groupes et séances ont été nettoyées.", "success")
+        
     except Exception as e:
         db.session.rollback()
         flash(f"Erreur lors de la suppression : {str(e)}", "danger")
     
     return redirect(url_for('gerer_entraineur'))
-
+    
 @app.route('/discussions', methods=['GET', 'POST'])
 def discussions():
     users = User.query.all()  # Récupère tous les utilisateurs
@@ -3412,12 +3479,13 @@ class Entraineur(db.Model):
     nom = db.Column(db.String(100), nullable=False)
     prenom = db.Column(db.String(100), nullable=False)
     sexe = db.Column(db.Enum('M', 'F'), nullable=False)
+    role_technique = db.Column(db.String(50), nullable=True)
     type_abonnement = db.Column(db.String(50), nullable=True, default=None)
     tel = db.Column(db.String(100), nullable=True)
     addresse = db.Column(db.String(100), nullable=True)
     compte_bancaire = db.Column(db.String(100), nullable=True)
     status = db.Column(db.Enum('Actif', 'Non-Actif'), nullable=False)
-
+    code_saison = db.Column(db.String(10), nullable=True)
     def __repr__(self):
         return f'<Entraineur {self.nom} {self.prenom}>'
 
