@@ -129,7 +129,7 @@
                 <td>
                     <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_entraineur', id=entraineur.id_entraineur) }}">Modifier</a>
                     <a href="javascript:void(0)" 
-   onclick="confirmerSuppression('{{ entraineur.nom }}', {{ entraineur.id }})" 
+   onclick="confirmerSuppression('{{ entraineur.nom }}', {{ entraineur.id_entraineur }})" 
    class="btn btn-danger btn-sm">
     <i class="bi bi-trash"></i> Supprimer
 </a>

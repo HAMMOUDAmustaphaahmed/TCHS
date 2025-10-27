@@ -1674,11 +1674,10 @@ def retirer_adherent_groupe(groupe_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 400
-
 @app.route('/directeur_technique', methods=['GET', 'POST'])
 @season_required
 def directeur_technique():
-    # Vérification des droits d’accès
+    # Vérification des droits d'accès
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
@@ -1744,7 +1743,7 @@ def directeur_technique():
                 db.session.commit()
                 flash("Séance supprimée", "success")
 
-    # --- LOGIQUE D’AFFICHAGE DES DONNÉES ---
+    # --- LOGIQUE D'AFFICHAGE DES DONNÉES ---
     week_offset = request.args.get('week_offset', 0, type=int)
     day_offset = max(0, min(6, request.args.get('day_offset', 0, type=int)))
 
@@ -1752,8 +1751,8 @@ def directeur_technique():
     start_of_week = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
     current_day = start_of_week + timedelta(days=day_offset)
 
-    # 🧩 Filtrage par saison courante
-    groupes = Groupe.query.filter_by(saison_code=current_season_code).all()
+    # Récupération des groupes de la saison
+    groupes = Groupe.query.all()
 
     entraineurs = Entraineur.query.filter_by(status='Actif').all()
     prep_physiques = Entraineur.query.filter_by(type_abonnement="prep_physique", status='Actif').all()
@@ -1784,6 +1783,27 @@ def directeur_technique():
         for a in all_adherents
     ]
 
+    # ← NOUVEAU : Récupérer les adhérents NON affectés à un groupe
+    adherents_non_affectes = Adherent.query.filter(
+        Adherent.code_saison == current_season_code,
+        Adherent.status == 'Actif',
+        or_(
+            Adherent.groupe.is_(None),
+            Adherent.groupe == '',
+            Adherent.groupe == 'None'
+        )
+    ).order_by(Adherent.nom, Adherent.prenom).all()
+
+    # Transformer en liste de dictionnaires
+    adherents_non_affectes_list = [{
+        'matricule': a.matricule,
+        'nom': a.nom,
+        'prenom': a.prenom,
+        'type_abonnement': a.type_abonnement or 'N/D',
+        'date_naissance': a.date_naissance.strftime('%d/%m/%Y') if a.date_naissance else 'N/D',
+        'date_inscription': a.date_inscription.strftime('%d/%m/%Y') if a.date_inscription else 'N/D'
+    } for a in adherents_non_affectes]
+
     # Rendu de la page
     return render_template(
         'gestion_groupes.html',
@@ -1800,6 +1820,7 @@ def directeur_technique():
         seances_par_groupe=seances_par_groupe,
         all_adherents=adherents_list,
         adherents_json=json.dumps(adherents_list),
+        adherents_non_affectes=adherents_non_affectes_list,  # ← NOUVEAU
         saison_code=current_season_code,
         saison_type=session.get('saison_type'),
         saison_year=session.get('saison')
@@ -2579,6 +2600,30 @@ def generer_code_saison():
     else:  # Janvier à mai - fin de saison
         return f"S{annee}"
 
+def get_next_matricule(code_saison):
+    """
+    Génère le prochain matricule disponible pour une saison donnée.
+    Réutilise les matricules des adhérents supprimés.
+    """
+    # Récupérer tous les matricules utilisés pour cette saison
+    matricules_utilises = db.session.query(Adherent.matricule).filter(
+        Adherent.code_saison == code_saison
+    ).order_by(Adherent.matricule).all()
+    
+    matricules_utilises = [m[0] for m in matricules_utilises]
+    
+    # Si aucun matricule, commencer à 1
+    if not matricules_utilises:
+        return 1
+    
+    # Chercher le premier trou dans la séquence
+    for i in range(1, max(matricules_utilises) + 2):
+        if i not in matricules_utilises:
+            return i
+    
+    # Si aucun trou, retourner le max + 1
+    return max(matricules_utilises) + 1
+
 @app.route('/ajouter_adherent', methods=['POST', 'GET'])
 def ajouter_adherent():
     if 'user_id' not in session or session.get('role') != 'admin':
@@ -2588,24 +2633,40 @@ def ajouter_adherent():
     code_saison_defaut = session.get('saison_code')
     
     if request.method == 'POST':
-        # Calculer le matricule
-        dernier_adherent = Adherent.query.order_by(Adherent.matricule.desc()).first()
-        matricule = dernier_adherent.matricule + 1 if dernier_adherent else 1
-        
-        # Code saison depuis le formulaire
+        # Récupérer nom et prénom
+        nom = request.form['Nom'].strip()
+        prenom = request.form['Prénom'].strip()
         code_saison = request.form.get('code_saison', code_saison_defaut)
         
-        # Plus besoin de categorie - on utilise type_abonnement
+        # CONTRÔLE BACKEND : Vérifier les doublons (nom + prénom + saison)
+        adherent_existant = Adherent.query.filter(
+            func.lower(Adherent.nom) == nom.lower(),
+            func.lower(Adherent.prenom) == prenom.lower(),
+            Adherent.code_saison == code_saison
+        ).first()
+        
+        if adherent_existant:
+            flash(
+                f"Un adhérent nommé {nom} {prenom} existe déjà pour la saison {code_saison} "
+                f"(Matricule: {adherent_existant.matricule}). Impossible d'ajouter un doublon.",
+                'danger'
+            )
+            return redirect(url_for('ajouter_adherent'))
+        
+        # Calculer le prochain matricule disponible pour cette saison
+        matricule = get_next_matricule(code_saison)
+        
+        # Créer le nouvel adhérent
         nouveau_adherent = Adherent(
-            nom=request.form['Nom'],
-            prenom=request.form['Prénom'],
+            nom=nom,
+            prenom=prenom,
             date_naissance=request.form['date_naissance'],
             date_inscription=request.form['date_inscription'],
             sexe=request.form['sexe'],
             tel1=request.form['tel1'],
             tel2=request.form.get('tel2'),
             type_abonnement=request.form['type_abonnement'],
-            categorie=request.form['type_abonnement'],  # Utiliser type_abonnement comme catégorie
+            categorie=request.form['type_abonnement'],
             matricule=matricule,
             email=request.form.get('email'),
             code_saison=code_saison,
@@ -2620,14 +2681,40 @@ def ajouter_adherent():
         try:
             db.session.add(nouveau_adherent)
             db.session.commit()
-            flash(f'Adhérent {nouveau_adherent.nom} {nouveau_adherent.prenom} ajouté avec succès (Matricule: {matricule})', 'success')
+            flash(
+                f'Adhérent {nouveau_adherent.nom} {nouveau_adherent.prenom} ajouté avec succès '
+                f'(Matricule: {matricule}, Saison: {code_saison})', 
+                'success'
+            )
             return redirect(url_for('gerer_adherent'))
         except Exception as e:
             db.session.rollback()
             flash(f"Erreur : {str(e)}", 'danger')
+    
+    # Récupérer les adhérents existants de la saison pour le contrôle frontend
+    adherents_existants = Adherent.query.filter_by(
+        code_saison=code_saison_defaut
+    ).with_entities(
+        Adherent.nom, 
+        Adherent.prenom, 
+        Adherent.matricule,
+        Adherent.status,
+        Adherent.date_inscription
+    ).all()
+    
+    # Transformer en liste de dictionnaires pour JSON
+    adherents_list = [{
+        'nom': a.nom.lower(),
+        'prenom': a.prenom.lower(),
+        'matricule': a.matricule,
+        'status': a.status,
+        'date_inscription': a.date_inscription.strftime('%d/%m/%Y')
+    } for a in adherents_existants]
 
     return render_template('ajouter_adherent.html', 
-                         code_saison_defaut=code_saison_defaut)
+                         code_saison_defaut=code_saison_defaut,
+                         adherents_existants=adherents_list)
+
 
 
 @app.route('/gerer_adherent')
@@ -2766,7 +2853,6 @@ def ajouter_entraineur():
                          current_season_type=current_season_type,
                          current_season_year=current_season_year)
 
-
 @app.route('/modifier_entraineur/<int:id>', methods=['GET', 'POST'])
 def modifier_entraineur(id):
     if 'user_id' not in session or session.get('role') != 'admin':
@@ -2779,7 +2865,12 @@ def modifier_entraineur(id):
         entraineur.nom = request.form['nom']
         entraineur.prenom = request.form['prenom']
         entraineur.sexe = request.form['sexe']
-        entraineur.role_technique = request.form['role_technique']  # ← AJOUTER
+        entraineur.addresse = request.form.get('adresse', '')  # ⚠️ addresse dans le modèle
+        entraineur.tel = request.form.get('telephone', '')  # ⚠️ tel dans le modèle
+        entraineur.compte_bancaire = request.form.get('compte_bancaire', '')
+        
+        # Rôle technique
+        entraineur.role_technique = request.form['role_technique']
         
         # Si le rôle est "Entraineur", on garde la catégorie, sinon on la met à None
         if request.form['role_technique'] == 'Entraineur':
@@ -2787,7 +2878,7 @@ def modifier_entraineur(id):
         else:
             entraineur.type_abonnement = None
         
-        entraineur.enfant = request.form['enfant']
+        # Status
         entraineur.status = request.form['status']
         
         # Mettre à jour le code saison
@@ -2802,6 +2893,7 @@ def modifier_entraineur(id):
         except Exception as e:
             db.session.rollback()
             flash(f"Erreur lors de la mise à jour : {str(e)}", "danger")
+        
         return redirect(url_for('gerer_entraineur'))
     
     # Extraire type et année de la saison
@@ -2816,6 +2908,7 @@ def modifier_entraineur(id):
                          entraineur=entraineur,
                          saison_type=saison_type,
                          annee_saison=annee_saison)
+
 
 @app.route('/gerer_entraineur', methods=['POST', 'GET'])
 @season_required

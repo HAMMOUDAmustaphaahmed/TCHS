@@ -189,9 +189,190 @@
             </div>
     
             <!-- Section Gestion des Groupes -->
-            <div class="text-start mb-4">
-                <button class="btn btn-primary" onclick="showGroupForm()">Ajouter un groupe</button>
+            <!-- Section Gestion des Groupes -->
+<div class="text-start mb-4">
+    <button class="btn btn-primary me-2" onclick="showGroupForm()">
+        <i class="fas fa-plus-circle me-2"></i>
+        Ajouter un groupe
+    </button>
+    <button class="btn btn-warning" onclick="openNonAffectesModal()">
+        <i class="fas fa-user-slash me-2"></i>
+        Liste des adhérents non affectés
+        <span class="badge bg-danger ms-2">{{ adherents_non_affectes|length }}</span>
+    </button>
+</div>
+<!-- Modal Adhérents Non Affectés -->
+<div id="nonAffectesModal" class="modal" style="display:none;">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-slash me-2"></i>
+                    Adhérents Non Affectés à un Groupe
+                    <span class="badge bg-danger ms-2">{{ adherents_non_affectes|length }}</span>
+                </h5>
+                <button type="button" class="btn-close" onclick="closeNonAffectesModal()"></button>
             </div>
+            <div class="modal-body">
+                {% if adherents_non_affectes|length == 0 %}
+                    <div class="alert alert-success text-center">
+                        <i class="fas fa-check-circle fa-3x mb-3"></i>
+                        <h5>Excellent !</h5>
+                        <p class="mb-0">Tous les adhérents de la saison <strong>{{ saison_code }}</strong> sont affectés à un groupe.</p>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>{{ adherents_non_affectes|length }}</strong> adhérent(s) de la saison 
+                        <strong>{{ saison_code }}</strong> n'ont pas encore de groupe assigné.
+                    </div>
+                    
+                    <!-- Barre de recherche -->
+                    <div class="mb-3">
+                        <input type="text" id="searchNonAffectes" class="form-control" 
+                               placeholder="🔍 Rechercher par nom, prénom ou matricule...">
+                    </div>
+                    
+                    <!-- Tableau -->
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table table-hover table-striped" id="tableNonAffectes">
+                            <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+                                <tr>
+                                    <th>Matricule</th>
+                                    <th>Nom</th>
+                                    <th>Prénom</th>
+                                    <th>Type d'Abonnement</th>
+                                    <th>Date de Naissance</th>
+                                    <th>Date d'Inscription</th>
+                                    
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for adherent in adherents_non_affectes %}
+                                <tr data-matricule="{{ adherent.matricule }}" 
+                                    data-nom="{{ adherent.nom|lower }}" 
+                                    data-prenom="{{ adherent.prenom|lower }}">
+                                    <td><strong>{{ adherent.matricule }}</strong></td>
+                                    <td>{{ adherent.nom }}</td>
+                                    <td>{{ adherent.prenom }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ adherent.type_abonnement }}</span>
+                                    </td>
+                                    <td>{{ adherent.date_naissance }}</td>
+                                    <td>{{ adherent.date_inscription }}</td>
+                                    
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeNonAffectesModal()">
+                    Fermer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="nonAffectesBackdrop" class="modal-backdrop" style="display:none;" onclick="closeNonAffectesModal()"></div>
+
+<style>
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1050;
+    overflow: auto;
+}
+
+.modal-xl {
+    max-width: 1200px;
+    margin: 30px auto;
+}
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+}
+
+#tableNonAffectes tbody tr:hover {
+    background-color: #fff3cd !important;
+    cursor: pointer;
+}
+</style>
+<script>
+// Ouvrir le modal des adhérents non affectés
+function openNonAffectesModal() {
+    document.getElementById('nonAffectesModal').style.display = 'block';
+    document.getElementById('nonAffectesBackdrop').style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Empêcher le scroll
+}
+
+// Fermer le modal
+function closeNonAffectesModal() {
+    document.getElementById('nonAffectesModal').style.display = 'none';
+    document.getElementById('nonAffectesBackdrop').style.display = 'none';
+    document.body.style.overflow = 'auto'; // Réactiver le scroll
+}
+
+// Fonction de recherche dans le tableau
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchNonAffectes');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#tableNonAffectes tbody tr');
+            
+            rows.forEach(row => {
+                const matricule = row.dataset.matricule;
+                const nom = row.dataset.nom;
+                const prenom = row.dataset.prenom;
+                
+                if (matricule.includes(filter) || 
+                    nom.includes(filter) || 
+                    prenom.includes(filter)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+
+// Fonction pour affecter rapidement un adhérent à un groupe
+function affecterAdherentRapide(matricule) {
+    // Fermer le modal des non affectés
+    closeNonAffectesModal();
+    
+    // Ouvrir le modal d'ajout d'adhérent avec ce matricule pré-sélectionné
+    // (vous pouvez adapter selon votre logique existante)
+    alert(`Fonctionnalité à implémenter : Affecter l'adhérent ${matricule} à un groupe`);
+    
+    // Optionnel : Ouvrir directement un sélecteur de groupe
+    // const groupeId = prompt("Entrez l'ID du groupe :");
+    // if (groupeId) {
+    //     // Appel API pour affecter l'adhérent
+    // }
+}
+
+// Fermer le modal avec la touche Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeNonAffectesModal();
+    }
+});
+</script>
     
             <!-- Formulaire d'ajout de groupe -->
 <div id="groupForm" class="mt-2" style="display:none;">
@@ -395,15 +576,13 @@ function closeAdherentsListModal() {
             <div class="mb-3">
                 <h6>Nouveaux sélectionnés :</h6>
                 <div id="selectedAdherents" style="max-height: 120px; overflow-y: auto;"></div>
+                <button class="btn btn-primary" onclick="confirmAddAdherents()">Confirmer</button>
             </div>
+                
         </div>
     </div>
 
-    <!-- Boutons -->
-    <div class="d-flex gap-2 justify-content-end mt-3">
-        <button class="btn btn-secondary" onclick="closeAddAdherentModal()">Annuler</button>
-        <button class="btn btn-primary" onclick="confirmAddAdherents()">Confirmer</button>
-    </div>
+   
 </div>
 
     
@@ -416,15 +595,12 @@ function closeAdherentsListModal() {
         <button type="button" class="btn-close" aria-label="Close" onclick="closeSessionModal()"></button>
     </div>
 
-    <!-- Groupe (pré-rempli selon le bouton cliqué) -->
+    <!-- Groupe (pré-rempli et désactivé) -->
     <div class="mb-3">
-        <label for="sessionGroupe" class="form-label">Groupe :</label>
-        <select id="sessionGroupe" class="form-select" required>
-            <option value="">Sélectionner un groupe</option>
-            {% for groupe in groupes %}
-            <option value="{{ groupe.id_groupe }}">{{ groupe.nom_groupe }}</option>
-            {% endfor %}
-        </select>
+        <label for="sessionGroupeNom" class="form-label">Groupe :</label>
+        <input type="text" id="sessionGroupeNom" class="form-control" readonly 
+               style="background-color: #f8f9fa; border: 1px solid #dee2e6; color: #495057; font-weight: 500; cursor: not-allowed;">
+        <input type="hidden" id="sessionGroupe">
     </div>
 
     <!-- Type de séance -->
@@ -479,6 +655,7 @@ function closeAdherentsListModal() {
         <button class="btn btn-primary" onclick="addSession()">Confirmer</button>
     </div>
 </div>
+
 
   
         

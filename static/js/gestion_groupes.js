@@ -102,16 +102,33 @@ document.addEventListener('DOMContentLoaded', function() {
 // 📌 Gestion des Séances
 // ==========================
 
+
 function openSessionModal(groupeId, typeSeance) {
     console.log('Opening session modal for group:', groupeId, 'type:', typeSeance);
     
     currentGroupId = groupeId;
     const type = typeSeance || 'entrainement';
     
-    // Pré-remplir le groupe
-    const groupeSelect = document.getElementById('sessionGroupe');
-    if (groupeSelect) {
-        groupeSelect.value = groupeId;
+    // 🎯 RÉCUPÉRER LE NOM DU GROUPE DEPUIS LA LIGNE DU TABLEAU
+    const button = window.event.target.closest('button');
+    const row = button.closest('tr');
+    const groupeNom = row.querySelector('td:first-child').textContent.trim();
+    
+    console.log('Nom du groupe trouvé:', groupeNom);
+    
+    // Pré-remplir le groupe (ID caché + Nom visible)
+    const groupeIdInput = document.getElementById('sessionGroupe');
+    const groupeNomInput = document.getElementById('sessionGroupeNom');
+    
+    if (groupeIdInput) {
+        groupeIdInput.value = groupeId;
+    }
+    
+    if (groupeNomInput) {
+        groupeNomInput.value = groupeNom;
+        console.log('Valeur dans sessionGroupeNom:', groupeNomInput.value);
+    } else {
+        console.error('Element sessionGroupeNom non trouvé !');
     }
     
     // Pré-remplir le type de séance
@@ -146,6 +163,8 @@ function openPrepPhysiqueModal(groupeId) {
     console.log('Opening prep physique modal for group:', groupeId);
     openSessionModal(groupeId, 'prep_physique');
 }
+
+
 
 function closeSessionModal() {
     const modal = document.getElementById('sessionModal');

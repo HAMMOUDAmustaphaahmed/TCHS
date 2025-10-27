@@ -5,7 +5,7 @@
     <title>TCHS - Ajouter Adhérent</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     
-    <!-- Favicon -->
+    <!-- Favicon -->    
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
     
     <!-- Google Web Fonts -->
@@ -96,29 +96,25 @@
                 
                 <!-- Formulaire -->
                 <form method="post" action="{{ url_for('ajouter_adherent') }}" id="adherentForm">
-                    <input type="hidden" id="code_saison" name="code_saison">
-                    
                     <div class="row">
-                        <!-- Code Saison Personnalisé -->
+                        <!-- Code Saison (non modifiable) -->
                         <div class="col-12 mb-4">
                             <label class="form-label">
                                 Code Saison <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
-                                <select id="prefix_saison" class="form-select" style="flex: 0 0 20%;">
-                                    <option value="S">S (Saison)</option>
-                                    <option value="E">E (École d'été)</option>
-                                </select>
-                                <input type="number" id="annee_saison" class="form-control" 
-                                       min="2020" max="2050" step="1" style="flex: 0 0 30%;">
-                                <span class="input-group-text bg-primary text-white" style="flex: 1;">
-                                    <i class="fas fa-arrow-right me-2"></i>
-                                    Code: <strong id="code-saison-preview" class="ms-2">S2025</strong>
+                                <input type="text" id="code_saison" name="code_saison" 
+                                       class="form-control bg-light" 
+                                       value="{{ code_saison_defaut }}" 
+                                       readonly required>
+                                <span class="input-group-text bg-primary text-white">
+                                    <i class="fas fa-lock me-2"></i>
+                                    Saison Actuelle
                                 </span>
                             </div>
                             <small class="text-muted">
                                 <i class="fas fa-info-circle me-1"></i>
-                                Le code sera généré automatiquement selon la période
+                                Le code saison est fixé selon votre sélection de connexion
                             </small>
                         </div>
                         
@@ -138,12 +134,32 @@
                             <input type="text" class="form-control" id="prenom" name="Prénom" required>
                         </div>
                         
+                        <!-- Alerte de doublon -->
+                        <div class="col-12 mb-3">
+                            <div id="duplicate-alert" class="alert alert-danger" style="display: none;">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>⚠️ Attention !</strong> Un adhérent avec ce nom et prénom existe déjà :
+                                
+                            </div>
+                        </div>
+                        
                         <!-- Date de Naissance -->
                         <div class="col-md-6 mb-3">
                             <label for="date_naissance" class="form-label">
                                 Date de Naissance / تاريخ الميلاد <span class="text-danger">*</span>
                             </label>
                             <input type="date" class="form-control" id="date_naissance" name="date_naissance" required>
+                            <small class="text-muted">Modifiable - Par défaut: aujourd'hui</small>
+                        </div>
+                        
+                        <!-- Date d'inscription -->
+                        <div class="col-md-6 mb-3">
+                            <label for="date_inscription" class="form-label">
+                                Date d'inscription / تاريخ التسجيل <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" class="form-control" id="date_inscription" 
+                                   name="date_inscription" required>
+                            <small class="text-muted">Modifiable - Par défaut: aujourd'hui</small>
                         </div>
                         
                         <!-- Sexe -->
@@ -155,6 +171,20 @@
                                 <option value="" disabled selected>Choisissez</option>
                                 <option value="M">Masculin / ذكر</option>
                                 <option value="F">Féminin / أنثى</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Type d'abonnement -->
+                        <div class="col-md-6 mb-3">
+                            <label for="type_abonnement" class="form-label">
+                                Type d'abonnement / نوع الاشتراك <span class="text-danger">*</span>
+                            </label>
+                            <select id="type_abonnement" name="type_abonnement" class="form-select" required>
+                                <option value="" disabled selected>Choisissez</option>
+                                <option value="Compétitif">Compétitif</option>
+                                <option value="Pré-Compétitif">Pré-Compétitif / École</option>
+                                <option value="Ecole d'été">École d'été</option>
+                                <option value="Loisir">Loisir / Adulte</option>
                             </select>
                         </div>
                         
@@ -179,49 +209,21 @@
                         </div>
                         
                         <!-- Email -->
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-12 mb-3">
                             <label for="email" class="form-label">
                                 Email / البريد الإلكتروني
                             </label>
                             <input type="email" class="form-control" id="email" name="email" 
                                    placeholder="exemple@email.com">
                         </div>
-                        
-                        <!-- Date d'inscription -->
-                        <div class="col-md-6 mb-3">
-                            <label for="date_inscription" class="form-label">
-                                Date d'inscription / تاريخ التسجيل <span class="text-danger">*</span>
-                            </label>
-                            <input type="date" class="form-control" id="date_inscription" 
-                                   name="date_inscription" required>
-                            <small class="text-muted">Par défaut: aujourd'hui (modifiable)</small>
-                        </div>
-                        
-                        <!-- Type d'abonnement (remplace Catégorie) -->
-                        <div class="col-md-6 mb-3">
-                            <label for="type_abonnement" class="form-label">
-                                Type d'abonnement / نوع الاشتراك <span class="text-danger">*</span>
-                            </label>
-                            <select id="type_abonnement" name="type_abonnement" class="form-select" required>
-                                <option value="" disabled selected>Choisissez</option>
-                                <option value="Compétitif">Compétitif</option>
-                                <option value="Pré-Compétitif">Pré-Compétitif / École</option>
-                                <option value="Ecole d'été">École d'été</option>
-                                <option value="Loisir">Loisir / Adulte</option>
-                            </select>
-                        </div>
                     </div>
                     
                     <!-- Note d'information -->
-                    <div class="alert alert-warning mt-3">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Note :</strong> Le groupe, l'entraîneur et la cotisation seront définis 
-                        lors de l'affectation du groupe via la page "Gestion des Groupes".
-                    </div>
+                    
                     
                     <!-- Bouton de soumission -->
                     <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
                             <i class="fas fa-save me-2"></i>
                             Ajouter l'Adhérent
                         </button>
@@ -240,91 +242,84 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     
     <script>
-        // Fonction pour générer le code saison automatiquement
-        function genererCodeSaisonAuto() {
-            const aujourd_hui = new Date();
-            const mois = aujourd_hui.getMonth() + 1; // 0-11
-            const annee = aujourd_hui.getFullYear();
-            
-            let prefix, anneeCode;
-            
-            // Entre 01/10 et 31/06 de l'année suivante → S + année suivante
-            if (mois >= 10) { // Octobre-Décembre
-                prefix = 'S';
-                anneeCode = annee + 1;
-            } else if (mois <= 6) { // Janvier-Juin
-                prefix = 'S';
-                anneeCode = annee;
-            } else { // Juillet-Septembre → École d'été
-                prefix = 'E';
-                anneeCode = annee;
-            }
-            
-            return { prefix, anneeCode };
-        }
-        
-        // Mettre à jour le code saison
-        function mettreAJourCodeSaison() {
-            const prefix = document.getElementById('prefix_saison').value;
-            const annee = document.getElementById('annee_saison').value;
-            const codeFinal = prefix + annee;
-            
-            document.getElementById('code_saison').value = codeFinal;
-            document.getElementById('code-saison-preview').textContent = codeFinal;
-        }
-        
-        // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
-            // Définir la date d'inscription par défaut à aujourd'hui
+            // Définir les dates par défaut à aujourd'hui
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date_inscription').value = today;
+            document.getElementById('date_naissance').value = today;
             
-            // Initialiser le code saison
-            const codeAuto = genererCodeSaisonAuto();
-            document.getElementById('prefix_saison').value = codeAuto.prefix;
-            document.getElementById('annee_saison').value = codeAuto.anneeCode;
-            mettreAJourCodeSaison();
+            // Récupérer la liste des adhérents existants depuis le backend
+            const adherentsExistants = {{ adherents_existants | tojson | safe }};
             
-            // Event listeners pour le code saison
-            document.getElementById('prefix_saison').addEventListener('change', mettreAJourCodeSaison);
-            document.getElementById('annee_saison').addEventListener('input', mettreAJourCodeSaison);
+            const nomInput = document.getElementById('nom');
+            const prenomInput = document.getElementById('prenom');
+            const duplicateAlert = document.getElementById('duplicate-alert');
+            const duplicateInfo = document.getElementById('duplicate-info');
+            const submitBtn = document.getElementById('submitBtn');
             
-            // Synchronisation type abonnement et code saison
-            document.getElementById('type_abonnement').addEventListener('change', function() {
-                if (this.value === "Ecole d'été") {
-                    document.getElementById('prefix_saison').value = 'E';
-                    mettreAJourCodeSaison();
+            // Fonction pour vérifier les doublons (côté client)
+            function checkDuplicate() {
+                const nom = nomInput.value.trim().toLowerCase();
+                const prenom = prenomInput.value.trim().toLowerCase();
+                
+                if (!nom || !prenom) {
+                    duplicateAlert.style.display = 'none';
+                    submitBtn.disabled = false;
+                    return;
                 }
-            });
+                
+                // Chercher dans la liste locale
+                const doublon = adherentsExistants.find(
+                    a => a.nom === nom && a.prenom === prenom
+                );
+                
+                if (doublon) {
+                    duplicateAlert.style.display = 'block';
+                    duplicateInfo.innerHTML = `
+                        <strong>Matricule:</strong> ${doublon.matricule}<br>
+                        <strong>Statut:</strong> ${doublon.status}<br>
+                        <strong>Date d'inscription:</strong> ${doublon.date_inscription}
+                    `;
+                    submitBtn.disabled = true;
+                    submitBtn.classList.remove('btn-primary');
+                    submitBtn.classList.add('btn-secondary');
+                } else {
+                    duplicateAlert.style.display = 'none';
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('btn-secondary');
+                    submitBtn.classList.add('btn-primary');
+                }
+            }
+            
+            // Event listeners pour le contrôle en temps réel
+            nomInput.addEventListener('input', checkDuplicate);
+            prenomInput.addEventListener('input', checkDuplicate);
+            nomInput.addEventListener('blur', checkDuplicate);
+            prenomInput.addEventListener('blur', checkDuplicate);
             
             // Validation du formulaire
             const form = document.getElementById('adherentForm');
             form.addEventListener('submit', function(e) {
+                if (submitBtn.disabled) {
+                    e.preventDefault();
+                    alert('❌ Impossible d\'ajouter un adhérent avec un nom et prénom déjà existant dans cette saison.');
+                    return false;
+                }
+                
+                // Validation des téléphones
                 const tel1 = document.getElementById('tel1').value;
                 const tel2 = document.getElementById('tel2').value;
                 
-                // Vérifier le format des téléphones
                 if (tel1 && !/^\d{8}$/.test(tel1)) {
                     e.preventDefault();
-                    alert('Le téléphone 1 doit contenir exactement 8 chiffres');
+                    alert('❌ Le téléphone 1 doit contenir exactement 8 chiffres');
                     return false;
                 }
                 
-                if (tel2 && !/^\d{8}$/.test(tel2)) {
+                if (tel2 && tel2.trim() !== '' && !/^\d{8}$/.test(tel2)) {
                     e.preventDefault();
-                    alert('Le téléphone 2 doit contenir exactement 8 chiffres');
+                    alert('❌ Le téléphone 2 doit contenir exactement 8 chiffres');
                     return false;
-                }
-                
-                // Vérifier la cohérence type abonnement / code saison
-                const typeAbo = document.getElementById('type_abonnement').value;
-                const prefix = document.getElementById('prefix_saison').value;
-                
-                if (typeAbo === "Ecole d'été" && prefix !== 'E') {
-                    if (!confirm("Vous avez sélectionné 'École d'été' mais le code saison n'est pas 'E'. Continuer ?")) {
-                        e.preventDefault();
-                        return false;
-                    }
                 }
             });
         });
