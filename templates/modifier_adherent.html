@@ -137,16 +137,16 @@
                         </div>
                         
                         <div class="col-6">
-                            <div class="form-floating mb-3">
-                                <select id="entraineur" name="entraineur" class="form-control" required>
-                                    <option value="" disabled>Entraîneur</option>
-                                    {% for e in entraineurs %}
-                                    <option value="{{ e.nom }} {{ e.prenom }}" {% if adherent.entraineur == e.nom + ' ' + e.prenom %}selected{% endif %}>{{ e.nom }} {{ e.prenom }}</option>
-                                    {% endfor %}
-                                </select>
-                                <label for="entraineur">Entraîneur</label>
-                            </div>
-                        </div>
+    <div class="form-floating mb-3">
+        <select id="entraineur" name="entraineur" class="form-control">
+            <option value="">Sélectionner un entraîneur</option>
+            {% for e in entraineurs %}
+            <option value="{{ e.nom }} {{ e.prenom }}" {% if adherent.entraineur == e.nom + ' ' + e.prenom %}selected{% endif %}>{{ e.nom }} {{ e.prenom }}</option>
+            {% endfor %}
+        </select>
+        <label for="entraineur">Entraîneur</label>
+    </div>
+</div>
                         <div class="col-6">
                             <div class="form-floating mb-3">
                                 <input type="email" class="form-control" id="floatingInputEmail" name="email" placeholder="Email" value="{{ adherent.email }}">

@@ -2741,19 +2741,27 @@ def gerer_adherent():
                          saison_code=current_season_code,
                          saison_type=session.get('saison_type'),
                          saison_year=session.get('saison'))
+
 @app.route('/modifier_adherent/<int:id>', methods=['GET', 'POST'])
 def modifier_adherent(id):
     if 'user_id' not in session or session.get('role') != 'admin':
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
     
+    # Récupérer le code_saison de la session
+    saison_code = session.get('saison_code')
+    
+    if not saison_code:
+        flash("Aucune saison active. Veuillez vous reconnecter.", "danger")
+        return redirect(url_for('login'))
+    
     # Récupérer l'adhérent par son ID, sinon retourner une erreur 404 si non trouvé
-    groupes = Groupe.query.all()
-    nom_groupes = [groupe.nom_groupe for groupe in groupes]
     adherent = Adherent.query.get_or_404(id)
     
-    # Générer le code saison par défaut pour les nouveaux adhérents
-
+    # Filtrer les groupes par code_saison
+    groupes = Groupe.query.filter_by(saison_code=saison_code).all()
+    nom_groupes = [groupe.nom_groupe for groupe in groupes]
+    
     if request.method == 'POST':
         adherent.nom = request.form['nom']
         adherent.prenom = request.form['prenom']
@@ -2762,21 +2770,23 @@ def modifier_adherent(id):
         adherent.tel1 = request.form['tel1']
         adherent.tel2 = request.form['tel2']
         adherent.type_abonnement = request.form['type_abonnement']
-        adherent.categorie = request.form['categorie']
+        adherent.ancien_abonnee = request.form['ancien_abonnee']
         adherent.groupe = request.form['groupe']
         adherent.entraineur = request.form['entraineur']
         adherent.email = request.form['email']
         adherent.status = request.form['status']
         
         db.session.commit()
+        flash("Adhérent modifié avec succès.", "success")
         return redirect(url_for('gerer_adherent'))
-
-    # Get list of all trainers
-    entraineurs = Entraineur.query.all()
-    return render_template('modifier_adherent.html', 
-                         adherent=adherent, 
-                         entraineurs=entraineurs,
-                         nom_groupes=nom_groupes)
+    
+    # Filtrer les entraîneurs par code_saison
+    entraineurs = Entraineur.query.filter_by(code_saison=saison_code).all()
+    
+    return render_template('modifier_adherent.html',
+                          adherent=adherent,
+                          entraineurs=entraineurs,
+                          nom_groupes=nom_groupes)
 
 @app.route('/supprimer_adherent/<int:id>', methods=['GET', 'POST'])
 def supprimer_adherent(id):
