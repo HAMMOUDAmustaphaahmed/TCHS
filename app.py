@@ -1840,21 +1840,20 @@ def planning_prep_physique():
 
     season = SeasonContext(Seance)
 
-    # Créneaux de 30 minutes
+    # Créneaux horaires (1h)
     creneaux = []
-    for hour in range(8, 22):
-        for minute in [0, 30]:
-            start_time = time(hour, minute)
-            end_hour = hour if minute == 0 else hour + 1
-            end_minute = 30 if minute == 0 else 0
-            end_time = time(end_hour, end_minute)
-            creneaux.append({'start': start_time, 'end': end_time})
+    for hour in range(8, 22):  # de 8h à 21h inclus
+        start_time = time(hour, 0)
+        end_time = time(hour + 1, 0)
+        creneaux.append({'start': start_time, 'end': end_time})
 
+    # Gestion de la semaine
     week_offset = request.args.get('week_offset', 0, type=int)
     today = datetime.today()
     start_of_week = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
     days_of_week = [start_of_week + timedelta(days=i) for i in range(7)]
 
+    # Séances de préparation physique de la semaine
     seances_week = season.filter_query(
         Seance.query.filter(
             Seance.type_seance == 'prep_physique',
@@ -1863,14 +1862,23 @@ def planning_prep_physique():
         )
     ).all()
 
+    # Construction du dictionnaire pour affichage
     seances_dict = {
         day.date(): {c['start']: [] for c in creneaux}
         for day in days_of_week
     }
 
     for s in seances_week:
-        if s.date in seances_dict and s.heure_debut in seances_dict[s.date]:
-            seances_dict[s.date][s.heure_debut].append(s)
+        if s.date in seances_dict:
+            for c in creneaux:
+                if c['start'] >= s.heure_debut and c['start'] < s.heure_fin:
+                    seances_dict[s.date][c['start']].append(s)
+
+    # ⚙️ Charger les entraîneurs de la saison (role_technique = "Prep Physique")
+    entraineurs = Entraineur.query.filter_by(
+        role_technique='Prep Physique',
+        code_saison=current_season_code
+    ).all()
 
     return render_template(
         'planning_prep_physique.html',
@@ -1880,7 +1888,8 @@ def planning_prep_physique():
         week_offset=week_offset,
         saison_code=current_season_code,
         saison_type=session.get('saison_type'),
-        saison_year=session.get('saison')
+        saison_year=session.get('saison'),
+        entraineurs=entraineurs
     )
 
 
@@ -2188,6 +2197,81 @@ def edit_session():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/delete_session', methods=['POST'])
+def delete_session():
+    """Supprimer une séance (pour une semaine ou toutes)"""
+    if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
+        return jsonify({"error": "Accès non autorisé"}), 403
+    
+    try:
+        data = request.get_json()
+        session_id = data.get('session_id')
+        scope = data.get('scope', 'week')  # 'week' ou 'all'
+        
+        if not session_id:
+            return jsonify({"error": "ID de séance manquant"}), 400
+        
+        # Récupérer la séance
+        seance = Seance.query.get(session_id)
+        if not seance:
+            return jsonify({"error": "Séance non trouvée"}), 404
+        
+        if scope == 'week':
+            # Supprimer uniquement cette séance
+            db.session.delete(seance)
+            db.session.commit()
+            return jsonify({"message": "Séance supprimée avec succès"}), 200
+            
+        elif scope == 'all':
+            # Supprimer toutes les séances similaires (même groupe, même horaire, même jour de semaine)
+            # Récupérer les informations de la séance
+            jour_semaine = seance.date.weekday()  # 0=Lundi, 6=Dimanche
+            heure_debut = seance.heure_debut
+            heure_fin = seance.heure_fin
+            groupe = seance.groupe
+            terrain = seance.terrain
+            entraineur = seance.entraineur
+            type_seance = seance.type_seance
+            code_saison = seance.code_saison
+            
+            # Trouver toutes les séances correspondantes
+            # VERSION MYSQL : filtrer par critères puis filtrer le jour en Python
+            seances_candidats = Seance.query.filter(
+                and_(
+                    Seance.heure_debut == heure_debut,
+                    Seance.heure_fin == heure_fin,
+                    Seance.groupe == groupe,
+                    Seance.terrain == terrain,
+                    Seance.entraineur == entraineur,
+                    Seance.type_seance == type_seance,
+                    Seance.code_saison == code_saison
+                )
+            ).all()
+            
+            # Filtrer par jour de semaine en Python
+            seances_similaires = [
+                s for s in seances_candidats 
+                if s.date.weekday() == jour_semaine
+            ]
+            
+            # Supprimer toutes les séances
+            count = len(seances_similaires)
+            for s in seances_similaires:
+                db.session.delete(s)
+            
+            db.session.commit()
+            return jsonify({
+                "message": f"{count} séance(s) récurrente(s) supprimée(s) avec succès"
+            }), 200
+        
+        else:
+            return jsonify({"error": "Scope invalide"}), 400
+            
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Erreur lors de la suppression: {str(e)}"}), 500
 
 @app.route('/api/search_adherent/<string:matricule>', methods=['GET'])
 def api_search_adherent(matricule):

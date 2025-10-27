@@ -243,8 +243,9 @@
                 <tr>
                     <th>Jour</th>
                     {% for c in creneaux %}
-                        <th>{{ c.start.strftime('%H:%M') }}</th>
+                        <th>{{ c.start.strftime('%H:%M') }} - {{ c.end.strftime('%H:%M') }}</th>
                     {% endfor %}
+
                 </tr>
             </thead>
             <tbody>
@@ -266,10 +267,20 @@
                                                 onclick="deleteSession({{ seance.seance_id }})">
                                             <i class="fas fa-times"></i>
                                         </button>
-                                        <button class="btn btn-warning btn-sm" 
-                                                onclick="openEditSessionModal({{ seance.seance_id }}, '{{ seance.date }}', '{{ seance.heure_debut }}', '', '{{ seance.entraineur_id }}')">
-                                            Éditer
-                                        </button>
+                                            <button class="btn btn-warning btn-sm"
+        onclick="openEditSessionModal(
+            {{ seance.seance_id }},
+            '{{ seance.date }}',
+            '{{ seance.heure_debut.strftime("%H:%M") }}',
+            '{{ seance.heure_fin.strftime("%H:%M") }}',
+            '{{ seance.terrain }}',
+            '{{ seance.entraineur.split(" ")[0] if seance.entraineur else "" }}'
+        )">
+    Éditer
+</button>
+
+
+
                                     </div>
                                 {% endfor %}
                             </td>
@@ -313,41 +324,31 @@
 
 
 <!-- Modal Éditer une Séance -->
-<div id="editSessionModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 350px;">
+<div id="editSessionModal" style="display:none; position: fixed; top: 50%; left: 50%;
+transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 350px;">
     <h4 class="mb-3">Éditer la séance</h4>
     <input type="hidden" id="editSessionId">
-    
+
+    <!-- Date -->
     <div class="mb-3">
         <label for="editSessionDate" class="form-label">Date :</label>
-        <input type="text" 
-               id="editSessionDate" 
-               class="form-control"
-               placeholder="JJ/MM/AAAA"
-               pattern="\d{2}/\d{2}/\d{4}"
-               autocomplete="off"
-               required>
+        <input type="text" id="editSessionDate" class="form-control" required>
     </div>
 
+    <!-- Heure de début -->
     <div class="mb-3">
-        <label for="editSessionTime" class="form-label">Créneau horaire :</label>
-        <select id="editSessionTime" class="form-select" required>
-            {% for creneau in creneaux %}
-            <option value="{{ creneau.start.strftime('%H:%M') }}">
-                {{ creneau.start.strftime('%H:%M') }} - {{ creneau.end.strftime('%H:%M') }}
-            </option>
-            {% endfor %}
-        </select>
+        <label for="editSessionTime" class="form-label">Heure de début :</label>
+        <input type="time" id="editSessionTime" class="form-control" required>
     </div>
 
+    <!-- Heure de fin -->
     <div class="mb-3">
-        <label for="editSessionTerrain" class="form-label">Terrain :</label>
-        <select id="editSessionTerrain" class="form-select">
-            {% for terrain in terrains %}
-            <option value="{{ terrain }}">Terrain {{ terrain }}</option>
-            {% endfor %}
-        </select>
+        <label for="editSessionEndTime" class="form-label">Heure de fin :</label>
+        <input type="time" id="editSessionEndTime" class="form-control" required>
     </div>
 
+    <!-- Entraîneur -->
     <div class="mb-3">
         <label for="editSessionEntraineur" class="form-label">Entraîneur :</label>
         <select id="editSessionEntraineur" class="form-select">
@@ -364,7 +365,6 @@
 </div>
 
 <script>
-// Initialisation du datepicker pour l'édition
 const editDatepicker = flatpickr("#editSessionDate", {
     locale: "fr",
     dateFormat: "d/m/Y",
@@ -374,22 +374,82 @@ const editDatepicker = flatpickr("#editSessionDate", {
     allowInput: true
 });
 
-// Fonction pour ouvrir le modal d'édition
-function openEditSessionModal(sessionId, date, heureDebut, terrain, entraineurId) {
-    // Conversion de la date au format FR
-    const [year, month, day] = date.split('-');
-    const formattedDate = `${day}/${month}/${year}`;
-    
-    editDatepicker.setDate(formattedDate);
-    
-    document.getElementById('editSessionId').value = sessionId;
-    document.getElementById('editSessionTime').value = heureDebut;
-    document.getElementById('editSessionTerrain').value = terrain;
-    document.getElementById('editSessionEntraineur').value = entraineurId;
-    
-    document.getElementById('editSessionModal').style.display = 'block';
+let currentSessionId = null;
+
+function openEditSessionModal(sessionId, date, heureDebut, heureFin, entraineurNom) {
+    currentSessionId = sessionId;
+
+    try {
+        // 🗓️ Convertir la date pour affichage
+        const [year, month, day] = date.split("-");
+        const formattedDate = `${day}/${month}/${year}`;
+
+        document.getElementById("editSessionId").value = sessionId;
+        document.getElementById("editSessionDate").value = formattedDate;
+        document.getElementById("editSessionTime").value = heureDebut;
+        document.getElementById("editSessionEndTime").value = heureFin;
+
+        // 👨‍🏫 Sélectionner l'entraîneur correspondant
+        const entraineurSelect = document.getElementById("editSessionEntraineur");
+        let found = false;
+        for (let opt of entraineurSelect.options) {
+            if (opt.text.includes(entraineurNom)) {
+                opt.selected = true;
+                found = true;
+                break;
+            }
+        }
+        if (!found && entraineurSelect.options.length > 0) entraineurSelect.selectedIndex = 0;
+
+        document.getElementById("editSessionModal").style.display = "block";
+    } catch (err) {
+        console.error("Erreur ouverture modal :", err);
+        alert("Impossible d’ouvrir le modal. Vérifie la console.");
+    }
+}
+
+function closeEditSessionModal() {
+    document.getElementById("editSessionModal").style.display = "none";
+}
+
+function submitEditSession() {
+    const sessionId = document.getElementById("editSessionId").value;
+    const date = document.getElementById("editSessionDate").value;
+    const heureDebut = document.getElementById("editSessionTime").value;
+    const heureFin = document.getElementById("editSessionEndTime").value;
+    const entraineur = document.getElementById("editSessionEntraineur").value;
+
+    fetch("/edit_session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            session_id: sessionId,
+            date: date,
+            heure_debut: heureDebut,
+            heure_fin: heureFin,
+            terrain: null, // plus de terrain
+            entraineur: entraineur
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+        closeEditSessionModal();
+    })
+    .catch(err => {
+        console.error("Erreur :", err);
+        alert("Une erreur est survenue.");
+        closeEditSessionModal();
+    });
 }
 </script>
+
+
 
 <style>
 /* Style cohérent avec le modal d'ajout */
@@ -402,67 +462,7 @@ function openEditSessionModal(sessionId, date, heureDebut, terrain, entraineurId
     border-radius: 4px;
     padding: 0.375rem 0.75rem;
 }
-</style>
 
-<script>
-let currentSessionId = null;
-
-// Ouvrir le modal avec les données existantes
-function openEditSessionModal(sessionId, date, time, terrain, entraineur) {
-currentSessionId = sessionId;
-document.getElementById('editSessionId').value = sessionId;
-document.getElementById('editSessionDate').value = date;
-document.getElementById('editSessionTime').value = time;
-document.getElementById('editSessionTerrain').value = terrain;
-document.getElementById('editSessionEntraineur').value = entraineur;
-document.getElementById('editSessionModal').style.display = 'block';
-}
-
-// Fermer le modal
-function closeEditSessionModal() {
-document.getElementById('editSessionModal').style.display = 'none';
-}
-
-// Soumettre la modification de la séance
-function submitEditSession() {
-const sessionId = document.getElementById('editSessionId').value;
-const date = document.getElementById('editSessionDate').value;
-const time = document.getElementById('editSessionTime').value;
-const terrain = document.getElementById('editSessionTerrain').value;
-const entraineur = document.getElementById('editSessionEntraineur').value;
-
-fetch('/edit_session', {
-method: 'POST',
-headers: {
-'Content-Type': 'application/json',
-},
-body: JSON.stringify({
-session_id: sessionId,
-date: date,
-heure_debut: time,
-terrain: terrain,
-entraineur: entraineur
-})
-})
-.then(response => response.json())
-.then(data => {
-if (data.message) {
-alert(data.message);
-location.reload();
-} else {
-alert(data.error);
-}
-closeEditSessionModal();
-})
-.catch(error => {
-console.error('Erreur :', error);
-alert('Une erreur est survenue.');
-closeEditSessionModal();
-});
-}
-</script>
-
-<style>
     .time-slot {
 height: 80px;
 vertical-align: top;
