@@ -3273,9 +3273,10 @@ def gestion_cotisations():
     if 'user_id' not in session or session.get('role') != 'admin':
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
-    groupes = Groupe.query.all()
+    code_saison=session.get('saison_code')
+    groupes = Groupe.query.filter_by(saison_code=code_saison).all()
     nom_groupes = [groupe.nom_groupe for groupe in groupes]
-    cotisations = Cotisation.query.all()
+    cotisations = Cotisation.query.filter_by(code_saison=code_saison).all()
     
     if request.method == 'POST':
         action = request.form.get('action')
@@ -3289,7 +3290,9 @@ def gestion_cotisations():
                 
             nouvelle_cotisation = Cotisation(
                 nom_cotisation=nom,
-                montant_cotisation=float(montant)
+                montant_cotisation=float(montant),
+                code_saison=code_saison
+
             )
             db.session.add(nouvelle_cotisation)
             flash("Cotisation ajoutée avec succès", "success")
@@ -3858,6 +3861,7 @@ class Cotisation(db.Model):
     id_cotisation = db.Column(db.Integer, primary_key=True)
     nom_cotisation = db.Column(db.String(100), nullable=False, unique=True)
     montant_cotisation = db.Column(db.Float, nullable=False)
+    code_saison = db.Column(db.String(10), nullable=False)
 
 import os
 from datetime import datetime
