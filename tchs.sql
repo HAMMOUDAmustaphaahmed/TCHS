@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1
--- Généré le : lun. 27 oct. 2025 à 12:33
+-- Généré le : mar. 28 oct. 2025 à 12:27
 -- Version du serveur : 10.4.32-MariaDB
 -- Version de PHP : 8.2.12
 
@@ -54,11 +54,11 @@ CREATE TABLE `adherent` (
 --
 
 INSERT INTO `adherent` (`adherent_id`, `nom`, `prenom`, `date_naissance`, `sexe`, `date_inscription`, `tel1`, `tel2`, `type_abonnement`, `categorie`, `matricule`, `groupe`, `entraineur`, `email`, `paye`, `status`, `code_saison`, `cotisation`, `remise`) VALUES
-(6, 'hammouda', 'ahmed', '1996-08-30', 'M', '2025-01-20', '54391747', '54391747', 'Compétitif', 'Non', 1, 'Minime-1-A', 'Gaaloul Ilhem', 'ahmed@gmail.com', 'O', 'Actif', 'S2025', 700, 5),
+(6, 'hammouda', 'ahmed', '1996-08-30', 'M', '2025-01-20', '54391747', '54391747', 'Compétitif', 'Non', 1, NULL, NULL, 'ahmed@gmail.com', 'O', 'Actif', 'S2025', NULL, NULL),
 (7, 'mohamed', 'ali', '1990-01-01', 'M', '2025-01-20', '12345678', '123546789', 'Non Compétitif', 'Non', 2, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif', 'S2025', NULL, NULL),
 (8, 'mohamed', 'saleh', '1994-01-01', 'M', '2025-01-20', '1234', '12345', 'Non Compétitif', 'Non', 3, 'john.doe', 'john doe', 'user@gmail.com', 'N', 'Actif', 'S2025', NULL, NULL),
 (9, 'Flen', 'Ben Flen', '2025-01-22', 'M', '2025-01-22', '1234', '1234', 'Non Compétitif', 'Non', 4, 'loisir', 'john doe', 'flen@gmail.com', 'N', 'Actif', 'S2025', NULL, NULL),
-(10, 'Abdelmaksoud', 'Thameur', '2000-04-06', 'F', '2025-01-22', '28425595', '', 'N/D', 'Non', 5, 'X', 'test tedst', '', 'O', 'Actif', 'S2025', NULL, NULL),
+(10, 'Abdelmaksoud', 'Thameur', '2000-04-06', 'M', '2025-01-22', '28425595', '', 'Adulte', 'Non', 5, 'Adulte-5-A', 'Kharrat Ramzi', '', 'O', 'Actif', 'S2025', NULL, NULL),
 (11, 'Foulani', 'Foulen', '2025-01-22', 'M', '2025-01-22', '1234', '', 'Compétitif', 'Non', 6, 'Lutin-1-A', 'Kharrat Ramzi', '', 'N', 'Actif', 'S2025', NULL, NULL),
 (12, 'aaa', 'aaa', '2025-01-22', 'M', '2025-01-22', '134', '', 'Ecole d\'été', 'Non', 7, 'Poussin-1-B', 'Zallila Adam', 'a@gmail.com', 'N', 'Actif', 'S2025', NULL, NULL),
 (13, 'Flen', 'Foulani', '2025-01-22', 'M', '2025-01-22', '1234', '', 'N/D', 'Non', 8, NULL, NULL, 'da7ee7@gmail.com', 'N', 'Actif', 'S2025', NULL, NULL),
@@ -66,14 +66,12 @@ INSERT INTO `adherent` (`adherent_id`, `nom`, `prenom`, `date_naissance`, `sexe`
 (15, 'Ali', 'Mohamed', '2000-01-01', 'M', '2025-08-26', '12345678', '', 'Ecole d\'été', 'Non', 10, 'Ecole d\'été-1-A', 'Mhiri Afif', '', 'O', 'Actif', 'E2025', NULL, NULL),
 (16, 'Sahli', 'Ali', '2018-06-14', 'M', '2025-08-26', '28452595', '', 'Ecole d\'été', 'Oui', 11, NULL, NULL, '', 'O', 'Actif', 'E2025', 1500, 10),
 (17, 'bouhlel', 'Nabil', '2017-09-25', 'M', '2025-08-26', '28452595', '', 'Compétitif', 'Oui', 12, 'Lutin-1-B', 'Kharrat Ramzi', '', 'O', 'Actif', 'E2025', NULL, NULL),
-(18, 'Ben Ali', 'Saleh', '2010-01-01', 'M', '2025-08-28', '12345678', '', 'Loisir', 'Non', 13, 'Minime-1-B', 'mohamed saleh', 'saleh.benali@gmail.com', 'O', 'Actif', 'S2025', 1100, 0),
+(18, 'Ben Ali', 'Saleh', '2010-01-01', 'M', '2025-08-28', '12345678', '', 'Loisir', 'Non', 13, 'Poussin-1-B', 'Zallila Adam', 'saleh.benali@gmail.com', 'N', 'Actif', 'S2025', 1300, 0),
 (19, 'saleh', 'ali', '2025-09-08', 'M', '2025-09-08', '12345678', '', 'Compétitif', 'Non', 14, 'KD-1-A', 'mohamed saleh', '', 'O', 'Actif', 'S2025', 0, 0),
 (20, 'adherent', 'test', '1990-01-01', 'M', '2025-09-09', '12345678', '', 'Compétitif', 'Non', 15, 'KD-1-B', NULL, 'test@gmail.com', 'O', 'Actif', 'S2025', 0, 0),
 (25, 'Ayadi', 'Adel', '2025-09-23', 'M', '2025-09-23', '12345678', '', 'Loisir', 'Loisir', 16, 'Lutin-1-A', 'Kharrat Ramzi', '', 'N', 'Actif', 'S2025', 1650, 0),
-(26, 'test5', 'test5', '2025-09-23', 'M', '2025-09-23', '12345678', '', 'Pré-Compétitif', 'Poussin', 17, 'Poussin-1-B', NULL, '', 'N', 'Actif', 'S2025', 1170, 10),
-(27, 'testtest', 'testtest', '2025-09-23', 'M', '2025-09-23', '12345678', '', 'Pré-Compétitif', 'Minime', 18, 'Minime-1-A', NULL, '', 'N', 'Actif', 'S2025', 1200, 5),
 (28, 'Issaoui', 'Nehed', '2025-09-23', 'M', '2025-09-23', '12345678', '', 'Ecole d\'été', 'Ecole d\'été', 19, 'Ecole_ete-2-A', 'mohamed saleh', '', 'N', 'Actif', 'S2025', 1700, 5),
-(32, 'test1', 'test1', '2025-10-27', 'M', '2025-10-27', '12345678', '', 'Compétitif', 'Compétitif', 10, NULL, NULL, 'test1@gmail.com', 'N', 'Actif', 'S2025', NULL, NULL);
+(33, 'Abdelmaksoud', 'Aziz', '2012-04-06', 'M', '2024-10-01', '28425595', '', 'Compétitif', 'Compétitif', 10, 'Minime-1-A', 'Gaaloul Ilhem', 't.abdelmaksoud@gmail.com', 'N', 'Actif', 'S2025', 1200, 0);
 
 -- --------------------------------------------------------
 
@@ -159,8 +157,8 @@ INSERT INTO `cotisations` (`id_cotisation`, `nom_cotisation`, `montant_cotisatio
 (20, 'Lutin-1-A', 1650, 'S2025'),
 (21, 'Lutin-1-B', 1600, 'S2025'),
 (22, 'Minime-1-A', 1200, 'S2025'),
-(23, 'Minime-1-B', 1100, 'S2025'),
-(25, 'Adulte-5-A', 1500, 'S2025');
+(23, 'Minime-1-B', 1200, 'S2025'),
+(26, 'Adulte-5-A', 2000, 'S2025');
 
 -- --------------------------------------------------------
 
@@ -251,7 +249,7 @@ INSERT INTO `groupe` (`id_groupe`, `nom_groupe`, `entraineur_nom`, `type_abonnem
 (10, 'Lutin-1-B', 'Kharrat Ramzi', 'Loisir', 'Lutin', NULL, 'S2025', '2025-10-23 10:29:23'),
 (11, 'Benjamin-1-A', 'Missoum Walid', 'N/D', 'Benjamin', NULL, 'S2025', '2025-10-23 10:29:23'),
 (12, 'Benjamin-1-B', 'Missoum Walid', 'N/D', 'Benjamin', NULL, 'S2025', '2025-10-23 10:29:23'),
-(13, 'Minime-1-A', 'Gaaloul Ilhem', 'N/D', 'Minime', NULL, 'S2025', '2025-10-23 10:29:23'),
+(13, 'Minime-1-A', 'Gaaloul Ilhem', 'N/D', 'Minime', 'Ali Mohamed', 'S2025', '2025-10-23 10:29:23'),
 (14, 'Minime-1-B', 'Gaaloul Ilhem', 'N/D', 'Minime', NULL, 'S2025', '2025-10-23 10:29:23'),
 (15, 'KD-1-A', 'Hdaya Aya', 'N/D', 'KD', NULL, 'S2025', '2025-10-23 10:29:23'),
 (16, 'KD-1-B', 'Hdaya Aya', 'N/D', 'KD', NULL, 'S2025', '2025-10-23 10:29:23'),
@@ -356,32 +354,41 @@ CREATE TABLE `paiements` (
   `banque` varchar(50) DEFAULT NULL,
   `cotisation` decimal(10,2) NOT NULL,
   `remise` decimal(10,2) NOT NULL DEFAULT 0.00,
-  `code_saison` varchar(50) NOT NULL
+  `code_saison` varchar(50) NOT NULL,
+  `etat` varchar(20) NOT NULL DEFAULT 'actif',
+  `date_annulation` datetime DEFAULT NULL,
+  `annule_par` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Déchargement des données de la table `paiements`
 --
 
-INSERT INTO `paiements` (`id_paiement`, `matricule_adherent`, `numero_bon`, `numero_carnet`, `date_paiement`, `montant`, `total_montant_paye`, `montant_paye`, `montant_reste`, `type_reglement`, `numero_cheque`, `banque`, `cotisation`, `remise`, `code_saison`) VALUES
-(25, '2', 1, 1, '2025-01-28 16:19:40', 450.00, 300, 300.00, 150.00, 'chèque', '123456789', 'BIAT', 500.00, 10.00, 'S2025'),
-(26, '2', 2, 1, '2025-01-28 16:40:44', 450.00, 100, 100.00, 350.00, 'chèque', '123486', 'x', 500.00, 10.00, 'S2025'),
-(27, '1', 3, 1, '2025-01-29 16:36:56', 665.00, 500, 500.00, 165.00, 'chèque', '123456789', 'x', 700.00, 5.00, 'S2025'),
-(28, '2', 4, 1, '2025-01-29 17:46:49', 450.00, 50, 50.00, 400.00, 'espèce', NULL, NULL, 500.00, 10.00, 'S2025'),
-(29, '5', 5, 1, '2025-02-07 08:20:21', 450.00, 200, 200.00, 250.00, 'espèce', NULL, NULL, 500.00, 10.00, 'S2025'),
-(30, '4', 6, 1, '2025-02-07 09:34:14', 540.00, 300, 300.00, 240.00, 'espèce', NULL, NULL, 600.00, 10.00, 'S2025'),
-(31, '6', 7, 1, '2025-02-07 09:39:08', 250.00, 100, 100.00, 150.00, 'espèce', NULL, NULL, 250.00, 0.00, 'S2025'),
-(32, '1', 8, 1, '2025-02-09 13:48:50', 665.00, 165, 165.00, 500.00, 'espèce', NULL, NULL, 700.00, 5.00, 'S2025'),
-(33, '3', 9, 1, '2025-08-25 10:40:33', 200.00, 100, 100.00, 100.00, 'espèce', NULL, NULL, 200.00, 0.00, 'S2025'),
-(34, '3', 10, 1, '2025-08-25 10:40:43', 200.00, 200, 100.00, 0.00, 'espèce', NULL, NULL, 200.00, 0.00, 'S2025'),
-(35, '12', 11, 1, '2025-08-26 13:07:52', 1600.00, 0, 0.00, 1600.00, 'espèce', NULL, NULL, 1600.00, 0.00, 'S2025'),
-(36, '13', 12, 1, '2025-08-28 12:36:52', 1100.00, 100, 100.00, 1000.00, 'espèce', NULL, NULL, 1100.00, 0.00, 'S2025'),
-(37, '13', 13, 1, '2025-08-28 12:45:52', 1100.00, 200, 100.00, 900.00, 'espèce', NULL, NULL, 1100.00, 0.00, 'S2025'),
-(39, '13', 14, 1, '2025-08-28 12:54:18', 1100.00, 1100, 900.00, 0.00, 'espèce', NULL, NULL, 1100.00, 0.00, 'S2025'),
-(40, '11', 15, 1, '2025-09-09 09:47:07', 1350.00, 200, 200.00, 1150.00, 'espèce', NULL, NULL, 1500.00, 10.00, 'E2025'),
-(41, '16', 16, 1, '2025-09-09 16:57:51', 1440.00, 100, 100.00, 1340.00, 'espèce', NULL, NULL, 1440.00, 10.00, 'S2025'),
-(42, '16', 17, 1, '2025-09-09 17:02:09', 1440.00, 200, 100.00, 1240.00, 'espèce', NULL, NULL, 1440.00, 10.00, 'S2025'),
-(43, '18', 18, 1, '2025-09-23 13:04:55', 1200.00, 100, 100.00, 1100.00, 'espèce', NULL, NULL, 1200.00, 5.00, 'S2025');
+INSERT INTO `paiements` (`id_paiement`, `matricule_adherent`, `numero_bon`, `numero_carnet`, `date_paiement`, `montant`, `total_montant_paye`, `montant_paye`, `montant_reste`, `type_reglement`, `numero_cheque`, `banque`, `cotisation`, `remise`, `code_saison`, `etat`, `date_annulation`, `annule_par`) VALUES
+(25, '2', 1, 1, '2025-01-28 16:19:40', 450.00, 300, 300.00, 150.00, 'chèque', '123456789', 'BIAT', 500.00, 10.00, 'S2025', 'actif', NULL, NULL),
+(26, '2', 2, 1, '2025-01-28 16:40:44', 450.00, 100, 100.00, 350.00, 'chèque', '123486', 'x', 500.00, 10.00, 'S2025', 'actif', NULL, NULL),
+(27, '1', 3, 1, '2025-01-29 16:36:56', 665.00, 500, 500.00, 165.00, 'chèque', '123456789', 'x', 700.00, 5.00, 'S2025', 'actif', NULL, NULL),
+(28, '2', 4, 1, '2025-01-29 17:46:49', 450.00, 50, 50.00, 400.00, 'espèce', NULL, NULL, 500.00, 10.00, 'S2025', 'actif', NULL, NULL),
+(29, '5', 5, 1, '2025-02-07 08:20:21', 450.00, 200, 200.00, 250.00, 'espèce', NULL, NULL, 500.00, 10.00, 'S2025', 'annule', '2025-10-28 11:35:03', 'admin'),
+(30, '4', 6, 1, '2025-02-07 09:34:14', 540.00, 300, 300.00, 240.00, 'espèce', NULL, NULL, 600.00, 10.00, 'S2025', 'actif', NULL, NULL),
+(31, '6', 7, 1, '2025-02-07 09:39:08', 250.00, 100, 100.00, 150.00, 'espèce', NULL, NULL, 250.00, 0.00, 'S2025', 'actif', NULL, NULL),
+(32, '1', 8, 1, '2025-02-09 13:48:50', 665.00, 165, 165.00, 500.00, 'espèce', NULL, NULL, 700.00, 5.00, 'S2025', 'actif', NULL, NULL),
+(33, '3', 9, 1, '2025-08-25 10:40:33', 200.00, 100, 100.00, 100.00, 'espèce', NULL, NULL, 200.00, 0.00, 'S2025', 'actif', NULL, NULL),
+(34, '3', 10, 1, '2025-08-25 10:40:43', 200.00, 200, 100.00, 0.00, 'espèce', NULL, NULL, 200.00, 0.00, 'S2025', 'actif', NULL, NULL),
+(35, '12', 11, 1, '2025-08-26 13:07:52', 1600.00, 0, 0.00, 1600.00, 'espèce', NULL, NULL, 1600.00, 0.00, 'S2025', 'actif', NULL, NULL),
+(36, '13', 12, 1, '2025-08-28 12:36:52', 1100.00, 100, 100.00, 1000.00, 'espèce', NULL, NULL, 1100.00, 0.00, 'S2025', 'actif', NULL, NULL),
+(37, '13', 13, 1, '2025-08-28 12:45:52', 1100.00, 200, 100.00, 900.00, 'espèce', NULL, NULL, 1100.00, 0.00, 'S2025', 'actif', NULL, NULL),
+(39, '13', 14, 1, '2025-08-28 12:54:18', 1100.00, 1100, 900.00, 0.00, 'espèce', NULL, NULL, 1100.00, 0.00, 'S2025', 'actif', NULL, NULL),
+(40, '11', 15, 1, '2025-09-09 09:47:07', 1350.00, 200, 200.00, 1150.00, 'espèce', NULL, NULL, 1500.00, 10.00, 'E2025', 'actif', NULL, NULL),
+(41, '16', 16, 1, '2025-09-09 16:57:51', 1440.00, 100, 100.00, 1340.00, 'espèce', NULL, NULL, 1440.00, 10.00, 'S2025', 'actif', NULL, NULL),
+(42, '16', 17, 1, '2025-09-09 17:02:09', 1440.00, 200, 100.00, 1240.00, 'espèce', NULL, NULL, 1440.00, 10.00, 'S2025', 'actif', NULL, NULL),
+(43, '18', 18, 1, '2025-09-23 13:04:55', 1200.00, 100, 100.00, 1100.00, 'espèce', NULL, NULL, 1200.00, 5.00, 'S2025', 'actif', NULL, NULL),
+(44, '10', 19, 1, '2025-10-28 09:44:52', 1200.00, 0, 500.00, 700.00, 'espèce', '', '', 1200.00, 0.00, 'S2025', 'actif', NULL, NULL),
+(45, '10', 19, 1, '2025-10-28 09:44:52', 1200.00, 0, 500.00, 700.00, 'espèce', '', '', 1200.00, 0.00, 'S2025', 'annule', '2025-10-28 11:30:21', 'admin'),
+(46, '10', 19, 1, '2025-10-28 09:44:52', 1200.00, 0, 500.00, 700.00, 'espèce', '', '', 1200.00, 0.00, 'S2025', 'annule', '2025-10-28 11:30:19', 'admin'),
+(47, '10', 19, 1, '2025-10-28 09:44:52', 1200.00, 0, 500.00, 700.00, 'espèce', '', '', 1200.00, 0.00, 'S2025', 'annule', '2025-10-28 11:29:59', 'admin'),
+(48, '13', 20, 1, '2025-10-28 11:38:31', 1300.00, 0, 100.00, 100.00, 'espèce', '', '', 1300.00, 0.00, 'S2025', 'annule', '2025-10-28 11:38:42', 'admin'),
+(49, '10', 21, 1, '2025-10-28 12:12:41', 1200.00, 0, 100.00, 600.00, 'espèce', '', '', 1200.00, 0.00, 'S2025', 'actif', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -687,61 +694,12 @@ INSERT INTO `seances` (`seance_id`, `date`, `heure_debut`, `heure_fin`, `groupe`
 (344, '2026-08-11', '08:00:00', '09:30:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'entrainement', 90, 'S2025'),
 (345, '2026-08-18', '08:00:00', '09:30:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'entrainement', 90, 'S2025'),
 (346, '2026-08-25', '08:00:00', '09:30:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'entrainement', 90, 'S2025'),
-(347, '2025-09-23', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(348, '2025-09-30', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(349, '2025-10-07', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(350, '2025-10-14', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(351, '2025-10-21', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(352, '2025-10-28', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(353, '2025-11-04', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(354, '2025-11-11', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(355, '2025-11-18', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(356, '2025-11-25', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(357, '2025-12-02', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(358, '2025-12-09', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(359, '2025-12-16', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(360, '2025-12-23', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(361, '2025-12-30', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(362, '2026-01-06', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(363, '2026-01-13', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(364, '2026-01-20', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(365, '2026-01-27', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(366, '2026-02-03', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(367, '2026-02-10', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(368, '2026-02-17', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(369, '2026-02-24', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(370, '2026-03-03', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(371, '2026-03-10', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(372, '2026-03-17', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(373, '2026-03-24', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(374, '2026-03-31', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(375, '2026-04-07', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(376, '2026-04-14', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(377, '2026-04-21', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(378, '2026-04-28', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(379, '2026-05-05', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(380, '2026-05-12', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(381, '2026-05-19', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(382, '2026-05-26', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(383, '2026-06-02', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(384, '2026-06-09', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(385, '2026-06-16', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(386, '2026-06-23', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(387, '2026-06-30', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(388, '2026-07-07', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(389, '2026-07-14', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(390, '2026-07-21', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(391, '2026-07-28', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(392, '2026-08-04', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(393, '2026-08-11', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(394, '2026-08-18', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
-(395, '2026-08-25', '11:00:00', '12:00:00', 'Poussin-1-A', 'Mhiri Afif', 0, NULL, 'prep_physique', 60, 'S2025'),
 (396, '2025-09-23', '10:00:00', '11:00:00', 'Poussin-1-B', 'Zallila Adam', 0, NULL, 'prep_physique', 60, 'S2025'),
 (397, '2025-09-30', '10:00:00', '11:00:00', 'Poussin-1-B', 'Zallila Adam', 0, NULL, 'prep_physique', 60, 'S2025'),
 (398, '2025-10-07', '10:00:00', '11:00:00', 'Poussin-1-B', 'Zallila Adam', 0, NULL, 'prep_physique', 60, 'S2025'),
 (399, '2025-10-14', '10:00:00', '11:00:00', 'Poussin-1-B', 'Zallila Adam', 0, NULL, 'prep_physique', 60, 'S2025'),
 (400, '2025-10-21', '10:00:00', '11:00:00', 'Poussin-1-B', 'Zallila Adam', 0, NULL, 'prep_physique', 60, 'S2025'),
-(401, '2025-10-28', '10:00:00', '11:00:00', 'Poussin-1-B', 'Zallila Adam', 0, NULL, 'prep_physique', 60, 'S2025'),
+(401, '2025-10-28', '10:00:00', '11:00:00', 'Poussin-1-B', 'Ali Mohamed', NULL, NULL, 'prep_physique', 60, 'S2025'),
 (402, '2025-11-04', '10:00:00', '11:00:00', 'Poussin-1-B', 'Zallila Adam', 0, NULL, 'prep_physique', 60, 'S2025'),
 (403, '2025-11-11', '10:00:00', '11:00:00', 'Poussin-1-B', 'Zallila Adam', 0, NULL, 'prep_physique', 60, 'S2025'),
 (404, '2025-11-18', '10:00:00', '11:00:00', 'Poussin-1-B', 'Zallila Adam', 0, NULL, 'prep_physique', 60, 'S2025'),
@@ -884,9 +842,7 @@ INSERT INTO `seances` (`seance_id`, `date`, `heure_debut`, `heure_fin`, `groupe`
 (590, '2026-08-14', '18:00:00', '19:30:00', 'Poussin-1-B', 'Zallila Adam', 5, NULL, 'entrainement', 90, 'S2025'),
 (591, '2026-08-21', '18:00:00', '19:30:00', 'Poussin-1-B', 'Zallila Adam', 5, NULL, 'entrainement', 90, 'S2025'),
 (592, '2026-08-28', '18:00:00', '19:30:00', 'Poussin-1-B', 'Zallila Adam', 5, NULL, 'entrainement', 90, 'S2025'),
-(593, '2025-10-27', '18:00:00', '20:00:00', 'Poussin-1-A', 'Zallila Adam', 8, NULL, 'entrainement', 120, 'S2025'),
-(594, '2025-10-27', '20:00:00', '21:30:00', 'Poussin-1-A', 'Zallila Adam', 6, NULL, 'entrainement', 90, 'S2025'),
-(595, '2025-10-27', '12:30:00', '14:30:00', 'Poussin-1-A', 'Zallila Adam', 4, NULL, 'entrainement', 120, 'S2025');
+(595, '2025-10-27', '12:30:00', '14:30:00', 'Poussin-1-A', 'Zallila Adam', 5, NULL, 'entrainement', 120, 'S2025');
 
 -- --------------------------------------------------------
 
@@ -1082,7 +1038,7 @@ ALTER TABLE `utilisateurs`
 -- AUTO_INCREMENT pour la table `adherent`
 --
 ALTER TABLE `adherent`
-  MODIFY `adherent_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `adherent_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- AUTO_INCREMENT pour la table `autres_paiements`
@@ -1100,7 +1056,7 @@ ALTER TABLE `bon_de_recette`
 -- AUTO_INCREMENT pour la table `cotisations`
 --
 ALTER TABLE `cotisations`
-  MODIFY `id_cotisation` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+  MODIFY `id_cotisation` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT pour la table `depense`
@@ -1142,7 +1098,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT pour la table `paiements`
 --
 ALTER TABLE `paiements`
-  MODIFY `id_paiement` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
+  MODIFY `id_paiement` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
 
 --
 -- AUTO_INCREMENT pour la table `participanttournoi`
