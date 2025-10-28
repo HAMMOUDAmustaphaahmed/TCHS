@@ -54,8 +54,20 @@
             <div class="container mt-4">
                 <h2>Gestion des Cotisations</h2>
                 
+                <!-- Messages Flash -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
                 <!-- Bouton Ajouter -->
-                <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#cotisationModal" onclick="resetForm()">
+                <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addModal">
                     <i class="fas fa-plus"></i> Ajouter une cotisation
                 </button>
                 
@@ -65,20 +77,12 @@
                 </div>
                 
                 <!-- Tableau des cotisations -->
-                <div class="table-responsive">
-                    <table id="CotisationsTable" class="table text-start align-middle table-bordered table-hover mb-0 sortable"
-                           style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);">
+                <div class="table-responsive" style="background: linear-gradient(135deg, #f1f3f5 0%, #ffffff 100%);">
+                    <table id="CotisationsTable" class="table text-start align-middle table-bordered table-hover mb-0">
                         <thead>
-                            <tr class="text-dark" 
-                                style="position: sticky; top: 0; background: linear-gradient(135deg, #f1f3f5 0%, #ffffff 100%); z-index: 10;">
-                                <th onclick="sortTable(0, 'CotisationsTable')">Nom 
-                                    <span class="arrow asc">&#9650;</span>
-                                    <span class="arrow desc">&#9660;</span>
-                                </th>
-                                <th onclick="sortTable(1, 'CotisationsTable')">Montant (TND) 
-                                    <span class="arrow asc">&#9650;</span>
-                                    <span class="arrow desc">&#9660;</span>
-                                </th>
+                            <tr class="text-dark" style="background: linear-gradient(135deg, #e9f0f7 0%, #dbd8d8 100%);">
+                                <th>Nom</th>
+                                <th>Montant (TND)</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -90,15 +94,15 @@
                                 <td>
                                     <button class="btn btn-sm btn-warning shadow-sm" 
                                             data-bs-toggle="modal" 
-                                            data-bs-target="#cotisationModal"
-                                            onclick="fillEditForm('{{ cotisation.id_cotisation }}', '{{ cotisation.nom_cotisation }}', '{{ cotisation.montant_cotisation }}')">
-                                        <i class="fas fa-edit"></i>
+                                            data-bs-target="#editModal"
+                                            onclick="prepareEdit({{ cotisation.id_cotisation }}, '{{ cotisation.nom_cotisation }}', {{ cotisation.montant_cotisation }})">
+                                        <i class="fas fa-edit"></i> Modifier
                                     </button>
                                     <button class="btn btn-sm btn-danger shadow-sm" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#deleteModal"
                                             onclick="setDeleteId({{ cotisation.id_cotisation }})">
-                                        <i class="fas fa-trash"></i>
+                                        <i class="fas fa-trash"></i> Supprimer
                                     </button>
                                 </td>
                             </tr>
@@ -108,54 +112,73 @@
                 </div>
             </div>
             
-            <!-- Modal Ajout/Modification -->
-<div class="modal fade" id="cotisationModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle">Nouvelle Cotisation</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" name="action" id="formAction" value="ajouter">
-                    <input type="hidden" name="id" id="cotisationId">
-                    
-                    <!-- Champ pour l'ajout (liste déroulante) -->
-                    <div class="mb-3" id="addGroupeField">
-                        <div class="form-floating">
-                            <select class="form-select" id="nomCotisationSelect" name="nom" required>
-                                <option value="">Sélectionner un groupe</option>
-                                {% for nom in nom_groupes %}
-                                    <option value="{{ nom }}">{{ nom }}</option>
-                                {% endfor %}
-                            </select>
-                            <label for="nomCotisationSelect">Groupe</label>
-                        </div>
-                    </div>
-                    
-                    <!-- Champ pour la modification (texte fixe) -->
-                    <div class="mb-3" id="editGroupeField" style="display: none;">
-                        <label class="form-label fw-bold">Nom du groupe</label>
-                        <div class="alert alert-info mb-2" role="alert" style="font-size: 1.1rem; font-weight: 500;">
-                            <i class="fas fa-users me-2"></i><span id="nomCotisationDisplay"></span>
-                        </div>
-                        <input type="hidden" id="nomCotisationHidden" name="nom">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Montant (TND)</label>
-                        <input type="number" step="0.01" class="form-control" name="montant" id="montantCotisation" required>
+            <!-- Modal Ajout -->
+            <div class="modal fade" id="addModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="POST" id="addForm">
+                            <input type="hidden" name="action" value="ajouter">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Nouvelle Cotisation</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Groupe</label>
+                                    <select class="form-select" name="nom" required>
+                                        <option value="">Sélectionner un groupe</option>
+                                        {% for nom in nom_groupes %}
+                                            <option value="{{ nom }}">{{ nom }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Montant (TND)</label>
+                                    <input type="number" step="0.01" class="form-control" name="montant" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                <button type="submit" class="btn btn-primary">Ajouter</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Confirmer</button>
+            </div>
+            
+            <!-- Modal Modification -->
+            <div class="modal fade" id="editModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="POST" id="editForm">
+                            <input type="hidden" name="action" value="modifier">
+                            <input type="hidden" name="id" id="editId">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Modifier Cotisation</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Groupe</label>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-users me-2"></i>
+                                        <span id="editNomDisplay"></span>
+                                    </div>
+                                    <input type="hidden" name="nom" id="editNom">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Montant (TND)</label>
+                                    <input type="number" step="0.01" class="form-control" name="montant" id="editMontant" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                <button type="submit" class="btn btn-primary">Modifier</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </form>
-        </div>
-    </div>
-</div>
+            </div>
             
             <!-- Modal Suppression -->
             <div class="modal fade" id="deleteModal" tabindex="-1">
@@ -215,107 +238,40 @@
     <!-- Template Javascript -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
-    <style>
-        /* Harmonisation avec le tableau des adhérents */
-        #CotisationsTable th {
-            cursor: pointer;
-            user-select: none;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 14px;
-            color: #343a40;
-        }
-
-        #CotisationsTable td {
-            vertical-align: middle;
-            font-size: 15px;
-        }
-
-        #CotisationsTable tr:hover {
-            background-color: #f5f7fd !important;
-            transition: background-color 0.2s ease-in-out;
-        }
-
-        #CotisationsTable .btn i {
-            font-size: 14px;
-        }
-
-        /* Tri visuel des colonnes */
-        .arrow {
-            display: none;
-            margin-left: 5px;
-            font-size: 0.7rem;
-            color: #6c757d;
-        }
-
-        th.sorted-asc .arrow.asc,
-        th.sorted-desc .arrow.desc {
-            display: inline;
-            color: #4361ee;
-            font-weight: bold;
-        }
-
-        .table-responsive {
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .table-striped tbody tr:nth-of-type(odd) {
-            background-color: #f8f9fa;
-        }
-
-        .btn-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
-        }
-    </style>
-
-<script>
-    // Recherche dans le tableau
-    $(document).ready(function(){
-        $("#searchInput").on("keyup", function() {
-            let value = $(this).val().toLowerCase();
-            $("#CotisationsTable tbody tr").filter(function() {
-                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+    <script>
+        // Recherche dans le tableau
+        $(document).ready(function(){
+            $("#searchInput").on("keyup", function() {
+                let value = $(this).val().toLowerCase();
+                $("#CotisationsTable tbody tr").filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+                });
             });
         });
-    });
 
-    // Fonction pour remplir le formulaire de modification
-    function fillEditForm(id, nom, montant) {
-        document.getElementById('formAction').value = 'modifier';
-        document.getElementById('cotisationId').value = id;
-        
-        // Masquer le champ de sélection et afficher le champ texte fixe
-        document.getElementById('addGroupeField').style.display = 'none';
-        document.getElementById('editGroupeField').style.display = 'block';
-        
-        // Remplir les champs
-        document.getElementById('nomCotisationDisplay').textContent = nom;
-        document.getElementById('nomCotisationHidden').value = nom;
-        document.getElementById('montantCotisation').value = montant;
-        
-        document.getElementById('modalTitle').textContent = 'Modifier Cotisation';
-    }
+        // Préparer la modification
+        function prepareEdit(id, nom, montant) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editNomDisplay').textContent = nom;
+            document.getElementById('editNom').value = nom;
+            document.getElementById('editMontant').value = parseFloat(montant).toFixed(2);
+        }
 
-    // Fonction pour réinitialiser le formulaire (mode ajout)
-    function resetForm() {
-        document.getElementById('formAction').value = 'ajouter';
-        document.getElementById('cotisationId').value = '';
-        document.getElementById('nomCotisationSelect').value = '';
-        document.getElementById('montantCotisation').value = '';
-        document.getElementById('modalTitle').textContent = 'Nouvelle Cotisation';
-        
-        // Afficher le champ de sélection et masquer le champ texte
-        document.getElementById('addGroupeField').style.display = 'block';
-        document.getElementById('editGroupeField').style.display = 'none';
-    }
+        // Définir l'ID pour la suppression
+        function setDeleteId(id) {
+            document.getElementById('deleteId').value = id;
+        }
 
-    // Fonction pour définir l'ID de suppression
-    function setDeleteId(id) {
-        document.getElementById('deleteId').value = id;
-    }
-</script>
+        // Réinitialiser le formulaire d'ajout quand le modal se ferme
+        $('#addModal').on('hidden.bs.modal', function () {
+            document.getElementById('addForm').reset();
+        });
+
+        // Réinitialiser le formulaire de modification quand le modal se ferme
+        $('#editModal').on('hidden.bs.modal', function () {
+            document.getElementById('editForm').reset();
+        });
+    </script>
 </body>
 
 </html>

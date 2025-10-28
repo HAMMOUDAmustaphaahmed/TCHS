@@ -309,6 +309,8 @@ def get_current_season():
         'saison_year': session.get('saison')
     })
 
+from sqlalchemy import func, or_
+
 @app.route('/admin')
 @season_required
 def admin():
@@ -326,9 +328,12 @@ def admin():
         flash("Veuillez sélectionner une saison.", "warning")
         return redirect(url_for('login'))
     
-    # Apply season filters using session's season code
+    # Apply season filters AND etat='actif' filter for payments
     paiements = payment_season.filter_query(
-        Paiement.query.filter(Paiement.code_saison == current_season_code)
+        Paiement.query.filter(
+            Paiement.code_saison == current_season_code,
+            Paiement.etat == 'actif'  # AJOUT: Filtrer uniquement les paiements actifs
+        )
     ).all()
     
     adherents = adherent_season.filter_query(
@@ -342,9 +347,12 @@ def admin():
     paiements_count = len(paiements)
     moyenne_paiement = total_collecte / paiements_count if paiements_count > 0 else 0
     
-    # Get recent payments for current season
+    # Get recent payments for current season (only active ones)
     paiements_recent = payment_season.filter_query(
-        Paiement.query.filter(Paiement.code_saison == current_season_code)
+        Paiement.query.filter(
+            Paiement.code_saison == current_season_code,
+            Paiement.etat == 'actif'  # AJOUT: Filtrer uniquement les paiements actifs
+        )
         .order_by(Paiement.date_paiement.desc())
     ).limit(5).all()
 
@@ -357,7 +365,6 @@ def admin():
         saison_code=current_season_code,
         saison_type=session.get('saison_type'),
         saison_year=session.get('saison'))
-
 
 
 @app.route('/api/adherents-data')
@@ -373,6 +380,7 @@ def get_adherents_data():
         # Create season context
         season = SeasonContext(Adherent)
         
+        # MODIFICATION: Filtrer par saison
         all_adherents = season.filter_query(
             Adherent.query.filter(Adherent.code_saison == season_code)
         ).all()
@@ -396,13 +404,13 @@ def get_adherents_data():
             if a.type_abonnement:
                 types_abonnement.add(a.type_abonnement)
             if a.groupe:
-                groupes.add(a.groupe)
+                groupes.add(a.groupe)  # MODIFICATION: Les groupes sont maintenant filtrés par saison
 
         return jsonify({
             'success': True,
             'adherents': adherents_list,
             'types_abonnement': sorted(list(types_abonnement)),
-            'groupes': sorted(list(groupes)),
+            'groupes': sorted(list(groupes)),  # Groupes filtrés par saison
             'saison_code': season_code,
             'total': len(adherents_list)
         })
@@ -415,6 +423,7 @@ def get_adherents_data():
             'error': str(e)
         }), 500
 
+
 @app.route('/api/paiements-indicators')
 @season_required
 def get_paiements_indicators():
@@ -426,15 +435,19 @@ def get_paiements_indicators():
         types_filter = request.args.getlist('types[]')
         groupes_filter = request.args.getlist('groupes[]')
 
-        # Base query with season filter
+        # Base query with season filter AND etat='actif' filter
         base_query = db.session.query(
             Paiement, Adherent.nom, Adherent.prenom, Adherent.type_abonnement,
             Adherent.groupe, Adherent.paye
         ).join(
             Adherent, 
             Paiement.matricule_adherent == Adherent.matricule
-        ).filter(Paiement.code_saison == current_season_code)
+        ).filter(
+            Paiement.code_saison == current_season_code,
+            Paiement.etat == 'actif'  # AJOUT: Filtrer uniquement les paiements actifs
+        )
 
+        # Conserver la logique de filtration existante
         if types_filter:
             base_query = base_query.filter(Adherent.type_abonnement.in_(types_filter))
         if groupes_filter:
@@ -473,12 +486,12 @@ def get_paiements_indicators():
             type_reglement = paiement.type_reglement or 'Non spécifié'
             reglement_stats[type_reglement] = reglement_stats.get(type_reglement, 0) + 1
 
-            # CORRECTION: Initialiser les stats avec les bonnes clés (singulier)
+            # Initialiser les stats avec les bonnes clés (singulier)
             if type_abonnement not in type_abonnement_payment_stats:
                 type_abonnement_payment_stats[type_abonnement] = {'complet': 0, 'partiel': 0, 'impaye': 0}
                 type_abonnement_montants[type_abonnement] = {'complet': 0, 'partiel': 0, 'impaye': 0}
 
-            # CORRECTION: Utiliser les mêmes clés que dans l'initialisation
+            # Utiliser les mêmes clés que dans l'initialisation
             type_abonnement_payment_stats[type_abonnement][status_paiement] += 1
 
             # Update amounts by subscription type and status
@@ -526,113 +539,7 @@ def get_paiements_indicators():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
-    try:
-        current_season_code = session.get('saison_code')
-        if not current_season_code:
-            return jsonify({'error': 'Aucune saison sélectionnée'}), 400
 
-        types_filter = request.args.getlist('types[]')
-        groupes_filter = request.args.getlist('groupes[]')
-
-        # Base query with season filter
-        base_query = db.session.query(
-            Paiement, Adherent.nom, Adherent.prenom, Adherent.type_abonnement,
-            Adherent.groupe, Adherent.paye
-        ).join(
-            Adherent, 
-            Paiement.matricule_adherent == Adherent.matricule
-        ).filter(Paiement.code_saison == current_season_code)
-
-        if types_filter:
-            base_query = base_query.filter(Adherent.type_abonnement.in_(types_filter))
-        if groupes_filter:
-            base_query = base_query.filter(Adherent.groupe.in_(groupes_filter))
-
-        paiements_data = base_query.all()
-
-        paiements_list = []
-        statistics = {'complets': 0, 'partiels': 0, 'impayes': 0, 'montant_total': 0}
-        reglement_stats = {}
-        type_abonnement_payment_stats = {}
-        type_abonnement_montants = {}
-
-        for paiement, nom, prenom, type_abonnement, groupe, adherent_paye in paiements_data:
-            type_abonnement = type_abonnement or 'Non spécifié'
-            groupe = groupe or 'Non spécifié'
-            
-            montant_reste = float(paiement.montant_reste or 0)
-            montant_paye = float(paiement.montant_paye or 0)
-            montant_total = float(paiement.montant or 0)
-
-            # Determine payment status
-            if montant_reste <= 0 and montant_paye >= montant_total:
-                status_paiement = 'complet'
-                statistics['complets'] += 1
-            elif montant_paye > 0:
-                status_paiement = 'partiel'
-                statistics['partiels'] += 1
-            else:
-                status_paiement = 'impaye'
-                statistics['impayes'] += 1
-
-            statistics['montant_total'] += montant_paye
-
-            # Update payment type stats
-            type_reglement = paiement.type_reglement or 'Non spécifié'
-            reglement_stats[type_reglement] = reglement_stats.get(type_reglement, 0) + 1
-
-            # Update subscription type stats
-            if type_abonnement not in type_abonnement_payment_stats:
-                type_abonnement_payment_stats[type_abonnement] = {'complets': 0, 'partiels': 0, 'impayes': 0}
-                type_abonnement_montants[type_abonnement] = {'complets': 0, 'partiels': 0, 'impayes': 0}
-
-            type_abonnement_payment_stats[type_abonnement][status_paiement] += 1
-
-            # Update amounts by subscription type and status
-            if status_paiement == 'complet':
-                type_abonnement_montants[type_abonnement]['complets'] += montant_paye
-            elif status_paiement == 'partiel':
-                type_abonnement_montants[type_abonnement]['partiels'] += montant_paye
-            else:  # impaye
-                type_abonnement_montants[type_abonnement]['impayes'] += montant_total
-
-            paiements_list.append({
-                'id_paiement': paiement.id_paiement,
-                'matricule_adherent': paiement.matricule_adherent,
-                'nom_adherent': f"{nom} {prenom}".strip(),
-                'date_paiement': paiement.date_paiement.isoformat() if paiement.date_paiement else None,
-                'montant': montant_total,
-                'montant_paye': montant_paye,
-                'montant_reste': montant_reste,
-                'type_reglement': type_reglement,
-                'type_abonnement': type_abonnement,
-                'groupe': groupe,
-                'status_paiement': status_paiement,
-                'adherent_paye_status': adherent_paye
-            })
-
-        # Get recent payments
-        paiements_recents = sorted(
-            [p for p in paiements_list if p['date_paiement']],
-            key=lambda x: x['date_paiement'], 
-            reverse=True
-        )[:10]
-
-        return jsonify({
-            'success': True,
-            'paiements': paiements_list,
-            'statistics': statistics,
-            'reglement_stats': reglement_stats,
-            'type_abonnement_payment_stats': type_abonnement_payment_stats,
-            'type_abonnement_montants': type_abonnement_montants,
-            'paiements_recents': paiements_recents,
-            'saison_code': current_season_code
-        })
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/financial-indicators')
 @season_required
@@ -645,10 +552,13 @@ def get_financial_indicators():
         types_filter = request.args.getlist('types[]')
         groupes_filter = request.args.getlist('groupes[]')
 
-        # Base query with season filter
-        base_query = Paiement.query.filter(Paiement.code_saison == current_season_code)
+        # Base query with season filter AND etat='actif' filter
+        base_query = Paiement.query.filter(
+            Paiement.code_saison == current_season_code,
+            Paiement.etat == 'actif'  # AJOUT: Filtrer uniquement les paiements actifs
+        )
 
-        # If filters are applied, join with Adherent table
+        # If filters are applied, join with Adherent table (conserver la logique existante)
         if types_filter or groupes_filter:
             base_query = base_query.join(Adherent, Paiement.matricule_adherent == Adherent.matricule)
             if types_filter:
@@ -674,8 +584,6 @@ def get_financial_indicators():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
-from sqlalchemy import func, or_
-
 # Route pour l'emploi du temps de préparation physique
 @app.route('/emploi_prep_physique', methods=['GET'])
 def emploi_prep_physique():
@@ -3150,24 +3058,20 @@ def paiement():
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
 
-    # Récupérer l'année de la saison depuis la session
-    saison_year = session.get('saison')  # Ex: 2025
+    saison_year = session.get('saison')
     if not saison_year:
         flash("Veuillez sélectionner une saison.", "warning")
         return redirect(url_for('login'))
     
-    # Récupérer le type depuis l'URL (annuel ou ete)
-    type_param = request.args.get('type', 'annuel')  # Par défaut: annuel
+    type_param = request.args.get('type', 'annuel')
     
-    # Déterminer le code saison selon le type
     if type_param == 'ete':
-        code_saison = f"E{saison_year}"  # Ex: E2025
+        code_saison = f"E{saison_year}"
         saison_type = 'ete'
     else:
-        code_saison = f"S{saison_year}"  # Ex: S2025
+        code_saison = f"S{saison_year}"
         saison_type = 'annuel'
     
-    # Récupérer TOUS les adhérents de la saison pour l'autocomplete
     adherents_search_data = Adherent.query.filter_by(
         code_saison=code_saison,
         status='Actif'
@@ -3177,7 +3081,6 @@ def paiement():
         Adherent.prenom
     ).all()
     
-    # Convertir en liste de dictionnaires pour le JS
     adherents_list = [
         {
             'matricule': adh.matricule,
@@ -3186,7 +3089,6 @@ def paiement():
         }
         for adh in adherents_search_data
     ]
-    
     
     adherent = None
     paiements = []
@@ -3213,7 +3115,6 @@ def paiement():
                                  saison_year=saison_year,
                                  adherents_list=adherents_list)
         
-        # Rechercher l'adhérent avec le code saison correspondant
         adherent = Adherent.query.filter_by(
             matricule=matricule,
             code_saison=code_saison,
@@ -3231,16 +3132,22 @@ def paiement():
                                  saison_year=saison_year,
                                  adherents_list=adherents_list)
 
-        # Récupérer les paiements existants pour cet adhérent dans la saison actuelle
+        # Récupérer UNIQUEMENT les paiements ACTIFS
         paiements = Paiement.query.filter_by(
             matricule_adherent=str(matricule),
-            code_saison=code_saison
+            code_saison=code_saison,
+            etat='actif'  # FILTRE IMPORTANT
         ).order_by(Paiement.date_paiement.asc()).all()
 
-        # Traitement du paiement si montant_paye est fourni
+        # Traitement du paiement
         if request.form.get('montant_paye'):
             try:
                 montant_paye = float(request.form.get('montant_paye', 0))
+                
+                if montant_paye <= 0:
+                    flash("Le montant doit être supérieur à 0.", "danger")
+                    return redirect(url_for('paiement', type=type_param))
+                
                 type_reglement = request.form.get('type_reglement')
                 numero_cheque = request.form.get('numero_cheque')
                 banque = request.form.get('banque')
@@ -3258,14 +3165,23 @@ def paiement():
                     
                     db.session.commit()
                 
-                # Calculer le montant restant
+                # Calculer le montant restant AVEC LES PAIEMENTS ACTIFS UNIQUEMENT
                 cotisation = float(adherent.cotisation or 0)
-                remise_pourcentage = float(adherent.remise or 0)
+                remise_pourcentage = float(adherent.remise) if adherent.remise is not None else 0
                 remise_montant = (cotisation * remise_pourcentage) / 100
                 montant_net = cotisation - remise_montant
                 
+                # CORRECTION : calculer avec les paiements ACTIFS uniquement
                 total_deja_paye = sum(float(p.montant_paye or 0) for p in paiements)
-                montant_reste = max(0, montant_net - total_deja_paye - montant_paye)
+                
+                # VALIDATION : vérifier que le nouveau montant ne dépasse pas le reste à payer
+                reste_avant_paiement = montant_net - total_deja_paye
+                
+                if montant_paye > reste_avant_paiement:
+                    flash(f"Le montant payé ({montant_paye:.2f} TND) dépasse le reste à payer ({reste_avant_paiement:.2f} TND).", "danger")
+                    return redirect(url_for('paiement', type=type_param))
+                
+                montant_reste = reste_avant_paiement - montant_paye
                 
                 # Calculer le numéro de bon
                 dernier_paiement = Paiement.query.order_by(Paiement.id_paiement.desc()).first()
@@ -3276,7 +3192,7 @@ def paiement():
                     numero_carnet += 1
                     numero_bon = 1
                 
-                # Créer le nouveau paiement
+                # Créer le nouveau paiement avec etat='actif' par défaut
                 nouveau_paiement = Paiement(
                     matricule_adherent=str(matricule),
                     montant=montant_net,
@@ -3289,7 +3205,8 @@ def paiement():
                     remise=remise_pourcentage,
                     numero_bon=numero_bon,
                     numero_carnet=numero_carnet,
-                    code_saison=code_saison
+                    code_saison=code_saison,
+                    etat='actif'  # NOUVEAU
                 )
                 
                 db.session.add(nouveau_paiement)
@@ -3311,7 +3228,7 @@ def paiement():
                 db.session.rollback()
                 flash(f"Erreur lors de l'enregistrement: {str(e)}", "danger")
         
-        # Calculer les informations financières
+        # Calculer les informations financières AVEC PAIEMENTS ACTIFS UNIQUEMENT
         if adherent.cotisation:
             cotisation = float(adherent.cotisation)
             remise = float(adherent.remise or 0)
@@ -3319,10 +3236,8 @@ def paiement():
             montant_net = cotisation - remise_montant
             total_montant_paye = sum(float(p.montant_paye or 0) for p in paiements)
         
-        # Récupérer les cotisations disponibles pour le premier paiement
         cotisations = Cotisation.query.all()
         
-        # Calculer le prochain numéro de bon
         dernier_paiement = Paiement.query.order_by(Paiement.id_paiement.desc()).first()
         numero_carnet = dernier_paiement.numero_carnet if dernier_paiement else 1
         numero_bon = (dernier_paiement.numero_bon + 1) if dernier_paiement else 1
@@ -3330,11 +3245,7 @@ def paiement():
         if numero_bon > 50:
             numero_carnet += 1
             numero_bon = 1
-    print("=== DEBUG AUTCOMPLETE ===")
-    print(f"Type de adherents_list: {type(adherents_list)}")
-    print(f"Nombre d'éléments: {len(adherents_list)}")
-    for i, adh in enumerate(adherents_list[:5]):
-        print(f"  {i+1}. {adh}")
+    
     return render_template('paiement.html',
                          adherent=adherent,
                          paiements=paiements,
@@ -3352,55 +3263,197 @@ def paiement():
                          adherents_list=adherents_list,
                          reste_a_payer=max(0, montant_net - total_montant_paye))
 
+
+# 3. NOUVELLE ROUTE POUR ANNULER UN PAIEMENT
+
+@app.route('/annuler_paiement/<int:id_paiement>', methods=['POST'])
+def annuler_paiement(id_paiement):
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return jsonify({'success': False, 'message': 'Accès non autorisé'}), 403
+    
+    try:
+        paiement = Paiement.query.get_or_404(id_paiement)
+        
+        # Vérifier si le paiement n'est pas déjà annulé
+        if paiement.etat == 'annule':
+            return jsonify({'success': False, 'message': 'Ce paiement est déjà annulé'}), 400
+        
+        # Annuler le paiement
+        paiement.etat = 'annule'
+        paiement.date_annulation = datetime.now(pytz.timezone('Europe/Paris'))
+        paiement.annule_par = session.get('username')
+        
+        # Recalculer le statut de paiement de l'adhérent
+        adherent = Adherent.query.filter_by(matricule=paiement.matricule_adherent).first()
+        if adherent:
+            # Récupérer tous les paiements ACTIFS
+            paiements_actifs = Paiement.query.filter_by(
+                matricule_adherent=paiement.matricule_adherent,
+                code_saison=paiement.code_saison,
+                etat='actif'
+            ).all()
+            
+            total_paye = sum(float(p.montant_paye or 0) for p in paiements_actifs)
+            cotisation = float(adherent.cotisation or 0)
+            remise_montant = (cotisation * float(adherent.remise or 0)) / 100
+            montant_net = cotisation - remise_montant
+            reste = montant_net - total_paye
+            
+            # Mettre à jour le statut
+            adherent.paye = 'O' if reste <= 0 else 'N'
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Paiement annulé avec succès',
+            'nouveau_total_paye': total_paye,
+            'reste_a_payer': reste
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Erreur: {str(e)}'}), 500
+
+# 5. ROUTE POUR VISUALISER LES PAIEMENTS ANNULÉS
+@app.route('/paiements_annules')
+@season_required
+def paiements_annules():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        flash("Accès non autorisé.", "danger")
+        return redirect(url_for('login'))
+
+    saison_year = session.get('saison')
+    if not saison_year:
+        flash("Veuillez sélectionner une saison.", "warning")
+        return redirect(url_for('login'))
+    
+    type_param = request.args.get('type', 'annuel')
+    
+    if type_param == 'ete':
+        code_saison = f"E{saison_year}"
+        saison_type = 'ete'
+    else:
+        code_saison = f"S{saison_year}"
+        saison_type = 'annuel'
+    
+    # Récupérer tous les paiements annulés pour la saison
+    paiements_annules = Paiement.query.filter_by(
+        code_saison=code_saison,
+        etat='annule'
+    ).order_by(Paiement.date_annulation.desc()).all()
+    
+    # Préparer les données avec les informations de l'adhérent
+    paiements_data = []
+    for paiement in paiements_annules:
+        adherent = Adherent.query.filter_by(
+            matricule=paiement.matricule_adherent,
+            code_saison=code_saison
+        ).first()
+        
+        paiements_data.append({
+            'paiement': paiement,
+            'adherent_nom': f"{adherent.nom} {adherent.prenom}" if adherent else "Adhérent inconnu",
+            'adherent_matricule': paiement.matricule_adherent
+        })
+    
+    return render_template('paiements_annules.html',
+                         paiements_data=paiements_data,
+                         saison_type=saison_type,
+                         code_saison=code_saison,
+                         saison_year=saison_year,
+                         total_annules=len(paiements_annules))
+
 @app.route('/cotisations', methods=['GET', 'POST'])
 def gestion_cotisations():
     if 'user_id' not in session or session.get('role') != 'admin':
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
-    code_saison=session.get('saison_code')
+    
+    code_saison = session.get('saison_code')
     groupes = Groupe.query.filter_by(saison_code=code_saison).all()
     nom_groupes = [groupe.nom_groupe for groupe in groupes]
     cotisations = Cotisation.query.filter_by(code_saison=code_saison).all()
     
     if request.method == 'POST':
         action = request.form.get('action')
+        print(f"Action reçue: {action}")  # Debug
         
         if action == 'ajouter':
             nom = request.form.get('nom')
             montant = request.form.get('montant')
+            print(f"Ajouter - Nom: {nom}, Montant: {montant}")  # Debug
+            
             if not nom or not montant:
                 flash("Tous les champs sont obligatoires", "danger")
+                return redirect(url_for('gestion_cotisations'))
+                
+            # Vérifier si la cotisation existe déjà
+            existing = Cotisation.query.filter_by(
+                nom_cotisation=nom, 
+                code_saison=code_saison
+            ).first()
+            
+            if existing:
+                flash(f"Une cotisation existe déjà pour le groupe {nom}", "warning")
                 return redirect(url_for('gestion_cotisations'))
                 
             nouvelle_cotisation = Cotisation(
                 nom_cotisation=nom,
                 montant_cotisation=float(montant),
                 code_saison=code_saison
-
             )
             db.session.add(nouvelle_cotisation)
+            db.session.commit()
             flash("Cotisation ajoutée avec succès", "success")
 
         elif action == 'modifier':
             id_cotisation = request.form.get('id')
+            nom = request.form.get('nom')
+            montant = request.form.get('montant')
+            print(f"Modifier - ID: {id_cotisation}, Nom: {nom}, Montant: {montant}")  # Debug
+            
+            if not id_cotisation or not nom or not montant:
+                flash("Tous les champs sont obligatoires", "danger")
+                return redirect(url_for('gestion_cotisations'))
+            
             cotisation = Cotisation.query.get(id_cotisation)
             if cotisation:
-                cotisation.nom_cotisation = request.form.get('nom')
-                cotisation.montant_cotisation = float(request.form.get('montant'))
+                # Vérifier si un autre groupe a déjà ce nom
+                existing = Cotisation.query.filter(
+                    Cotisation.nom_cotisation == nom,
+                    Cotisation.code_saison == code_saison,
+                    Cotisation.id_cotisation != int(id_cotisation)
+                ).first()
+                
+                if existing:
+                    flash(f"Une cotisation existe déjà pour le groupe {nom}", "warning")
+                    return redirect(url_for('gestion_cotisations'))
+                
+                cotisation.nom_cotisation = nom
+                cotisation.montant_cotisation = float(montant)
+                db.session.commit()
                 flash("Cotisation modifiée avec succès", "success")
+            else:
+                flash("Cotisation non trouvée", "danger")
 
         elif action == 'supprimer':
             id_cotisation = request.form.get('id')
+            print(f"Supprimer - ID: {id_cotisation}")  # Debug
+            
             cotisation = Cotisation.query.get(id_cotisation)
             if cotisation:
                 db.session.delete(cotisation)
+                db.session.commit()
                 flash("Cotisation supprimée avec succès", "success")
+            else:
+                flash("Cotisation non trouvée", "danger")
 
-        db.session.commit()
         return redirect(url_for('gestion_cotisations'))
 
-    return render_template('gestion_cotisations.html', cotisations=cotisations,nom_groupes=nom_groupes)
-
+    return render_template('gestion_cotisations.html', 
+                         cotisations=cotisations,
+                         nom_groupes=nom_groupes)
 
 @app.route('/rechercher_adherent', methods=['POST'])
 def rechercher_adherent():
@@ -3918,24 +3971,28 @@ class Paiement(db.Model):
     __tablename__ = 'paiements'
 
     id_paiement = db.Column(db.Integer, primary_key=True)
-    matricule_adherent = db.Column(db.String(20), nullable=False)  # Pas de clé étrangère
+    matricule_adherent = db.Column(db.String(20), nullable=False)
     date_paiement = db.Column(
         db.DateTime,
-        default=lambda: datetime.now(pytz.timezone('Europe/Paris')),  # Utilisez une fonction lambda pour évaluer dynamiquement la date et l'heure
+        default=lambda: datetime.now(pytz.timezone('Europe/Paris')),
         nullable=False
     )
-    montant = db.Column(db.Float, nullable=False)  # Montant total à payer
-    montant_paye = db.Column(db.Float, default=0, nullable=False)  # Montant payé dans cette tranche
-    total_montant_paye = db.Column(db.Float, default=0, nullable=False)  # Montant payé dans cette tranche
-    montant_reste = db.Column(db.Float, nullable=False)  # Montant restant après paiement
-    type_reglement = db.Column(db.String(50), nullable=True)  # Espèce, chèque, virement
-    numero_cheque = db.Column(db.String(50), nullable=True)  # Facultatif pour les chèques
-    banque = db.Column(db.String(50), nullable=True)  # Facultatif pour les chèques
-    cotisation = db.Column(db.Float, nullable=False)  # Cotisation totale
-    remise = db.Column(db.Float, default=0, nullable=False)  # Remise appliquée (s'il y en a)
-    numero_bon = db.Column(db.Integer, nullable=False)  # Numéro de bon
-    numero_carnet = db.Column(db.Integer, nullable=False)  # Numéro de carnet
-    code_saison = db.Column(db.String(50), nullable=False)  # code de la saison 
+    montant = db.Column(db.Float, nullable=False)
+    montant_paye = db.Column(db.Float, default=0, nullable=False)
+    total_montant_paye = db.Column(db.Float, default=0, nullable=False)
+    montant_reste = db.Column(db.Float, nullable=False)
+    type_reglement = db.Column(db.String(50), nullable=True)
+    numero_cheque = db.Column(db.String(50), nullable=True)
+    banque = db.Column(db.String(50), nullable=True)
+    cotisation = db.Column(db.Float, nullable=False)
+    remise = db.Column(db.Float, default=0, nullable=False)
+    numero_bon = db.Column(db.Integer, nullable=False)
+    numero_carnet = db.Column(db.Integer, nullable=False)
+    code_saison = db.Column(db.String(50), nullable=False)
+    etat = db.Column(db.String(20), default='actif', nullable=False)  # NOUVEAU CHAMP
+    date_annulation = db.Column(db.DateTime, nullable=True)  # NOUVEAU CHAMP
+    annule_par = db.Column(db.String(100), nullable=True)  # NOUVEAU CHAMP
+
     def __repr__(self):
         return f"<Paiement {self.id_paiement} - Matricule: {self.matricule_adherent}>"
 
