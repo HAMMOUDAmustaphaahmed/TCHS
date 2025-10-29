@@ -40,6 +40,44 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 from functools import wraps
 from flask import session, redirect, url_for, flash
 
+
+
+
+
+# Gestionnaire pour erreur 404 (Page non trouvée)
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+# Gestionnaire pour erreur 500 (Erreur serveur)
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+# Gestionnaire pour erreur 403 (Accès interdit)
+@app.errorhandler(403)
+def forbidden(e):
+    return render_template('403.html'), 403
+
+# Gestionnaire pour erreur 400 (Mauvaise requête)
+@app.errorhandler(400)
+def bad_request(e):
+    return render_template('400.html'), 400
+
+# Gestionnaire générique pour toutes les autres erreurs
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # Log l'erreur pour le débogage
+    app.logger.error(f'Erreur non gérée: {str(e)}')
+    
+    # Si c'est une erreur HTTP, retourner le code approprié
+    if hasattr(e, 'code'):
+        return render_template('404.html', error=str(e)), e.code
+    
+    # Sinon, retourner une erreur 500
+    return render_template('500.html', error=str(e)), 500
+
+
 def get_current_saison():
     """
     Récupère l'année de saison depuis la session
@@ -584,6 +622,7 @@ def get_financial_indicators():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
+
 # Route pour l'emploi du temps de préparation physique
 @app.route('/emploi_prep_physique', methods=['GET'])
 def emploi_prep_physique():
@@ -1310,77 +1349,159 @@ def supprimer_location(id):
     flash("Réservation supprimée avec succès", "success")
     return redirect(url_for('locations_terrains'))
 
-# Routes pour la gestion des groupes (à ajouter dans app.py)
 
-@app.route('/ajouter_groupe', methods=['POST'])
-def ajouter_groupe():
+@app.route('/add_groupe', methods=['POST'])
+def add_groupe():
     # --- Vérification d'accès ---
     if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
-        return jsonify({"error": "Accès non autorisé"}), 403
+        return jsonify({"success": False, "message": "Accès non autorisé"}), 403
 
-    current_season_code = session.get('saison_code')
+    # 🔥 CORRECTION : Récupérer le saison_code correctement depuis la session
+    current_season_code = session.get('saison_code')  # Ex: 'S2025' ou 'E2024'
+    
     if not current_season_code:
-        return jsonify({"error": "Aucune saison active"}), 400
+        return jsonify({"success": False, "message": "Aucune saison active"}), 400
 
     data = request.get_json()
-    group_name = data.get('groupName')
-    entraineur_id = data.get('entraineurId')
-    prep_physique_id = data.get('prepPhysiqueId')
+    
+    # Récupération des données du formulaire
+    group_name = data.get('nom_groupe')
+    entraineur_id = data.get('entraineur_id')
+    prep_physique_id = data.get('prep_physique_id')
     cotisation = data.get('cotisation')
 
     # --- Validation des champs obligatoires ---
     if not group_name or not entraineur_id:
-        return jsonify({"error": "Nom et entraîneur requis"}), 400
+        return jsonify({"success": False, "message": "Nom et entraîneur requis"}), 400
+
+    # Validation du format du nom (doit contenir un tiret)
+    if '-' not in group_name:
+        return jsonify({"success": False, "message": "Le nom du groupe doit contenir un tiret (ex: KD-Lions)"}), 400
 
     # --- Vérifier l'existence du groupe dans la saison courante ---
-    existing_group = Groupe.query.filter_by(nom_groupe=group_name, saison_code=current_season_code).first()
+    existing_group = Groupe.query.filter_by(
+        nom_groupe=group_name, 
+        saison_code=current_season_code
+    ).first()
+    
     if existing_group:
-        return jsonify({"error": f"Groupe '{group_name}' existe déjà dans la saison {current_season_code}"}), 400
+        return jsonify({
+            "success": False, 
+            "message": f"Groupe '{group_name}' existe déjà dans la saison {current_season_code}"
+        }), 400
 
     try:
         # --- Récupérer l'entraîneur ---
         entraineur = Entraineur.query.get(entraineur_id)
         if not entraineur:
-            return jsonify({"error": "Entraîneur introuvable"}), 404
+            return jsonify({"success": False, "message": "Entraîneur introuvable"}), 404
 
-        # --- Récupérer le préparateur physique ---
+        # --- Récupérer le préparateur physique (optionnel) ---
         prep_physique_nom = None
         if prep_physique_id:
             prep_physique = Entraineur.query.get(prep_physique_id)
             if prep_physique and prep_physique.type_abonnement == "prep_physique":
                 prep_physique_nom = f"{prep_physique.nom} {prep_physique.prenom}"
 
+        # Extraction de la catégorie (partie avant le premier tiret)
+        categorie = group_name.split('-')[0].strip()
+
         # --- Création du nouveau groupe ---
         nouveau_groupe = Groupe(
             nom_groupe=group_name,
             entraineur_nom=f"{entraineur.nom} {entraineur.prenom}",
             type_abonnement=entraineur.type_abonnement,
-            categorie=group_name.split('-')[0],
+            categorie=categorie,
             preparateur_physique=prep_physique_nom,
-            saison_code=current_season_code,           # 🆕 Saison actuelle
-            date_creation=datetime.utcnow()             # 🆕 Date automatique
+            saison_code=current_season_code,  # 🔥 Utilisation du code complet (ex: 'S2025')
+            date_creation=datetime.utcnow()
         )
 
         db.session.add(nouveau_groupe)
-        db.session.flush()  # Permet de récupérer l'ID avant le commit
+        db.session.flush()  # Récupérer l'ID avant le commit
 
-        # --- Création de la cotisation liée (si fournie) ---
+        # --- 🔥 CORRECTION : Création de la cotisation avec code_saison ---
         if cotisation:
-            nouvelle_cotisation = Cotisation(
-                nom_cotisation=group_name,
-                montant_cotisation=float(cotisation)
-            )
-            db.session.add(nouvelle_cotisation)
+            try:
+                montant = float(cotisation)
+                if montant > 0:
+                    nouvelle_cotisation = Cotisation(
+                        nom_cotisation=group_name,
+                        montant_cotisation=montant,
+                        code_saison=current_season_code  # 🔥 AJOUT DU CODE SAISON ICI
+                    )
+                    db.session.add(nouvelle_cotisation)
+            except ValueError:
+                # Si la conversion échoue, on ignore la cotisation
+                pass
 
         db.session.commit()
+        
         return jsonify({
-            "message": f"Groupe '{group_name}' ajouté avec succès pour la saison {current_season_code}",
+            "success": True,
+            "message": f"Groupe '{group_name}' créé avec succès pour la saison {current_season_code}",
             "groupe_id": nouveau_groupe.id_groupe
         }), 200
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": f"Erreur lors de la création du groupe : {str(e)}"}), 500
+        print(f"❌ Erreur lors de la création du groupe: {str(e)}")  # Pour debug
+        return jsonify({
+            "success": False, 
+            "message": f"Erreur lors de la création du groupe : {str(e)}"
+        }), 500
+
+
+# Route alternative pour compatibilité
+@app.route('/ajouter_groupe', methods=['POST'])
+def ajouter_groupe():
+    """Redirection vers la nouvelle route pour compatibilité"""
+    return add_groupe()
+
+@app.route('/supprimer_groupe/<int:id_groupe>', methods=['DELETE'])
+def supprimer_groupe(id_groupe):
+    try:
+        # 1. Récupérer le groupe à supprimer
+        groupe = Groupe.query.get(id_groupe)
+        
+        if not groupe:
+            return jsonify({"error": "Groupe non trouvé"}), 404
+        
+        nom_groupe = groupe.nom_groupe
+        
+        # 2. Mettre à jour les adhérents associés à ce groupe
+        adherents = Adherent.query.filter_by(groupe=nom_groupe).all()
+        for adherent in adherents:
+            adherent.groupe = None
+            adherent.entraineur = None
+        
+        # 3. Supprimer toutes les séances associées à ce groupe
+        seances = Seance.query.filter_by(groupe=nom_groupe).all()
+        for seance in seances:
+            db.session.delete(seance)
+        
+        # 4. Supprimer les cotisations associées à ce groupe
+        # (en supposant que nom_cotisation correspond au nom_groupe)
+        cotisations = Cotisation.query.filter_by(nom_cotisation=nom_groupe).all()
+        for cotisation in cotisations:
+            db.session.delete(cotisation)
+        
+        # 5. Supprimer le groupe lui-même
+        db.session.delete(groupe)
+        
+        # 6. Valider toutes les modifications
+        db.session.commit()
+        
+        return jsonify({
+            "message": f"Groupe '{nom_groupe}' supprimé avec succès",
+            "adherents_mis_a_jour": len(adherents),
+            "seances_supprimees": len(seances),
+            "cotisations_supprimees": len(cotisations)
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Erreur lors de la suppression: {str(e)}"}), 500
 
 # Route avec le bon nom pour correspondre au JS
 @app.route('/api/get_groupe_details/<int:groupe_id>', methods=['GET'])
@@ -3715,23 +3836,6 @@ class Adherent(db.Model):
             "remise": self.remise
         }
 
-class Entraineur(db.Model):
-    __tablename__ = 'entraineur'
-    
-    id_entraineur = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    nom = db.Column(db.String(100), nullable=False)
-    prenom = db.Column(db.String(100), nullable=False)
-    sexe = db.Column(db.Enum('M', 'F'), nullable=False)
-    role_technique = db.Column(db.String(50), nullable=True)
-    type_abonnement = db.Column(db.String(50), nullable=True, default=None)
-    tel = db.Column(db.String(100), nullable=True)
-    addresse = db.Column(db.String(100), nullable=True)
-    compte_bancaire = db.Column(db.String(100), nullable=True)
-    status = db.Column(db.Enum('Actif', 'Non-Actif'), nullable=False)
-    code_saison = db.Column(db.String(10), nullable=True)
-    def __repr__(self):
-        return f'<Entraineur {self.nom} {self.prenom}>'
-
 
 
 class Groupe(db.Model):
@@ -3799,6 +3903,25 @@ class Reservation(db.Model):
     commentaire = db.Column(db.Text, nullable=True)
     status = db.Column(db.Enum('en_attente', 'acceptée', 'refusée'), default='en_attente')
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)    
+
+class Entraineur(db.Model):
+    __tablename__ = 'entraineur'
+    
+    id_entraineur = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nom = db.Column(db.String(100), nullable=False)
+    prenom = db.Column(db.String(100), nullable=False)
+    sexe = db.Column(db.Enum('M', 'F'), nullable=False)
+    role_technique = db.Column(db.String(50), nullable=True)
+    type_abonnement = db.Column(db.String(50), nullable=True, default=None)
+    tel = db.Column(db.String(100), nullable=True)
+    addresse = db.Column(db.String(100), nullable=True)
+    compte_bancaire = db.Column(db.String(100), nullable=True)
+    status = db.Column(db.Enum('Actif', 'Non-Actif'), nullable=False)
+    code_saison = db.Column(db.String(10), nullable=True)
+    def __repr__(self):
+        return f'<Entraineur {self.nom} {self.prenom}>'
+
+
 
 @app.route('/api/mes_reservations', methods=['GET'])
 def get_mes_reservations():

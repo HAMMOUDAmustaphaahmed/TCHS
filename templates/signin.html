@@ -29,6 +29,77 @@
 
     <!-- Template Stylesheet -->
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+    <style>
+        .unified-season-input {
+            display: flex;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            overflow: hidden;
+            background: white;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .unified-season-input:focus-within {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+        .season-type-wrapper {
+            flex: 0 0 auto;
+            border-right: 1px solid #ced4da;
+            background: #f8f9fa;
+        }
+
+        .season-type-wrapper select {
+            border: none;
+            background: transparent;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #0d6efd;
+            cursor: pointer;
+            outline: none;
+            width: 80px;
+        }
+
+        .season-type-wrapper select:focus {
+            outline: none;
+        }
+
+        .season-year-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .season-year-wrapper input {
+            border: none;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .season-year-wrapper input:focus {
+            outline: none;
+        }
+
+        .season-label {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: white;
+            padding: 0 5px;
+            font-size: 0.875rem;
+            color: #6c757d;
+            z-index: 1;
+        }
+
+        .season-input-container {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+    </style>
 </head>
 
 <body>
@@ -53,25 +124,26 @@
                                 <label for="password">Mot de Passe</label>
                             </div>
                             
-                            <!-- Type de Saison -->
-                            <div class="form-floating mb-3">
-                                <select class="form-control" id="saison_type" name="saison_type" required>
-                                    <option value="S">Saison Normale (Oct-Juin)</option>
-                                    <option value="E">École d'été (Juil-Sept)</option>
-                                </select>
-                                <label for="saison_type">Type de Saison</label>
-                            </div>
-
-                            <!-- Année -->
-                            <div class="form-floating mb-3">
-                                <input type="number" 
-                                       class="form-control" 
-                                       id="annee_saison" 
-                                       name="annee_saison" 
-                                       min="2020" 
-                                       max="2030" 
-                                       required>
-                                <label for="annee_saison">Année</label>
+                            <!-- Input Unifié pour la Saison -->
+                            <div class="season-input-container">
+                                <label class="season-label">Saison</label>
+                                <div class="unified-season-input">
+                                    <div class="season-type-wrapper">
+                                        <select id="saison_type" name="saison_type" required>
+                                            <option value="S">S</option>
+                                            <option value="E">E</option>
+                                        </select>
+                                    </div>
+                                    <div class="season-year-wrapper">
+                                        <input type="number" 
+                                               id="annee_saison" 
+                                               name="annee_saison" 
+                                               min="2020" 
+                                               max="2030"
+                                               placeholder="2025"
+                                               required>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Champ caché pour le code saison complet -->
