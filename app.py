@@ -25,7 +25,7 @@ app.config['DEBUG'] = True
 app.secret_key = 'your_secret_key'  # Remplacez par une clé sécurisée
 
 # Configure the database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/tchs'  # Update with your DB URI
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/tchs'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize SQLAlchemy
@@ -2357,7 +2357,6 @@ def changer_mot_de_passe():
 from flask import make_response
 from reportlab.lib.pagesizes import landscape, letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Spacer
-import pandas as pd
 from io import BytesIO
 
 @app.route('/export-schedule')
@@ -3171,21 +3170,21 @@ def repondre(id):
 from datetime import datetime
 from flask import render_template, request, redirect, url_for, flash, session
 
-
 @app.route('/paiement', methods=['GET', 'POST'])
 @season_required
 def paiement():
+    # 🔐 Vérification d'accès
     if 'user_id' not in session or session.get('role') != 'admin':
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
 
+    # 📅 Saison
     saison_year = session.get('saison')
     if not saison_year:
         flash("Veuillez sélectionner une saison.", "warning")
         return redirect(url_for('login'))
     
     type_param = request.args.get('type', 'annuel')
-    
     if type_param == 'ete':
         code_saison = f"E{saison_year}"
         saison_type = 'ete'
@@ -3193,6 +3192,7 @@ def paiement():
         code_saison = f"S{saison_year}"
         saison_type = 'annuel'
     
+    # 📋 Récupération des adhérents pour l'autocomplétion
     adherents_search_data = Adherent.query.filter_by(
         code_saison=code_saison,
         status='Actif'
@@ -3203,14 +3203,11 @@ def paiement():
     ).all()
     
     adherents_list = [
-        {
-            'matricule': adh.matricule,
-            'nom': adh.nom,
-            'prenom': adh.prenom,
-        }
+        {'matricule': adh.matricule, 'nom': adh.nom, 'prenom': adh.prenom}
         for adh in adherents_search_data
     ]
     
+    # Variables par défaut
     adherent = None
     paiements = []
     cotisations = []
@@ -3222,49 +3219,59 @@ def paiement():
     remise_montant = 0
     total_montant_paye = 0
 
+    # 🔎 Gestion du POST (recherche ou ajout de paiement)
     if request.method == 'POST':
-        matricule = request.form.get('matricule', '').strip()
+        query_text = request.form.get('matricule', '').strip()
         
-        if not matricule:
-            flash("Veuillez saisir un matricule.", "warning")
-            return render_template('paiement.html',
-                                 adherent=None,
-                                 paiements=[],
-                                 cotisations=[],
-                                 saison_type=saison_type,
-                                 code_saison=code_saison,
-                                 saison_year=saison_year,
-                                 adherents_list=adherents_list)
+        if not query_text:
+            flash("Veuillez saisir un matricule ou un nom/prénom.", "warning")
+            return render_template(
+                'paiement.html',
+                adherent=None,
+                paiements=[],
+                cotisations=[],
+                saison_type=saison_type,
+                code_saison=code_saison,
+                saison_year=saison_year,
+                adherents_list=adherents_list
+            )
         
-        adherent = Adherent.query.filter_by(
-            matricule=matricule,
-            code_saison=code_saison,
-            status='Actif'
+        # ✅ Recherche flexible : par matricule, nom ou prénom
+        from sqlalchemy import func, cast, String
+        adherent = Adherent.query.filter(
+            (Adherent.code_saison == code_saison) &
+            (Adherent.status == 'Actif') &
+            (
+                (func.lower(Adherent.nom).like(f"%{query_text.lower()}%")) |
+                (func.lower(Adherent.prenom).like(f"%{query_text.lower()}%")) |
+                (cast(Adherent.matricule, String) == query_text)
+            )
         ).first()
 
         if not adherent:
-            flash(f"Aucun adhérent trouvé avec le matricule {matricule} pour la saison {code_saison}.", "danger")
-            return render_template('paiement.html',
-                                 adherent=None,
-                                 paiements=[],
-                                 cotisations=[],
-                                 saison_type=saison_type,
-                                 code_saison=code_saison,
-                                 saison_year=saison_year,
-                                 adherents_list=adherents_list)
+            flash(f"Aucun adhérent trouvé pour la recherche « {query_text} » dans la saison {code_saison}.", "danger")
+            return render_template(
+                'paiement.html',
+                adherent=None,
+                paiements=[],
+                cotisations=[],
+                saison_type=saison_type,
+                code_saison=code_saison,
+                saison_year=saison_year,
+                adherents_list=adherents_list
+            )
 
-        # Récupérer UNIQUEMENT les paiements ACTIFS
+        # 🔹 Récupérer les paiements actifs
         paiements = Paiement.query.filter_by(
-            matricule_adherent=str(matricule),
+            matricule_adherent=str(adherent.matricule),
             code_saison=code_saison,
-            etat='actif'  # FILTRE IMPORTANT
+            etat='actif'
         ).order_by(Paiement.date_paiement.asc()).all()
 
-        # Traitement du paiement
+        # 💰 Si un paiement est ajouté
         if request.form.get('montant_paye'):
             try:
                 montant_paye = float(request.form.get('montant_paye', 0))
-                
                 if montant_paye <= 0:
                     flash("Le montant doit être supérieur à 0.", "danger")
                     return redirect(url_for('paiement', type=type_param))
@@ -3272,8 +3279,8 @@ def paiement():
                 type_reglement = request.form.get('type_reglement')
                 numero_cheque = request.form.get('numero_cheque')
                 banque = request.form.get('banque')
-                
-                # Premier paiement : définir la cotisation et la remise
+
+                # Si première cotisation non définie
                 if not adherent.cotisation:
                     cotisation_select = request.form.get('cotisation_select')
                     if cotisation_select:
@@ -3283,39 +3290,34 @@ def paiement():
                     
                     remise_input = request.form.get('remise_input', 0)
                     adherent.remise = float(remise_input) if remise_input else 0
-                    
                     db.session.commit()
                 
-                # Calculer le montant restant AVEC LES PAIEMENTS ACTIFS UNIQUEMENT
                 cotisation = float(adherent.cotisation or 0)
-                remise_pourcentage = float(adherent.remise) if adherent.remise is not None else 0
+                remise_pourcentage = float(adherent.remise) if adherent.remise else 0
                 remise_montant = (cotisation * remise_pourcentage) / 100
                 montant_net = cotisation - remise_montant
-                
-                # CORRECTION : calculer avec les paiements ACTIFS uniquement
+
                 total_deja_paye = sum(float(p.montant_paye or 0) for p in paiements)
-                
-                # VALIDATION : vérifier que le nouveau montant ne dépasse pas le reste à payer
                 reste_avant_paiement = montant_net - total_deja_paye
-                
+
                 if montant_paye > reste_avant_paiement:
                     flash(f"Le montant payé ({montant_paye:.2f} TND) dépasse le reste à payer ({reste_avant_paiement:.2f} TND).", "danger")
                     return redirect(url_for('paiement', type=type_param))
-                
+
                 montant_reste = reste_avant_paiement - montant_paye
-                
-                # Calculer le numéro de bon
+
+                # Génération des numéros de carnet et bon
                 dernier_paiement = Paiement.query.order_by(Paiement.id_paiement.desc()).first()
                 numero_carnet = dernier_paiement.numero_carnet if dernier_paiement else 1
                 numero_bon = (dernier_paiement.numero_bon + 1) if dernier_paiement else 1
-                
+
                 if numero_bon > 50:
                     numero_carnet += 1
                     numero_bon = 1
-                
-                # Créer le nouveau paiement avec etat='actif' par défaut
+
+                # Création du paiement
                 nouveau_paiement = Paiement(
-                    matricule_adherent=str(matricule),
+                    matricule_adherent=str(adherent.matricule),
                     montant=montant_net,
                     montant_paye=montant_paye,
                     montant_reste=montant_reste,
@@ -3327,29 +3329,21 @@ def paiement():
                     numero_bon=numero_bon,
                     numero_carnet=numero_carnet,
                     code_saison=code_saison,
-                    etat='actif'  # NOUVEAU
+                    etat='actif'
                 )
-                
+
                 db.session.add(nouveau_paiement)
-                
-                # Mettre à jour le statut de paiement de l'adhérent
-                if montant_reste <= 0:
-                    adherent.paye = 'O'
-                else:
-                    adherent.paye = 'N'
-                
+                adherent.paye = 'O' if montant_reste <= 0 else 'N'
                 db.session.commit()
-                
+
                 flash("Paiement enregistré avec succès.", "success")
                 return redirect(url_for('paiement', type=type_param))
-                
-            except ValueError as e:
-                flash(f"Montant invalide: {str(e)}", "danger")
+
             except Exception as e:
                 db.session.rollback()
-                flash(f"Erreur lors de l'enregistrement: {str(e)}", "danger")
-        
-        # Calculer les informations financières AVEC PAIEMENTS ACTIFS UNIQUEMENT
+                flash(f"Erreur lors de l'enregistrement : {str(e)}", "danger")
+
+        # 📊 Recalcul des montants
         if adherent.cotisation:
             cotisation = float(adherent.cotisation)
             remise = float(adherent.remise or 0)
@@ -3358,32 +3352,33 @@ def paiement():
             total_montant_paye = sum(float(p.montant_paye or 0) for p in paiements)
         
         cotisations = Cotisation.query.all()
-        
         dernier_paiement = Paiement.query.order_by(Paiement.id_paiement.desc()).first()
         numero_carnet = dernier_paiement.numero_carnet if dernier_paiement else 1
         numero_bon = (dernier_paiement.numero_bon + 1) if dernier_paiement else 1
-        
+
         if numero_bon > 50:
             numero_carnet += 1
             numero_bon = 1
-    
-    return render_template('paiement.html',
-                         adherent=adherent,
-                         paiements=paiements,
-                         cotisations=cotisations,
-                         cotisation=cotisation,
-                         remise=remise,
-                         remise_montant=remise_montant,
-                         montant_net=montant_net,
-                         total_montant_paye=total_montant_paye,
-                         numero_carnet=numero_carnet,
-                         numero_bon=numero_bon,
-                         saison_type=saison_type,
-                         code_saison=code_saison,
-                         saison_year=saison_year,
-                         adherents_list=adherents_list,
-                         reste_a_payer=max(0, montant_net - total_montant_paye))
 
+    # 🧾 Rendu final
+    return render_template(
+        'paiement.html',
+        adherent=adherent,
+        paiements=paiements,
+        cotisations=cotisations,
+        cotisation=cotisation,
+        remise=remise,
+        remise_montant=remise_montant,
+        montant_net=montant_net,
+        total_montant_paye=total_montant_paye,
+        numero_carnet=numero_carnet,
+        numero_bon=numero_bon,
+        saison_type=saison_type,
+        code_saison=code_saison,
+        saison_year=saison_year,
+        adherents_list=adherents_list,
+        reste_a_payer=max(0, montant_net - total_montant_paye)
+    )
 
 # 3. NOUVELLE ROUTE POUR ANNULER UN PAIEMENT
 
@@ -6046,7 +6041,6 @@ def search_presence():
 
 
 from flask import request, jsonify, send_file
-import pandas as pd
 from io import BytesIO
 
 @app.route('/export_monthly_presence', methods=['GET'])
@@ -6124,7 +6118,6 @@ def export_monthly_presence():
 from flask import Blueprint, render_template, send_file, jsonify
 from sqlalchemy import extract, func
 from io import BytesIO
-import pandas as pd
 from datetime import datetime
 
 
@@ -6375,7 +6368,6 @@ from flask import request, jsonify, send_file
 from sqlalchemy import func, and_, or_, cast, String, extract
 from datetime import datetime, timedelta
 import io
-import pandas as pd
 from collections import defaultdict
 import xlsxwriter
 
