@@ -54,17 +54,7 @@
             <div class="container mt-4">
                 <h2>Gestion des Cotisations</h2>
                 
-                <!-- Messages Flash -->
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
+               
                 
                 <!-- Bouton Ajouter -->
                 <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addModal">

@@ -1780,8 +1780,7 @@ def directeur_technique():
     start_of_week = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
     current_day = start_of_week + timedelta(days=day_offset)
 
-    # Récupération des groupes de la saison
-    groupes = Groupe.query.all()
+    groupes = Groupe.query.filter_by(saison_code=current_season_code).all()
 
     entraineurs = Entraineur.query.filter_by(status='Actif').all()
     prep_physiques = Entraineur.query.filter_by(type_abonnement="prep_physique", status='Actif').all()
