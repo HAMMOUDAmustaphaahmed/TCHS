@@ -1,4 +1,4 @@
-// Module pattern pour éviter les conflits de variables - VERSION CORRIGÉE
+// Module pattern pour éviter les conflits de variables - VERSION AVEC DURÉE
 const PresenceModule = (function() {
     // Variables privées
     let currentSearchType = null;
@@ -6,7 +6,7 @@ const PresenceModule = (function() {
     let currentAdherentDetails = null;
     let currentAdherentName = '';
     
-    const API_BASE_URL = '/api'; // Ajustez selon la config Flask
+    const API_BASE_URL = '/api';
 
     // Initialisation
     function init() {
@@ -262,6 +262,13 @@ ${session.entraineur_nom ? 'Entraîneur: ' + session.entraineur_nom : ''}">
                         <i class="fas fa-eye"></i> Voir détails
                     </button>
                 `;
+            } else if (currentSearchType === 'entraineur') {
+                tableHtml += `
+                    <button class="btn btn-sm btn-outline-primary view-details-btn-entraineur" 
+                            data-nom="${item.nom}">
+                        <i class="fas fa-eye"></i> Voir détails
+                    </button>
+                `;
             }
             tableHtml += '</td>';
 
@@ -282,6 +289,11 @@ ${session.entraineur_nom ? 'Entraîneur: ' + session.entraineur_nom : ''}">
             const nom = $(this).data('nom');
             const prenom = $(this).data('prenom');
             showAdherentDetails(matricule, nom, prenom);
+        });
+
+        $('.view-details-btn-entraineur').on('click', function() {
+            const nom = $(this).data('nom');
+            showEntraineurDetails(nom);
         });
     }
 
@@ -322,7 +334,7 @@ ${session.entraineur_nom ? 'Entraîneur: ' + session.entraineur_nom : ''}">
         window.open(downloadUrl, '_blank');
     }
 
-    // Affichage des détails d'un adhérent - VERSION CORRIGÉE
+    // Affichage des détails d'un adhérent - AVEC DURÉE
     function showAdherentDetails(matricule, nom, prenom) {
         currentAdherentName = `${nom} ${prenom}`;
         currentAdherentDetails = [];
@@ -331,7 +343,7 @@ ${session.entraineur_nom ? 'Entraîneur: ' + session.entraineur_nom : ''}">
         $('#adherentName').text(`Chargement des détails de ${currentAdherentName}...`);
         $('#detailsTable tbody').html(`
             <tr>
-                <td colspan="5" class="text-center">
+                <td colspan="6" class="text-center">
                     <div class="spinner-border spinner-border-sm" role="status">
                         <span class="visually-hidden">Chargement...</span>
                     </div>
@@ -339,19 +351,31 @@ ${session.entraineur_nom ? 'Entraîneur: ' + session.entraineur_nom : ''}">
                 </td>
             </tr>
         `);
+        
+        // Mettre à jour l'en-tête du tableau avec la colonne Durée
+        $('#detailsTable thead tr').html(`
+            <th>Date</th>
+            <th>Groupe</th>
+            <th>Entraîneur</th>
+            <th>Heure début</th>
+            <th>Durée</th>
+            <th>État</th>
+        `);
+        
         $('#detailsModal').modal('show');
         
+        const params = new URLSearchParams({
+            start_date: $('#startDate').val(),
+            end_date: $('#endDate').val()
+        });
+        
         $.ajax({
-            url: `${API_BASE_URL}/presences/adherent/${matricule}/details`,
+            url: `/get_adherent_presences/${matricule}?${params.toString()}`,
             method: 'GET',
             success: function(response) {
-                if (response.success) {
-                    currentAdherentDetails = response.details;
-                    displayAdherentDetails(response.details);
-                    $('#adherentName').text(`Détails des présences de ${currentAdherentName}`);
-                } else {
-                    showModalError('Erreur lors du chargement des détails: ' + (response.error || 'Erreur inconnue'));
-                }
+                currentAdherentDetails = response.presences;
+                displayDetailsWithDuration(response.presences, response.total_heures);
+                $('#adherentName').text(`Détails des présences de ${response.nom}`);
             },
             error: function(xhr, status, error) {
                 console.error('Erreur lors du chargement des détails:', error);
@@ -360,15 +384,65 @@ ${session.entraineur_nom ? 'Entraîneur: ' + session.entraineur_nom : ''}">
         });
     }
 
-    // Affichage des détails dans le modal - VERSION AMÉLIORÉE
-    function displayAdherentDetails(details) {
+    // Affichage des détails d'un entraîneur - NOUVEAU AVEC DURÉE
+    function showEntraineurDetails(nomEntraineur) {
+        currentAdherentName = nomEntraineur;
+        currentAdherentDetails = [];
+        
+        // Afficher le modal avec un spinner de chargement
+        $('#adherentName').text(`Chargement des détails de ${nomEntraineur}...`);
+        $('#detailsTable tbody').html(`
+            <tr>
+                <td colspan="6" class="text-center">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    Chargement des données...
+                </td>
+            </tr>
+        `);
+        
+        // Mettre à jour l'en-tête du tableau avec la colonne Durée
+        $('#detailsTable thead tr').html(`
+            <th>Date</th>
+            <th>Groupe</th>
+            <th>Entraîneur</th>
+            <th>Heure début</th>
+            <th>Durée</th>
+            <th>État</th>
+        `);
+        
+        $('#detailsModal').modal('show');
+        
+        const params = new URLSearchParams({
+            start_date: $('#startDate').val(),
+            end_date: $('#endDate').val()
+        });
+        
+        $.ajax({
+            url: `/get_entraineur_presences/${encodeURIComponent(nomEntraineur)}?${params.toString()}`,
+            method: 'GET',
+            success: function(response) {
+                currentAdherentDetails = response.presences;
+                displayDetailsWithDuration(response.presences, response.total_heures);
+                $('#adherentName').text(`Détails des présences de ${response.nom}`);
+            },
+            error: function(xhr, status, error) {
+                console.error('Erreur lors du chargement des détails:', error);
+                showModalError('Impossible de charger les détails. Veuillez réessayer.');
+            }
+        });
+    }
+
+    // Affichage des détails avec durée - NOUVELLE FONCTION
+    function displayDetailsWithDuration(details, totalHeures) {
         const tbody = $('#detailsTable tbody');
         tbody.empty();
         
         if (!details || details.length === 0) {
             tbody.append(`
                 <tr>
-                    <td colspan="5" class="text-center text-muted">
+                    <td colspan="6" class="text-center text-muted">
                         <i class="fas fa-info-circle me-2"></i>
                         Aucune donnée de présence trouvée pour cette période
                     </td>
@@ -387,8 +461,9 @@ ${session.entraineur_nom ? 'Entraîneur: ' + session.entraineur_nom : ''}">
                     <td>${detail.groupe || 'N/A'}</td>
                     <td>${detail.entraineur || 'N/A'}</td>
                     <td>${detail.heure_debut || 'N/A'}</td>
+                    <td><strong>${detail.duree_heures}h</strong> (${detail.duree_minutes}min)</td>
                     <td>
-                        <span class="badge ${detail.etat === 'Présent(e)' ? 'bg-success' : 'bg-danger'}">
+                        <span class="badge ${detail.etat === 'Présent' ? 'bg-success' : 'bg-danger'}">
                             ${detail.etat || 'N/A'}
                         </span>
                     </td>
@@ -396,6 +471,14 @@ ${session.entraineur_nom ? 'Entraîneur: ' + session.entraineur_nom : ''}">
             `;
             tbody.append(row);
         });
+        
+        // Ajouter la ligne de total
+        tbody.append(`
+            <tr class="table-info">
+                <td colspan="4" class="text-end"><strong>Durée totale :</strong></td>
+                <td colspan="2"><strong>${totalHeures} heures</strong></td>
+            </tr>
+        `);
     }
 
     // Affichage des erreurs dans le modal
@@ -403,7 +486,7 @@ ${session.entraineur_nom ? 'Entraîneur: ' + session.entraineur_nom : ''}">
         const tbody = $('#detailsTable tbody');
         tbody.html(`
             <tr>
-                <td colspan="5" class="text-center text-danger">
+                <td colspan="6" class="text-center text-danger">
                     <i class="fas fa-exclamation-triangle me-2"></i>
                     ${message}
                 </td>
@@ -412,7 +495,7 @@ ${session.entraineur_nom ? 'Entraîneur: ' + session.entraineur_nom : ''}">
         $('#exportDetailsBtn').prop('disabled', true);
     }
 
-    // Export des données détaillées - VERSION CORRIGÉE
+    // Export des données détaillées - VERSION AVEC DURÉE
     function exportDetailsData() {
         if (!currentAdherentDetails || currentAdherentDetails.length === 0) {
             alert('Aucune donnée à exporter');
@@ -426,6 +509,8 @@ ${session.entraineur_nom ? 'Entraîneur: ' + session.entraineur_nom : ''}">
                 'Groupe': detail.groupe,
                 'Entraîneur': detail.entraineur,
                 'Heure début': detail.heure_debut,
+                'Durée (heures)': detail.duree_heures,
+                'Durée (minutes)': detail.duree_minutes,
                 'État': detail.etat
             }));
             
@@ -439,6 +524,8 @@ ${session.entraineur_nom ? 'Entraîneur: ' + session.entraineur_nom : ''}">
                 { width: 20 }, // Groupe
                 { width: 25 }, // Entraîneur
                 { width: 12 }, // Heure début
+                { width: 15 }, // Durée (heures)
+                { width: 15 }, // Durée (minutes)
                 { width: 15 }  // État
             ];
             ws['!cols'] = wscols;

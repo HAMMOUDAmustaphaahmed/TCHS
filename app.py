@@ -735,7 +735,7 @@ def entraineur():
         flash("Format du nom d'utilisateur invalide.", "danger")
         return redirect(url_for('login'))
     
-    # Normaliser le nom et prénom pour la requête
+    # Normaliser le nom et prénom
     nom = nom.strip()
     prenom = prenom.strip()
 
@@ -747,31 +747,48 @@ def entraineur():
     # Construire le nom complet normalisé
     nom_complet_entraineur = f"{nom} {prenom}".replace('\u00A0', ' ').strip()
 
-    # Debug pour vérifier le nom complet envoyé au template
-
-    # Gestion de la navigation
+    # Gestion de la navigation par semaine
     week_offset = request.args.get('week_offset', 0, type=int)
-    day_offset = request.args.get('day_offset', 0, type=int)
     today = datetime.today()
     start_of_week = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
-    day_offset = max(0, min(6, day_offset))
-    current_day = start_of_week + timedelta(days=day_offset)
+    
+    # Générer les jours de la semaine (Lundi à Dimanche)
+    jours_semaine = []
+    for i in range(7):
+        jour = start_of_week + timedelta(days=i)
+        jours_semaine.append(jour)
+    
+    # Récupérer UNIQUEMENT les séances de cet entraîneur pour la semaine
+    end_of_week = start_of_week + timedelta(days=6)
+    
+    # Filtrer par entraîneur - en normalisant les espaces
+    seances_semaine = Seance.query.filter(
+        Seance.date >= start_of_week.date(),
+        Seance.date <= end_of_week.date()
+    ).all()
+    
+    # Filtrer manuellement pour gérer la normalisation des noms
+    mes_seances = []
+    for seance in seances_semaine:
+        entraineur_seance_norm = seance.entraineur.replace('\u00A0', ' ').strip().lower()
+        if entraineur_seance_norm == nom_complet_entraineur.lower():
+            mes_seances.append(seance)
 
-    # Récupérer toutes les séances du jour
-    seances_tous = Seance.query.filter(Seance.date == current_day.date()).all()
-
-    # Préparer la structure pour le template
-    seances_par_terrain_et_heure = {}
-    for seance in seances_tous:
-        terrain = seance.terrain
+    # Préparer la structure : jour_heure => [liste de séances]
+    seances_par_jour_et_heure = {}
+    for seance in mes_seances:
+        jour_str = seance.date.strftime('%Y-%m-%d')
         heure_debut = seance.heure_debut.strftime('%H:%M')
-        key = f"{terrain}_{heure_debut}"
+        key = f"{jour_str}_{heure_debut}"
 
-        # Normalisation et debug de chaque entraîneur enregistré
+        # Normalisation de l'entraîneur
         entraineur_seance_norm = seance.entraineur.replace('\u00A0', ' ').strip()
 
-        seances_par_terrain_et_heure[key] = {
-            'id': seance.seance_id,
+        if key not in seances_par_jour_et_heure:
+            seances_par_jour_et_heure[key] = []
+        
+        seances_par_jour_et_heure[key].append({
+            'seance_id': seance.seance_id,
             'date': seance.date,
             'heure_debut': seance.heure_debut,
             'heure_fin': seance.heure_fin,
@@ -780,33 +797,28 @@ def entraineur():
             'terrain': seance.terrain,
             'type_seance': seance.type_seance or 'entrainement',
             'adherents_matricules': seance.adherents_matricules
-        }
+        })
 
-    # Créneaux horaires
-    creneaux = [
-        {'start': time(8, 0), 'end': time(9, 30)},
-        {'start': time(9, 30), 'end': time(11, 0)},
-        {'start': time(11, 0), 'end': time(12, 30)},
-        {'start': time(12, 30), 'end': time(14, 0)},
-        {'start': time(14, 0), 'end': time(15, 30)},
-        {'start': time(15, 30), 'end': time(17, 0)},
-        {'start': time(17, 0), 'end': time(18, 30)},
-        {'start': time(18, 30), 'end': time(20, 0)},
-    ]
+    # Créneaux horaires (08:00 à 20:00 par heure)
+    creneaux = []
+    for h in range(8, 20):
+        creneaux.append({
+            'start': time(h, 0),
+            'end': time(h + 1, 0),
+            'label': f"{h:02d}:00-{h+1:02d}:00"
+        })
 
     return render_template(
         'entraineur.html',
-        current_day=current_day,
         week_offset=week_offset,
-        day_offset=day_offset,
         entraineur=entraineur,
-        seances_par_terrain_et_heure=seances_par_terrain_et_heure,
+        jours_semaine=jours_semaine,
+        seances_par_jour_et_heure=seances_par_jour_et_heure,
         creneaux=creneaux,
         nom_complet_entraineur=nom_complet_entraineur,
-        type_seance_global='entrainement'
+        type_seance_global='entrainement',
+        start_of_week=start_of_week
     )
-
-
 # Route pour sauvegarder les présences
 @app.route('/api/save_presences', methods=['POST'])
 def save_presences():
@@ -2826,7 +2838,128 @@ def ajouter_adherent():
                          code_saison_defaut=code_saison_defaut,
                          adherents_existants=adherents_list)
 
+# Route pour rechercher des anciens adhérents
+@app.route('/rechercher_ancien_adherent', methods=['POST'])
+def rechercher_ancien_adherent():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return jsonify({'error': 'Accès non autorisé'}), 403
+    
+    code_saison_actuel = session.get('saison_code')
+    search_term = request.json.get('search_term', '').strip()
+    
+    if not search_term:
+        return jsonify({'error': 'Terme de recherche vide'}), 400
+    
+    # Recherche par matricule, nom ou prénom
+    # Exclure les adhérents de la saison actuelle
+    adherents = Adherent.query.filter(
+        Adherent.code_saison != code_saison_actuel,
+        db.or_(
+            Adherent.matricule == search_term if search_term.isdigit() else False,
+            func.lower(Adherent.nom).like(f'%{search_term.lower()}%'),
+            func.lower(Adherent.prenom).like(f'%{search_term.lower()}%')
+        )
+    ).order_by(Adherent.code_saison.desc()).all()
+    
+    # Grouper par nom/prénom et garder le plus récent
+    adherents_dict = {}
+    for adherent in adherents:
+        key = f"{adherent.nom.lower()}_{adherent.prenom.lower()}"
+        if key not in adherents_dict:
+            adherents_dict[key] = adherent
+    
+    # Convertir en liste de dictionnaires
+    resultats = [{
+        'adherent_id': a.adherent_id,
+        'nom': a.nom,
+        'prenom': a.prenom,
+        'matricule': a.matricule,
+        'date_naissance': a.date_naissance.isoformat(),
+        'sexe': a.sexe,
+        'tel1': a.tel1,
+        'tel2': a.tel2,
+        'type_abonnement': a.type_abonnement,
+        'email': a.email,
+        'code_saison': a.code_saison
+    } for a in adherents_dict.values()]
+    
+    return jsonify(resultats)
 
+
+# Route pour importer un ancien adhérent
+@app.route('/importer_adherent', methods=['POST'])
+def importer_adherent():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        flash("Accès non autorisé.", "danger")
+        return redirect(url_for('login'))
+    
+    code_saison_actuel = session.get('saison_code')
+    
+    # Récupérer les données du formulaire avec vérification
+    try:
+        nom = request.form.get('Nom', '').strip()
+        prenom = request.form.get('Prénom', '').strip()
+        
+        if not nom or not prenom:
+            flash("Le nom et le prénom sont obligatoires.", "danger")
+            return redirect(url_for('ajouter_adherent'))
+    except Exception as e:
+        flash(f"Erreur lors de la récupération des données : {str(e)}", "danger")
+        return redirect(url_for('ajouter_adherent'))
+    
+    # Vérifier qu'il n'existe pas déjà dans la saison actuelle
+    adherent_existant = Adherent.query.filter(
+        func.lower(Adherent.nom) == nom.lower(),
+        func.lower(Adherent.prenom) == prenom.lower(),
+        Adherent.code_saison == code_saison_actuel
+    ).first()
+    
+    if adherent_existant:
+        flash(
+            f"Cet adhérent existe déjà dans la saison {code_saison_actuel} "
+            f"(Matricule: {adherent_existant.matricule}).",
+            'danger'
+        )
+        return redirect(url_for('ajouter_adherent'))
+    
+    # Générer le nouveau matricule
+    matricule = get_next_matricule(code_saison_actuel)
+    
+    # Créer le nouvel adhérent avec toutes les données
+    nouvel_adherent = Adherent(
+        nom=nom,
+        prenom=prenom,
+        date_naissance=request.form.get('date_naissance'),
+        date_inscription=request.form.get('date_inscription'),
+        sexe=request.form.get('sexe'),
+        tel1=request.form.get('tel1', ''),
+        tel2=request.form.get('tel2', ''),
+        type_abonnement=request.form.get('type_abonnement'),
+        categorie=request.form.get('type_abonnement'),
+        matricule=matricule,
+        email=request.form.get('email', ''),
+        code_saison=code_saison_actuel,
+        paye='N',
+        status='Actif',
+        groupe=None,
+        entraineur=None,
+        cotisation=None,
+        remise=None
+    )
+    
+    try:
+        db.session.add(nouvel_adherent)
+        db.session.commit()
+        flash(
+            f'Adhérent {nouvel_adherent.nom} {nouvel_adherent.prenom} importé avec succès ! '
+            f'Nouveau Matricule: {matricule}, Saison: {code_saison_actuel}', 
+            'success'
+        )
+        return redirect(url_for('gerer_adherent'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Erreur lors de l'importation : {str(e)}", 'danger')
+        return redirect(url_for('ajouter_adherent'))
 
 @app.route('/gerer_adherent')
 @season_required
@@ -3094,22 +3227,75 @@ def supprimer_entraineur(id):
         flash(f"Erreur lors de la suppression : {str(e)}", "danger")
     
     return redirect(url_for('gerer_entraineur'))
+
+
+@app.route('/reset_password_entraineur/<int:id>')
+@season_required
+def reset_password_entraineur(id):
+    if 'user_id' not in session or session.get('role') != 'admin':
+        flash("Accès non autorisé.", "danger")
+        return redirect(url_for('login'))
     
+    # Récupérer l'entraîneur
+    entraineur = Entraineur.query.get(id)
+    if not entraineur:
+        flash("Entraîneur introuvable.", "danger")
+        return redirect(url_for('gerer_entraineur'))
+    
+    # Chercher le compte utilisateur de l'entraîneur avec format nom.prenom
+    utilisateur = User.query.filter_by(
+        utilisateur=f"{entraineur.nom}.{entraineur.prenom}",
+        role='entraineur'
+    ).first()
+    
+    if not utilisateur:
+        flash(f"Aucun compte utilisateur trouvé pour {entraineur.nom}.{entraineur.prenom}.", "warning")
+        return redirect(url_for('gerer_entraineur'))
+    
+    # Réinitialiser avec le mot de passe "entraineur" hashé en SHA256
+    hashed_password = hashlib.sha256('entraineur'.encode()).hexdigest()
+    utilisateur.password = hashed_password
+    db.session.commit()
+    
+    # Message pour déclencher le popup
+    flash(f"RESET_SUCCESS:{entraineur.nom} {entraineur.prenom}", "success")
+    
+    return redirect(url_for('gerer_entraineur'))
+
 @app.route('/discussions', methods=['GET', 'POST'])
 def discussions():
+    # Vérifier si l'utilisateur est connecté
+    if 'user_id' not in session or 'username' not in session:
+        flash("Vous devez être connecté pour accéder à la messagerie.", "danger")
+        return redirect(url_for('login'))
+    
     users = User.query.all()  # Récupère tous les utilisateurs
     users_list = [{'username': user.utilisateur} for user in users]
 
     if request.method == 'POST':
         destinataires = request.form.get('destinataires')  # Récupère la chaîne des destinataires
-        objet = request.form['objet']
-        corps = request.form['corps']
+        objet = request.form.get('objet', '')
+        corps = request.form.get('corps', '')
         expediteur = session['username']
 
-        # Convertir la chaîne des destinataires en liste
-        destinataires_list = destinataires.split(',')
+        # Validation
+        if not destinataires or not objet or not corps:
+            flash("Veuillez remplir tous les champs.", "danger")
+            return redirect(url_for('discussions'))
 
-        message = Message(expediteur=expediteur, destinataires=",".join(destinataires_list), objet=objet, corps=corps)
+        # Convertir la chaîne des destinataires en liste
+        destinataires_list = [d.strip() for d in destinataires.split(',') if d.strip()]
+        
+        if not destinataires_list:
+            flash("Veuillez sélectionner au moins un destinataire.", "danger")
+            return redirect(url_for('discussions'))
+
+        message = Message(
+            expediteur=expediteur, 
+            destinataires=",".join(destinataires_list), 
+            objet=objet, 
+            corps=corps
+        )
         db.session.add(message)
         db.session.commit()
 
@@ -3117,32 +3303,43 @@ def discussions():
         return redirect(url_for('discussions'))
 
     # Récupérer les messages envoyés et reçus
-    messages_envoyes = Message.query.filter_by(expediteur=session['username']).all()
-    messages_recus = Message.query.filter(Message.destinataires.like(f"%{session['username']}%")).all()
+    messages_envoyes = Message.query.filter_by(expediteur=session['username']).order_by(Message.date_envoi.desc()).all()
+    messages_recus = Message.query.filter(Message.destinataires.like(f"%{session['username']}%")).order_by(Message.date_envoi.desc()).all()
 
     # Préparer les données des messages
     messages_envoyes_data = [
         {
+            'id': msg.id,
             'expediteur': msg.expediteur,
             'destinataires': msg.destinataires,
             'objet': msg.objet,
             'corps': msg.corps,
-            'date': msg.date_envoi.strftime('%Y-%m-%d %H:%M')
+            'date': msg.date_envoi.strftime('%d/%m/%Y %H:%M'),
+            'lu': getattr(msg, 'statut', 'non lu') == 'lu'  # Si vous avez un champ statut
         } for msg in messages_envoyes
     ]
 
     messages_recus_data = [
         {
+            'id': msg.id,
             'expediteur': msg.expediteur,
             'destinataires': msg.destinataires,
             'objet': msg.objet,
             'corps': msg.corps,
-            'date': msg.date_envoi.strftime('%Y-%m-%d %H:%M')
+            'date': msg.date_envoi.strftime('%d/%m/%Y %H:%M'),
+            'lu': getattr(msg, 'statut', 'non lu') == 'lu'  # Si vous avez un champ statut
         } for msg in messages_recus
     ]
 
-    return render_template('discussions.html', users=users_list, messages_envoyes=messages_envoyes_data, messages_recus=messages_recus_data)
-
+    # IMPORTANT: Passer le rôle de l'utilisateur au template
+    return render_template(
+        'discussions.html', 
+        users=users_list, 
+        messages_envoyes=messages_envoyes_data, 
+        messages_recus=messages_recus_data,
+        user_role=session.get('role', 'unknown'),  # Ajout du rôle
+        username=session.get('username', '')        # Ajout du username
+    )
 @app.route('/message/<int:id>/marquer_lu', methods=['POST'])
 def marquer_lu(id):
     message = Message.query.get(id)
@@ -3954,15 +4151,19 @@ def get_mes_reservations():
         return jsonify({"error": str(e)}), 400
 
 @app.route('/api/reserver_terrain', methods=['POST'])
-def api_reserver_terrain():
-    if 'user_id' not in session:
-        return jsonify({"error": "Non autorisé"}), 403
-
+def reserver_terrain():
+    if 'user_id' not in session or session.get('role') != 'entraineur':
+        return jsonify({'success': False, 'error': 'Non autorisé'}), 403
+    
     try:
         data = request.get_json()
         username = session.get('username')
-        nom, prenom = username.split('.')  # Assurez-vous que cela correspond à votre format
-
+        nom, prenom = username.split('.')
+        
+        # Validation des données
+        if not all(k in data for k in ['date', 'heure_debut', 'heure_fin', 'numero_terrain']):
+            return jsonify({'success': False, 'error': 'Données manquantes'}), 400
+        
         nouvelle_reservation = Reservation(
             nom_entraineur=nom,
             prenom_entraineur=prenom,
@@ -3977,13 +4178,47 @@ def api_reserver_terrain():
         db.session.add(nouvelle_reservation)
         db.session.commit()
         
-        return jsonify({
-            "success": True,
-            "message": "Réservation créée avec succès"
-        })
+        return jsonify({'success': True, 'message': 'Réservation créée avec succès'})
+        
+    except ValueError as e:
+        return jsonify({'success': False, 'error': f'Format de date invalide: {str(e)}'}), 400
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 400
+        print(f"Erreur: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/mes_reservations')
+def mes_reservations():
+    if 'user_id' not in session or session.get('role') != 'entraineur':
+        return jsonify({'success': False, 'error': 'Non autorisé'}), 403
+    
+    try:
+        username = session.get('username')
+        nom, prenom = username.split('.')
+        
+        reservations = Reservation.query.filter_by(
+            nom_entraineur=nom,
+            prenom_entraineur=prenom
+        ).order_by(Reservation.date_reservation.desc()).all()
+        
+        reservations_list = []
+        for r in reservations:
+            reservations_list.append({
+                'date': r.date_reservation.strftime('%d/%m/%Y'),
+                'heure_debut': r.heure_debut.strftime('%H:%M'),
+                'heure_fin': r.heure_fin.strftime('%H:%M'),
+                'numero_terrain': r.numero_terrain,
+                'status': r.status,
+                'commentaire': r.commentaire or '-'
+            })
+        
+        return jsonify({'success': True, 'reservations': reservations_list})
+        
+    except Exception as e:
+        print(f"Erreur: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/all_reservations', methods=['GET'])
 def get_all_reservations():
     if 'user_id' not in session or session.get('role') != 'admin':
@@ -6388,7 +6623,6 @@ def search_adherent_presences(start_date, end_date, search_term):
     Recherche les présences des adhérents avec les critères spécifiés
     """
     try:
-        # Requête de base pour récupérer les présences d'adhérents
         query = db.session.query(
             Adherent.matricule,
             Adherent.nom,
@@ -6397,7 +6631,8 @@ def search_adherent_presences(start_date, end_date, search_term):
             Presence.heure_debut,
             Presence.groupe_nom,
             Presence.entraineur_nom,
-            Presence.est_present
+            Presence.est_present,
+            Presence.seance_id  # ← Assurez-vous que cette ligne existe
         ).join(
             Presence, 
             func.find_in_set(Adherent.matricule, Presence.adherent_matricule) > 0
@@ -6408,7 +6643,6 @@ def search_adherent_presences(start_date, end_date, search_term):
             )
         )
         
-        # Ajouter le filtre de recherche textuelle si fourni
         if search_term:
             search_pattern = f'%{search_term}%'
             query = query.filter(
@@ -6419,7 +6653,6 @@ def search_adherent_presences(start_date, end_date, search_term):
                 )
             )
         
-        # Exécuter la requête
         results = query.all()
         
         # Organiser les résultats par adhérent
@@ -6442,12 +6675,16 @@ def search_adherent_presences(start_date, end_date, search_term):
                 'heure_debut': row.heure_debut.strftime('%H:%M'),
                 'groupe_nom': row.groupe_nom,
                 'entraineur_nom': row.entraineur_nom,
-                'est_present': row.est_present
+                'est_present': row.est_present,
+                'seance_id': row.seance_id  # ← Assurez-vous que cette ligne existe
             })
         
         return list(adherent_dict.values())
         
     except Exception as e:
+        print(f"Erreur: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return []
 
 def search_entraineur_presences(start_date, end_date, search_term):
@@ -6455,23 +6692,22 @@ def search_entraineur_presences(start_date, end_date, search_term):
     Recherche les présences des entraîneurs
     """
     try:
-        # Recherche via les séances et présences
         query = db.session.query(
-            Presence.entraineur_nom,
-            Presence.date_seance,
-            Presence.heure_debut,
-            Presence.groupe_nom,
-            Presence.est_present
+            PresenceEntraineur.entraineur_nom,
+            PresenceEntraineur.date_seance,
+            PresenceEntraineur.heure_debut,
+            PresenceEntraineur.seance_id,
+            PresenceEntraineur.est_present
         ).filter(
             and_(
-                Presence.date_seance >= start_date,
-                Presence.date_seance <= end_date
+                PresenceEntraineur.date_seance >= start_date,
+                PresenceEntraineur.date_seance <= end_date
             )
         )
         
         if search_term:
             search_pattern = f'%{search_term}%'
-            query = query.filter(Presence.entraineur_nom.like(search_pattern))
+            query = query.filter(PresenceEntraineur.entraineur_nom.like(search_pattern))
         
         results = query.all()
         
@@ -6486,16 +6722,25 @@ def search_entraineur_presences(start_date, end_date, search_term):
             if not entraineur_dict[key]['nom']:
                 entraineur_dict[key]['nom'] = row.entraineur_nom
             
+            # Récupérer le groupe depuis la séance
+            seance = Seance.query.get(row.seance_id)
+            groupe_nom = seance.groupe if seance else 'N/A'
+            
             entraineur_dict[key]['sessions'].append({
                 'date_seance': row.date_seance.strftime('%Y-%m-%d'),
                 'heure_debut': row.heure_debut.strftime('%H:%M'),
-                'groupe_nom': row.groupe_nom,
-                'est_present': row.est_present
+                'groupe_nom': groupe_nom,
+                'entraineur_nom': row.entraineur_nom,
+                'est_present': row.est_present,
+                'seance_id': row.seance_id  # ← AJOUT ICI
             })
         
         return list(entraineur_dict.values())
         
     except Exception as e:
+        print(f"Erreur: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return []
 
 def search_groupe_presences(start_date, end_date, search_term):
@@ -6589,6 +6834,122 @@ def get_adherent_presence_details(matricule):
 # ============================================================================
 # ROUTES PRINCIPALES CORRIGÉES
 # ============================================================================
+# Route pour les détails adhérent avec durée
+@app.route('/get_adherent_presences/<matricule>')
+@season_required
+def get_adherent_presences(matricule):
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        adherent = Adherent.query.filter_by(matricule=matricule).first()
+        if not adherent:
+            return jsonify({'error': 'Adhérent non trouvé'}), 404
+        
+        query = Presence.query.filter(
+            Presence.adherent_matricule.like(f'%{matricule}%'),
+            Presence.est_present == 'O'
+        )
+        
+        if start_date:
+            query = query.filter(Presence.date_seance >= start_date)
+        if end_date:
+            query = query.filter(Presence.date_seance <= end_date)
+        
+        presences = query.order_by(Presence.date_seance.desc()).all()
+        
+        details = []
+        total_minutes = 0
+        
+        for p in presences:
+            # Récupérer la séance pour obtenir la durée
+            seance = Seance.query.get(p.seance_id)
+            duree_minutes = seance.duree if seance and seance.duree else 0
+            total_minutes += duree_minutes
+            
+            details.append({
+                'date': p.date_seance.strftime('%d/%m/%Y'),
+                'groupe': p.groupe_nom,
+                'entraineur': p.entraineur_nom,
+                'heure_debut': p.heure_debut.strftime('%H:%M'),
+                'duree_minutes': duree_minutes,
+                'duree_heures': round(duree_minutes / 60, 2),
+                'etat': 'Présent' if p.est_present == 'O' else 'Absent'
+            })
+        
+        total_heures = round(total_minutes / 60, 2)
+        
+        return jsonify({
+            'nom': f"{adherent.nom} {adherent.prenom}",
+            'presences': details,
+            'total_minutes': total_minutes,
+            'total_heures': total_heures,
+            'count': len(details)
+        })
+        
+    except Exception as e:
+        print(f"Erreur get_adherent_presences: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+# Route pour les détails entraîneur avec durée (NOUVEAU)
+@app.route('/get_entraineur_presences/<nom_entraineur>')
+@season_required
+def get_entraineur_presences(nom_entraineur):
+    try:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        # Construire la requête
+        query = PresenceEntraineur.query.filter(
+            PresenceEntraineur.entraineur_nom == nom_entraineur,
+            PresenceEntraineur.est_present == 'O'
+        )
+        
+        if start_date:
+            query = query.filter(PresenceEntraineur.date_seance >= start_date)
+        if end_date:
+            query = query.filter(PresenceEntraineur.date_seance <= end_date)
+        
+        presences = query.order_by(PresenceEntraineur.date_seance.desc()).all()
+        
+        details = []
+        total_minutes = 0
+        
+        for p in presences:
+            # Récupérer la séance pour obtenir la durée et le groupe
+            seance = Seance.query.get(p.seance_id)
+            duree_minutes = seance.duree if seance and seance.duree else 0
+            total_minutes += duree_minutes
+            
+            details.append({
+                'date': p.date_seance.strftime('%d/%m/%Y'),
+                'groupe': seance.groupe if seance else 'N/A',
+                'entraineur': p.entraineur_nom,
+                'heure_debut': p.heure_debut.strftime('%H:%M'),
+                'duree_minutes': duree_minutes,
+                'duree_heures': round(duree_minutes / 60, 2),
+                'etat': 'Présent' if p.est_present == 'O' else 'Absent'
+            })
+        
+        total_heures = round(total_minutes / 60, 2)
+        
+        return jsonify({
+            'nom': nom_entraineur,
+            'presences': details,
+            'total_minutes': total_minutes,
+            'total_heures': total_heures,
+            'count': len(details)
+        })
+        
+    except Exception as e:
+        print(f"Erreur get_entraineur_presences: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/presences/search', methods=['POST'])
 def search_presences():
@@ -6743,61 +7104,106 @@ def export_presences():
 # ============================================================================
 
 def create_adherent_sheet(workbook, data, header_format, present_format, absent_format, cell_format):
-    """Créer la feuille Excel pour les adhérents"""
+    """
+    Crée la feuille Excel pour les adhérents avec la colonne durée
+    """
     worksheet = workbook.add_worksheet('Adhérents')
     
     # En-têtes
-    headers = ['Matricule', 'Nom', 'Prénom', 'Date', 'Heure', 'Groupe', 'Entraîneur', 'Présence']
+    headers = ['Matricule', 'Nom', 'Prénom', 'Date', 'Groupe', 'Entraîneur', 'Heure début', 'Durée (h)', 'État']
     for col, header in enumerate(headers):
         worksheet.write(0, col, header, header_format)
     
+    # Données
     row = 1
     for adherent in data:
-        if 'sessions' in adherent:
-            for session in adherent['sessions']:
-                worksheet.write(row, 0, adherent['matricule'], cell_format)
-                worksheet.write(row, 1, adherent['nom'], cell_format)
-                worksheet.write(row, 2, adherent['prenom'], cell_format)
-                worksheet.write(row, 3, session['date_seance'], cell_format)
-                worksheet.write(row, 4, session['heure_debut'], cell_format)
-                worksheet.write(row, 5, session['groupe_nom'], cell_format)
-                worksheet.write(row, 6, session['entraineur_nom'], cell_format)
-                
-                presence_text = 'Présent' if session['est_present'] == 'O' else 'Absent'
-                presence_format = present_format if session['est_present'] == 'O' else absent_format
-                worksheet.write(row, 7, presence_text, presence_format)
-                
-                row += 1
+        matricule = adherent.get('matricule', 'N/A')
+        nom = adherent.get('nom', 'N/A')
+        prenom = adherent.get('prenom', 'N/A')
+        sessions = adherent.get('sessions', [])
+        
+        for session in sessions:
+            # Récupérer la séance pour obtenir la durée
+            seance_id = session.get('seance_id')
+            duree_heures = 0
+            
+            if seance_id:
+                seance = Seance.query.get(seance_id)
+                if seance and seance.duree:
+                    duree_heures = round(seance.duree / 60, 2)
+            
+            # Format de la cellule selon l'état
+            state_format = present_format if session.get('est_present') == 'O' else absent_format
+            
+            worksheet.write(row, 0, matricule, cell_format)
+            worksheet.write(row, 1, nom, cell_format)
+            worksheet.write(row, 2, prenom, cell_format)
+            worksheet.write(row, 3, session.get('date_seance', 'N/A'), cell_format)
+            worksheet.write(row, 4, session.get('groupe_nom', 'N/A'), cell_format)
+            worksheet.write(row, 5, session.get('entraineur_nom', 'N/A'), cell_format)
+            worksheet.write(row, 6, session.get('heure_debut', 'N/A'), cell_format)
+            worksheet.write(row, 7, duree_heures, cell_format)
+            worksheet.write(row, 8, 'Présent' if session.get('est_present') == 'O' else 'Absent', state_format)
+            
+            row += 1
     
     # Ajuster la largeur des colonnes
-    worksheet.set_column('A:H', 15)
+    worksheet.set_column('A:A', 12)  # Matricule
+    worksheet.set_column('B:B', 20)  # Nom
+    worksheet.set_column('C:C', 20)  # Prénom
+    worksheet.set_column('D:D', 15)  # Date
+    worksheet.set_column('E:E', 25)  # Groupe
+    worksheet.set_column('F:F', 25)  # Entraîneur
+    worksheet.set_column('G:G', 15)  # Heure début
+    worksheet.set_column('H:H', 12)  # Durée
+    worksheet.set_column('I:I', 15)  # État
 
 def create_entraineur_sheet(workbook, data, header_format, present_format, absent_format, cell_format):
-    """Créer la feuille Excel pour les entraîneurs"""
+    """
+    Crée la feuille Excel pour les entraîneurs avec la colonne durée
+    """
     worksheet = workbook.add_worksheet('Entraîneurs')
     
     # En-têtes
-    headers = ['Nom Entraîneur', 'Date', 'Heure', 'Groupe', 'Présence']
+    headers = ['Nom Entraîneur', 'Date', 'Groupe', 'Heure début', 'Durée (h)', 'État']
     for col, header in enumerate(headers):
         worksheet.write(0, col, header, header_format)
     
+    # Données
     row = 1
     for entraineur in data:
-        if 'sessions' in entraineur:
-            for session in entraineur['sessions']:
-                worksheet.write(row, 0, entraineur['nom'], cell_format)
-                worksheet.write(row, 1, session['date_seance'], cell_format)
-                worksheet.write(row, 2, session['heure_debut'], cell_format)
-                worksheet.write(row, 3, session['groupe_nom'], cell_format)
-                
-                presence_text = 'Présent' if session['est_present'] == 'O' else 'Absent'
-                presence_format = present_format if session['est_present'] == 'O' else absent_format
-                worksheet.write(row, 4, presence_text, presence_format)
-                
-                row += 1
+        nom = entraineur.get('nom', 'N/A')
+        sessions = entraineur.get('sessions', [])
+        
+        for session in sessions:
+            # Récupérer la séance pour obtenir la durée
+            seance_id = session.get('seance_id')
+            duree_heures = 0
+            
+            if seance_id:
+                seance = Seance.query.get(seance_id)
+                if seance and seance.duree:
+                    duree_heures = round(seance.duree / 60, 2)
+            
+            # Format de la cellule selon l'état
+            state_format = present_format if session.get('est_present') == 'O' else absent_format
+            
+            worksheet.write(row, 0, nom, cell_format)
+            worksheet.write(row, 1, session.get('date_seance', 'N/A'), cell_format)
+            worksheet.write(row, 2, session.get('groupe_nom', 'N/A'), cell_format)
+            worksheet.write(row, 3, session.get('heure_debut', 'N/A'), cell_format)
+            worksheet.write(row, 4, duree_heures, cell_format)
+            worksheet.write(row, 5, 'Présent' if session.get('est_present') == 'O' else 'Absent', state_format)
+            
+            row += 1
     
     # Ajuster la largeur des colonnes
-    worksheet.set_column('A:E', 15)
+    worksheet.set_column('A:A', 25)  # Nom Entraîneur
+    worksheet.set_column('B:B', 15)  # Date
+    worksheet.set_column('C:C', 25)  # Groupe
+    worksheet.set_column('D:D', 15)  # Heure début
+    worksheet.set_column('E:E', 12)  # Durée
+    worksheet.set_column('F:F', 15)  # État
 
 def create_groupe_sheet(workbook, data, header_format, present_format, absent_format, cell_format):
     """Créer la feuille Excel pour les groupes"""

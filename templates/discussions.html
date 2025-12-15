@@ -321,9 +321,24 @@
             <h3>TCHS.</h3>
             
         </div>
+<!-- Bouton Retour dynamique selon le rôle -->
+    {% if session.get('role') == 'admin' %}
         <a href="{{ url_for('admin') }}" class="nav-item nav-link active">
-                <i class="fa fa-left"></i>Retour
-            </a>
+            <i class="fa fa-arrow-left"></i> Retour
+        </a>
+    {% elif session.get('role') == 'directeur_technique' %}
+        <a href="{{ url_for('directeur') }}" class="nav-item nav-link active">
+            <i class="fa fa-arrow-left"></i> Retour
+        </a>
+    {% elif session.get('role') == 'entraineur' %}
+        <a href="{{ url_for('entraineur') }}" class="nav-item nav-link active">
+            <i class="fa fa-arrow-left"></i> Retour
+        </a>
+    {% else %}
+        <a href="{{ url_for('login') }}" class="nav-item nav-link active">
+            <i class="fa fa-arrow-left"></i> Retour
+        </a>
+    {% endif %}
         
         <button id="compose-trigger" class="compose-btn">
             <i class="fas fa-plus mr-2"></i> Nouveau message

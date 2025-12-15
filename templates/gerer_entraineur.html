@@ -126,21 +126,29 @@
                 <td>{{ entraineur.role_technique or 'N/D' }}</td> 
                 <td>{{ entraineur.type_abonnement or '-' }}</td>
                 <td>{{ entraineur.code_saison or 'N/D' }}</td>
-                <td>
-                    <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_entraineur', id=entraineur.id_entraineur) }}">Modifier</a>
-                    <a href="javascript:void(0)" 
-   onclick="confirmerSuppression('{{ entraineur.nom }}', {{ entraineur.id_entraineur }})" 
-   class="btn btn-danger btn-sm">
-    <i class="bi bi-trash"></i> Supprimer
-</a>
+<td>
+    <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_entraineur', id=entraineur.id_entraineur) }}">Modifier</a>
+    
+    <a href="javascript:void(0)" 
+       onclick="resetPassword('{{ entraineur.nom }}', '{{ entraineur.prenom }}', {{ entraineur.id_entraineur }})"
+       class="btn btn-warning btn-sm">
+        <i class="bi bi-key"></i> Reset MDP
+    </a>
+    
+    <a href="javascript:void(0)" 
+       onclick="confirmerSuppression('{{ entraineur.nom }}', {{ entraineur.id_entraineur }})" 
+       class="btn btn-danger btn-sm">
+        <i class="bi bi-trash"></i> Supprimer
+    </a>
+</td>
+
 <script>
-function confirmerSuppression(nom, id) {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer l'entraîneur "${nom}" ?\n\nCette action supprimera également toutes ses références dans les adhérents, groupes et séances.`)) {
-        window.location.href = `/supprimer_entraineur/${id}`;
+function resetPassword(nom, prenom, id) {
+    if (confirm(`Êtes-vous sûr de vouloir réinitialiser le mot de passe de ${nom} ${prenom} ?`)) {
+        window.location.href = `/reset_password_entraineur/${id}`;
     }
 }
 </script>
-                </td>
             </tr>
             {% endfor %}
         </tbody>
@@ -213,6 +221,20 @@ function confirmerSuppression(nom, id) {
             });
         }
     </script>
+    <script>
+    window.onload = function() {
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% if message.startswith('RESET_SUCCESS:') %}
+                        {% set nom_complet = message.replace('RESET_SUCCESS:', '') %}
+                        alert("✅ Réinitialisation réussie!\n\nLe mot de passe de {{ nom_complet }} a été réinitialisé.\n\nNouveau mot de passe : entraineur");
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    };
+</script>
 </body>
 
 </html>

@@ -5,19 +5,12 @@
     <title>TCHS - Ajouter Adhérent</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     
-    <!-- Favicon -->    
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
-    
-    <!-- Google Web Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Icon Font Stylesheet -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
-    
-    <!-- Bootstrap CSS -->
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     
@@ -33,25 +26,38 @@
             margin: 0 auto;
         }
         
-        .form-control:focus, .form-select:focus {
-            border-color: #80bdff;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        .search-result-item {
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
         }
         
-        .text-danger {
-            color: #dc3545 !important;
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+            border-color: #0d6efd;
+            transform: translateX(5px);
         }
         
-        .badge-season {
-            font-size: 0.9rem;
-            padding: 0.5rem 1rem;
+        .search-result-item.selected {
+            background-color: #e7f1ff;
+            border-color: #0d6efd;
+            border-width: 2px;
         }
         
-        @media (max-width: 768px) {
-            .form-container {
-                padding: 20px;
-                margin: 10px;
-            }
+        .badge-saison {
+            font-size: 0.8rem;
+        }
+        
+        #searchResults {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .import-mode {
+            border: 3px solid #0d6efd;
         }
     </style>
 </head>
@@ -60,7 +66,6 @@
     {% include 'sidebar.html' %}
     
     <div class="content">
-        <!-- Navbar -->
         <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
             <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
                 <h2 class="text-primary mb-0"></h2>
@@ -70,34 +75,35 @@
             </a>
         </nav>
         
-        <!-- Formulaire -->
         <div class="container mt-5 mb-5">
-            <div class="form-container">
-                <!-- En-tête avec indicateur de saison -->
+            <div class="form-container" id="mainFormContainer">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2 class="mb-0">
                         <i class="fas fa-user-plus me-2 text-primary"></i>
-                        Nouvel Adhérent
+                        <span id="formTitle">Nouvel Adhérent</span>
                     </h2>
-                    <div class="badge bg-primary badge-season">
-                        <i class="fa fa-calendar me-2"></i>
-                        Saison: {{ code_saison_defaut }}
+                    <div>
+                        <button type="button" class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#importModal">
+                            <i class="fas fa-file-import me-2"></i>
+                            Importer un ancien adhérent
+                        </button>
+                        <div class="badge bg-primary badge-season">
+                            <i class="fa fa-calendar me-2"></i>
+                            Saison: {{ code_saison_defaut }}
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Message d'information -->
                 <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
                     <i class="fas fa-info-circle me-2"></i>
-                    <div>
+                    <div id="infoMessage">
                         <strong>Information :</strong> L'adhérent sera ajouté sans groupe. 
                         Vous pourrez l'affecter à un groupe ultérieurement depuis la gestion des groupes.
                     </div>
                 </div>
                 
-                <!-- Formulaire -->
                 <form method="post" action="{{ url_for('ajouter_adherent') }}" id="adherentForm">
                     <div class="row">
-                        <!-- Code Saison (non modifiable) -->
                         <div class="col-12 mb-4">
                             <label class="form-label">
                                 Code Saison <span class="text-danger">*</span>
@@ -112,13 +118,8 @@
                                     Saison Actuelle
                                 </span>
                             </div>
-                            <small class="text-muted">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Le code saison est fixé selon votre sélection de connexion
-                            </small>
                         </div>
                         
-                        <!-- Nom -->
                         <div class="col-md-6 mb-3">
                             <label for="nom" class="form-label">
                                 Nom / اللقب <span class="text-danger">*</span>
@@ -126,7 +127,6 @@
                             <input type="text" class="form-control" id="nom" name="Nom" required>
                         </div>
                         
-                        <!-- Prénom -->
                         <div class="col-md-6 mb-3">
                             <label for="prenom" class="form-label">
                                 Prénom / الاسم <span class="text-danger">*</span>
@@ -134,35 +134,27 @@
                             <input type="text" class="form-control" id="prenom" name="Prénom" required>
                         </div>
                         
-                        <!-- Alerte de doublon -->
                         <div class="col-12 mb-3">
                             <div id="duplicate-alert" class="alert alert-danger" style="display: none;">
                                 <i class="fas fa-exclamation-triangle me-2"></i>
-                                <strong>⚠️ Attention !</strong> Un adhérent avec ce nom et prénom existe déjà :
-                                
+                                <strong>⚠️ Attention !</strong> Un adhérent avec ce nom et prénom existe déjà.
                             </div>
                         </div>
                         
-                        <!-- Date de Naissance -->
                         <div class="col-md-6 mb-3">
                             <label for="date_naissance" class="form-label">
                                 Date de Naissance / تاريخ الميلاد <span class="text-danger">*</span>
                             </label>
                             <input type="date" class="form-control" id="date_naissance" name="date_naissance" required>
-                            <small class="text-muted">Modifiable - Par défaut: aujourd'hui</small>
                         </div>
                         
-                        <!-- Date d'inscription -->
                         <div class="col-md-6 mb-3">
                             <label for="date_inscription" class="form-label">
                                 Date d'inscription / تاريخ التسجيل <span class="text-danger">*</span>
                             </label>
-                            <input type="date" class="form-control" id="date_inscription" 
-                                   name="date_inscription" required>
-                            <small class="text-muted">Modifiable - Par défaut: aujourd'hui</small>
+                            <input type="date" class="form-control" id="date_inscription" name="date_inscription" required>
                         </div>
                         
-                        <!-- Sexe -->
                         <div class="col-md-6 mb-3">
                             <label for="sexe" class="form-label">
                                 Sexe / الجنس <span class="text-danger">*</span>
@@ -174,7 +166,6 @@
                             </select>
                         </div>
                         
-                        <!-- Type d'abonnement -->
                         <div class="col-md-6 mb-3">
                             <label for="type_abonnement" class="form-label">
                                 Type d'abonnement / نوع الاشتراك <span class="text-danger">*</span>
@@ -188,27 +179,22 @@
                             </select>
                         </div>
                         
-                        <!-- Téléphone 1 -->
                         <div class="col-md-6 mb-3">
                             <label for="tel1" class="form-label">
                                 Téléphone 1 / رقم الهاتف 1 <span class="text-danger">*</span>
                             </label>
                             <input type="text" class="form-control" id="tel1" name="tel1" 
                                    pattern="[0-9]{8}" placeholder="Ex: 12345678" required>
-                            <small class="text-muted">8 chiffres</small>
                         </div>
                         
-                        <!-- Téléphone 2 -->
                         <div class="col-md-6 mb-3">
                             <label for="tel2" class="form-label">
                                 Téléphone 2 / رقم الهاتف 2
                             </label>
                             <input type="text" class="form-control" id="tel2" name="tel2" 
                                    pattern="[0-9]{8}" placeholder="Ex: 12345678">
-                            <small class="text-muted">Optionnel</small>
                         </div>
                         
-                        <!-- Email -->
                         <div class="col-md-12 mb-3">
                             <label for="email" class="form-label">
                                 Email / البريد الإلكتروني
@@ -218,21 +204,53 @@
                         </div>
                     </div>
                     
-                    <!-- Note d'information -->
-                    
-                    
-                    <!-- Bouton de soumission -->
                     <div class="d-grid gap-2 mt-4">
                         <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
                             <i class="fas fa-save me-2"></i>
-                            Ajouter l'Adhérent
+                            <span id="submitBtnText">Ajouter l'Adhérent</span>
                         </button>
-                        <a href="{{ url_for('gerer_adherent') }}" class="btn btn-outline-secondary">
+                        <button type="button" class="btn btn-outline-secondary" id="cancelBtn" onclick="window.location.href='{{ url_for('gerer_adherent') }}'">
                             <i class="fas fa-times me-2"></i>
                             Annuler
-                        </a>
+                        </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de recherche -->
+    <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-search me-2"></i>
+                        Rechercher un ancien adhérent
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Recherche par Matricule, Nom ou Prénom</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="searchInput" 
+                                   placeholder="Entrez le matricule, nom ou prénom...">
+                            <button class="btn btn-primary" type="button" id="searchBtn">
+                                <i class="fas fa-search"></i> Rechercher
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="searchResults"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-primary" id="confirmImportBtn" disabled>
+                        <i class="fas fa-check me-2"></i>
+                        Sélectionner cet adhérent
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -242,87 +260,185 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     
     <script>
+        let selectedAdherent = null;
+        const adherentsExistants = {{ adherents_existants | tojson | safe }};
+        
         document.addEventListener('DOMContentLoaded', function() {
-            // Définir les dates par défaut à aujourd'hui
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date_inscription').value = today;
             document.getElementById('date_naissance').value = today;
             
-            // Récupérer la liste des adhérents existants depuis le backend
-            const adherentsExistants = {{ adherents_existants | tojson | safe }};
+            // Recherche d'anciens adhérents
+            document.getElementById('searchBtn').addEventListener('click', searchAdherents);
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') searchAdherents();
+            });
             
+            // Confirmation d'importation
+            document.getElementById('confirmImportBtn').addEventListener('click', function() {
+                if (selectedAdherent) {
+                    fillFormWithAdherent(selectedAdherent);
+                    bootstrap.Modal.getInstance(document.getElementById('importModal')).hide();
+                }
+            });
+            
+            // Contrôle de doublons
             const nomInput = document.getElementById('nom');
             const prenomInput = document.getElementById('prenom');
-            const duplicateAlert = document.getElementById('duplicate-alert');
-            const duplicateInfo = document.getElementById('duplicate-info');
-            const submitBtn = document.getElementById('submitBtn');
-            
-            // Fonction pour vérifier les doublons (côté client)
-            function checkDuplicate() {
-                const nom = nomInput.value.trim().toLowerCase();
-                const prenom = prenomInput.value.trim().toLowerCase();
-                
-                if (!nom || !prenom) {
-                    duplicateAlert.style.display = 'none';
-                    submitBtn.disabled = false;
-                    return;
-                }
-                
-                // Chercher dans la liste locale
-                const doublon = adherentsExistants.find(
-                    a => a.nom === nom && a.prenom === prenom
-                );
-                
-                if (doublon) {
-                    duplicateAlert.style.display = 'block';
-                    duplicateInfo.innerHTML = `
-                        <strong>Matricule:</strong> ${doublon.matricule}<br>
-                        <strong>Statut:</strong> ${doublon.status}<br>
-                        <strong>Date d'inscription:</strong> ${doublon.date_inscription}
-                    `;
-                    submitBtn.disabled = true;
-                    submitBtn.classList.remove('btn-primary');
-                    submitBtn.classList.add('btn-secondary');
-                } else {
-                    duplicateAlert.style.display = 'none';
-                    submitBtn.disabled = false;
-                    submitBtn.classList.remove('btn-secondary');
-                    submitBtn.classList.add('btn-primary');
-                }
-            }
-            
-            // Event listeners pour le contrôle en temps réel
             nomInput.addEventListener('input', checkDuplicate);
             prenomInput.addEventListener('input', checkDuplicate);
-            nomInput.addEventListener('blur', checkDuplicate);
-            prenomInput.addEventListener('blur', checkDuplicate);
             
             // Validation du formulaire
-            const form = document.getElementById('adherentForm');
-            form.addEventListener('submit', function(e) {
+            document.getElementById('adherentForm').addEventListener('submit', function(e) {
+                const submitBtn = document.getElementById('submitBtn');
                 if (submitBtn.disabled) {
                     e.preventDefault();
                     alert('❌ Impossible d\'ajouter un adhérent avec un nom et prénom déjà existant dans cette saison.');
                     return false;
                 }
-                
-                // Validation des téléphones
-                const tel1 = document.getElementById('tel1').value;
-                const tel2 = document.getElementById('tel2').value;
-                
-                if (tel1 && !/^\d{8}$/.test(tel1)) {
-                    e.preventDefault();
-                    alert('❌ Le téléphone 1 doit contenir exactement 8 chiffres');
-                    return false;
-                }
-                
-                if (tel2 && tel2.trim() !== '' && !/^\d{8}$/.test(tel2)) {
-                    e.preventDefault();
-                    alert('❌ Le téléphone 2 doit contenir exactement 8 chiffres');
-                    return false;
-                }
             });
         });
+        
+        function searchAdherents() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            if (!searchTerm) {
+                alert('Veuillez entrer un terme de recherche');
+                return;
+            }
+            
+            fetch('/rechercher_ancien_adherent', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({search_term: searchTerm})
+            })
+            .then(response => response.json())
+            .then(data => {
+                displaySearchResults(data);
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la recherche');
+            });
+        }
+        
+        function displaySearchResults(adherents) {
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (adherents.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Aucun adhérent trouvé
+                    </div>`;
+                return;
+            }
+            
+            resultsDiv.innerHTML = adherents.map(a => `
+                <div class="search-result-item" data-adherent='${JSON.stringify(a)}'>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">
+                                <i class="fas fa-user me-2"></i>
+                                ${a.nom} ${a.prenom}
+                            </h6>
+                            <p class="mb-1 text-muted">
+                                <small>
+                                    <strong>Matricule:</strong> ${a.matricule} |
+                                    <strong>Né(e) le:</strong> ${new Date(a.date_naissance).toLocaleDateString('fr-FR')} |
+                                    <strong>Sexe:</strong> ${a.sexe === 'M' ? 'Masculin' : 'Féminin'}
+                                </small>
+                            </p>
+                            <p class="mb-0 text-muted">
+                                <small>
+                                    <strong>Tel:</strong> ${a.tel1} |
+                                    <strong>Type:</strong> ${a.type_abonnement}
+                                </small>
+                            </p>
+                        </div>
+                        <span class="badge bg-secondary badge-saison">
+                            Saison: ${a.code_saison}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Ajouter les événements de clic
+            document.querySelectorAll('.search-result-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.search-result-item').forEach(i => i.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedAdherent = JSON.parse(this.dataset.adherent);
+                    document.getElementById('confirmImportBtn').disabled = false;
+                });
+            });
+        }
+        
+        function fillFormWithAdherent(adherent) {
+            // Changer le mode du formulaire
+            document.getElementById('mainFormContainer').classList.add('import-mode');
+            document.getElementById('formTitle').innerHTML = '📥 Importation d\'un adhérent';
+            document.getElementById('submitBtnText').textContent = 'Confirmer l\'importation';
+            document.getElementById('infoMessage').innerHTML = `
+                <strong>Mode Importation :</strong> Vous importez les coordonnées de 
+                <strong>${adherent.nom} ${adherent.prenom}</strong> (ancienne saison: ${adherent.code_saison}).
+                Vérifiez et modifiez les informations si nécessaire avant de confirmer.
+            `;
+            
+            // Remplir le formulaire
+            document.getElementById('nom').value = adherent.nom;
+            document.getElementById('prenom').value = adherent.prenom;
+            document.getElementById('date_naissance').value = adherent.date_naissance;
+            document.getElementById('sexe').value = adherent.sexe;
+            document.getElementById('type_abonnement').value = adherent.type_abonnement;
+            document.getElementById('tel1').value = adherent.tel1 || '';
+            document.getElementById('tel2').value = adherent.tel2 || '';
+            document.getElementById('email').value = adherent.email || '';
+            
+            // Mettre la date d'inscription à aujourd'hui
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date_inscription').value = today;
+            
+            // Désactiver la vérification des doublons pour l'importation
+            document.getElementById('duplicate-alert').style.display = 'none';
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').classList.remove('btn-secondary');
+            document.getElementById('submitBtn').classList.add('btn-primary');
+            
+            // Changer l'action du formulaire
+            document.getElementById('adherentForm').action = "{{ url_for('importer_adherent') }}";
+            
+            // Scroll vers le formulaire
+            document.getElementById('mainFormContainer').scrollIntoView({behavior: 'smooth'});
+        }
+        
+        function checkDuplicate() {
+            const nom = document.getElementById('nom').value.trim().toLowerCase();
+            const prenom = document.getElementById('prenom').value.trim().toLowerCase();
+            const duplicateAlert = document.getElementById('duplicate-alert');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (!nom || !prenom) {
+                duplicateAlert.style.display = 'none';
+                submitBtn.disabled = false;
+                return;
+            }
+            
+            const doublon = adherentsExistants.find(
+                a => a.nom === nom && a.prenom === prenom
+            );
+            
+            if (doublon) {
+                duplicateAlert.style.display = 'block';
+                submitBtn.disabled = true;
+                submitBtn.classList.remove('btn-primary');
+                submitBtn.classList.add('btn-secondary');
+            } else {
+                duplicateAlert.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('btn-secondary');
+                submitBtn.classList.add('btn-primary');
+            }
+        }
     </script>
 </body>
 </html>
