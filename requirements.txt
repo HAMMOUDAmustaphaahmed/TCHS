@@ -1,0 +1,31 @@
+# Framework Web
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+
+# Base de données
+PyMySQL==1.1.0
+cryptography==41.0.4
+
+# Sécurité
+Werkzeug==2.3.7
+
+# Date et heure
+pytz==2023.3
+
+# Exports PDF/Excel
+reportlab==4.0.5
+openpyxl==3.1.2
+pandas==2.1.1
+XlsxWriter==3.1.9
+
+# Images (pour PDF)
+Pillow==10.0.1
+
+# Utilitaires
+python-dateutil==2.8.2
+
+# Production (optionnel)
+gunicorn==21.2.0
+
+# Variables d'environnement (optionnel)
+python-dotenv==1.0.0
