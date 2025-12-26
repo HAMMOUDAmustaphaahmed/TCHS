@@ -94,6 +94,7 @@
                 <td>{{ utilisateur.role }}</td>
                 <td>
                     <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_utilisateur', id=utilisateur.id) }}">Modifier</a>
+                    <a class="btn btn-sm btn-warning" href="{{ url_for('reset_password_utilisateur', id=utilisateur.id) }}" onclick="return confirm('Êtes-vous sûr de vouloir réinitialiser le mot de passe de {{ utilisateur.utilisateur }} à 1234 ?');">Reset MDP</a>
                     <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_utilisateur', id=utilisateur.id) }}">Supprimer</a>
                 </td>
             </tr>
@@ -123,6 +124,18 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     
     <script>
+        // Gestion du popup de succès
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% if message.startswith('RESET_SUCCESS:') %}
+                        let utilisateur = "{{ message.split(':')[1] }}";
+                        alert('Le mot de passe de ' + utilisateur + ' a été réinitialisé à 1234 avec succès.');
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         function sortTable(columnIndex) {
             var table = document.getElementById("UtilisateursTable");
             var rows = Array.prototype.slice.call(table.tBodies[0].rows, 0);

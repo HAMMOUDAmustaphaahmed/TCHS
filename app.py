@@ -724,6 +724,11 @@ def entraineur():
         flash("Accès non autorisé.", "danger")
         return redirect(url_for('login'))
     
+    # Vérifier que la saison est définie
+    if 'saison_code' not in session:
+        flash("Veuillez sélectionner une saison.", "warning")
+        return redirect(url_for('login'))
+    
     username = session.get('username')
     if not username:
         flash("Session invalide.", "danger")
@@ -747,6 +752,11 @@ def entraineur():
     # Construire le nom complet normalisé
     nom_complet_entraineur = f"{nom} {prenom}".replace('\u00A0', ' ').strip()
 
+    # Récupérer la saison depuis la session
+    saison_code = session.get('saison_code')  # Ex: 'S2025' ou 'E2025'
+    saison_type = session.get('saison_type')  # 'S' ou 'E'
+    saison_annee = session.get('saison')      # 2025
+    
     # Gestion de la navigation par semaine
     week_offset = request.args.get('week_offset', 0, type=int)
     today = datetime.today()
@@ -758,13 +768,14 @@ def entraineur():
         jour = start_of_week + timedelta(days=i)
         jours_semaine.append(jour)
     
-    # Récupérer UNIQUEMENT les séances de cet entraîneur pour la semaine
+    # Récupérer les séances pour la semaine ET la saison sélectionnée
     end_of_week = start_of_week + timedelta(days=6)
     
-    # Filtrer par entraîneur - en normalisant les espaces
+    # ✅ Filtrer par saison ET par dates (utiliser code_saison du modèle)
     seances_semaine = Seance.query.filter(
         Seance.date >= start_of_week.date(),
-        Seance.date <= end_of_week.date()
+        Seance.date <= end_of_week.date(),
+        Seance.code_saison == saison_code  # ✅ Utiliser code_saison (colonne réelle de la BDD)
     ).all()
     
     # Filtrer manuellement pour gérer la normalisation des noms
@@ -796,7 +807,8 @@ def entraineur():
             'entraineur': entraineur_seance_norm,
             'terrain': seance.terrain,
             'type_seance': seance.type_seance or 'entrainement',
-            'adherents_matricules': seance.adherents_matricules
+            'adherents_matricules': seance.adherents_matricules,
+            'code_saison': seance.code_saison  # ✅ Utiliser code_saison (attribut réel du modèle)
         })
 
     # Créneaux horaires (08:00 à 20:00 par heure)
@@ -817,7 +829,10 @@ def entraineur():
         creneaux=creneaux,
         nom_complet_entraineur=nom_complet_entraineur,
         type_seance_global='entrainement',
-        start_of_week=start_of_week
+        start_of_week=start_of_week,
+        saison_code=saison_code,  # ✅ Passer la saison au template
+        saison_type=saison_type,
+        saison_annee=saison_annee
     )
 # Route pour sauvegarder les présences
 @app.route('/api/save_presences', methods=['POST'])
@@ -3228,6 +3243,38 @@ def supprimer_entraineur(id):
     
     return redirect(url_for('gerer_entraineur'))
 
+@app.route('/api/changer_mot_de_passe', methods=['POST'])
+def changer_mot_de_passe_entraineur():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'error': 'Non authentifié'}), 401
+    
+    try:
+        data = request.get_json()
+        nouveau_password = data.get('nouveau_mot_de_passe')
+        
+        if not nouveau_password:
+            return jsonify({'success': False, 'error': 'Mot de passe manquant'}), 400
+        
+        # Valider le nouveau mot de passe
+        if len(nouveau_password) < 6:
+            return jsonify({'success': False, 'error': 'Le mot de passe doit contenir au moins 6 caractères'}), 400
+        
+        # Récupérer l'utilisateur connecté
+        utilisateur = User.query.get(session['user_id'])
+        if not utilisateur:
+            return jsonify({'success': False, 'error': 'Utilisateur introuvable'}), 404
+        
+        # Mettre à jour avec le nouveau mot de passe hashé
+        nouveau_password_hash = hashlib.sha256(nouveau_password.encode()).hexdigest()
+        utilisateur.password = nouveau_password_hash
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Mot de passe modifié avec succès'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erreur lors du changement de mot de passe: {e}")
+        return jsonify({'success': False, 'error': 'Erreur serveur'}), 500
 
 @app.route('/reset_password_entraineur/<int:id>')
 @season_required
@@ -3261,6 +3308,108 @@ def reset_password_entraineur(id):
     flash(f"RESET_SUCCESS:{entraineur.nom} {entraineur.prenom}", "success")
     
     return redirect(url_for('gerer_entraineur'))
+
+@app.route('/reset_password_utilisateur/<int:id>')
+def reset_password_utilisateur(id):
+    if 'user_id' not in session or session.get('role') != 'admin':
+        flash("Accès non autorisé.", "danger")
+        return redirect(url_for('login'))
+    
+    # Récupérer l'utilisateur
+    utilisateur = User.query.get(id)
+    if not utilisateur:
+        flash("Utilisateur introuvable.", "danger")
+        return redirect(url_for('gerer_utilisateur'))
+    
+    # Réinitialiser avec le mot de passe "1234" hashé en SHA256
+    hashed_password = hashlib.sha256('1234'.encode()).hexdigest()
+    utilisateur.password = hashed_password
+    db.session.commit()
+    
+    # Message pour déclencher le popup
+    flash(f"RESET_SUCCESS:{utilisateur.utilisateur}", "success")
+    
+    return redirect(url_for('gerer_utilisateur'))
+
+@app.route('/reset_password_admin', methods=['POST'])
+def reset_password_admin():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+    
+    try:
+        data = request.get_json()
+        ancien_password = data.get('ancien_password')
+        nouveau_password = data.get('nouveau_password')
+        
+        if not ancien_password or not nouveau_password:
+            return jsonify({'success': False, 'message': 'Données manquantes'}), 400
+        
+        # Récupérer l'utilisateur connecté
+        utilisateur = User.query.get(session['user_id'])
+        if not utilisateur:
+            return jsonify({'success': False, 'message': 'Utilisateur introuvable'}), 404
+        
+        # Vérifier l'ancien mot de passe (hasher avec SHA256)
+        ancien_password_hash = hashlib.sha256(ancien_password.encode()).hexdigest()
+        
+        if utilisateur.password != ancien_password_hash:
+            return jsonify({'success': False, 'message': 'Ancien mot de passe incorrect'}), 400
+        
+        # Valider le nouveau mot de passe
+        if len(nouveau_password) < 6:
+            return jsonify({'success': False, 'message': 'Le mot de passe doit contenir au moins 6 caractères'}), 400
+        
+        # Mettre à jour avec le nouveau mot de passe
+        nouveau_password_hash = hashlib.sha256(nouveau_password.encode()).hexdigest()
+        utilisateur.password = nouveau_password_hash
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Mot de passe modifié avec succès'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erreur lors du changement de mot de passe: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
+
+@app.route('/reset_password_manager', methods=['POST'])
+def reset_password_manager():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Non authentifié'}), 401
+    
+    try:
+        data = request.get_json()
+        ancien_password = data.get('ancien_password')
+        nouveau_password = data.get('nouveau_password')
+        
+        if not ancien_password or not nouveau_password:
+            return jsonify({'success': False, 'message': 'Données manquantes'}), 400
+        
+        # Récupérer l'utilisateur connecté
+        utilisateur = User.query.get(session['user_id'])
+        if not utilisateur:
+            return jsonify({'success': False, 'message': 'Utilisateur introuvable'}), 404
+        
+        # Vérifier l'ancien mot de passe (hasher avec SHA256)
+        ancien_password_hash = hashlib.sha256(ancien_password.encode()).hexdigest()
+        
+        if utilisateur.password != ancien_password_hash:
+            return jsonify({'success': False, 'message': 'Ancien mot de passe incorrect'}), 400
+        
+        # Valider le nouveau mot de passe
+        if len(nouveau_password) < 6:
+            return jsonify({'success': False, 'message': 'Le mot de passe doit contenir au moins 6 caractères'}), 400
+        
+        # Mettre à jour avec le nouveau mot de passe
+        nouveau_password_hash = hashlib.sha256(nouveau_password.encode()).hexdigest()
+        utilisateur.password = nouveau_password_hash
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Mot de passe modifié avec succès'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erreur lors du changement de mot de passe: {e}")
+        return jsonify({'success': False, 'message': 'Erreur serveur'}), 500
 
 @app.route('/discussions', methods=['GET', 'POST'])
 def discussions():
