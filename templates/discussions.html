@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS</title>
+
+    <title href="/">TCHS - Messagerie</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+
+    <style>
+        :root {
+            --outlook-blue: #0078d4;
+            --outlook-light-blue: #106ebe;
+            --outlook-gray: #f3f2f1;
+            --outlook-dark-gray: #a19f9d;
+            --outlook-hover: #edebe9;
+            --outlook-sidebar-width: 250px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar {
+            position: fixed;
+            width: var(--outlook-sidebar-width);
+            height: 100%;
+            background-color: var(--outlook-gray);
+            padding: 20px 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            margin-bottom: 30px;
+            padding-left: 10px;
+        }
+
+        .sidebar-brand h3 {
+            color: var(--outlook-blue);
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .compose-btn {
+            background-color: var(--outlook-blue);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            width: 100%;
+            font-weight: 500;
+            margin-bottom: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .compose-btn:hover {
+            background-color: var(--outlook-light-blue);
+        }
+
+        .folder-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .folder-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 2px;
+            transition: background-color 0.2s;
+        }
+
+        .folder-item:hover {
+            background-color: var(--outlook-hover);
+        }
+
+        .folder-item.active {
+            background-color: #c7e0f4;
+            color: var(--outlook-blue);
+        }
+
+        .folder-icon {
+            margin-right: 10px;
+            color: #605e5c;
+        }
+
+        .folder-name {
+            flex-grow: 1;
+        }
+
+        .message-count {
+            background-color: var(--outlook-blue);
+            color: white;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 12px;
+        }
+
+        .main-content {
+            margin-left: var(--outlook-sidebar-width);
+            padding: 20px;
+        }
+
+        .search-bar {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex-grow: 1;
+            padding: 10px 15px;
+            border: 1px solid #d2d0ce;
+            border-radius: 5px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--outlook-blue);
+            box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+        }
+
+        .message-list {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .message-item {
+            display: flex;
+            padding: 12px 15px;
+            border-bottom: 1px solid #edebe9;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .message-item:hover {
+            background-color: var(--outlook-hover);
+        }
+
+        .message-item.unread {
+            background-color: #f0f8ff;
+        }
+
+        .message-item.unread .message-sender,
+        .message-item.unread .message-subject {
+            font-weight: 600;
+        }
+
+        .message-sender {
+            width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .message-subject {
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin: 0 15px;
+        }
+
+        .message-date {
+            width: 100px;
+            text-align: right;
+            color: #605e5c;
+            font-size: 13px;
+        }
+
+        .message-preview {
+            color: #605e5c;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 5px;
+            font-size: 13px;
+        }
+
+        .message-form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-control {
+            display: block;
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d2d0ce;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            border-color: var(--outlook-blue);
+            box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+            outline: none;
+        }
+
+        .btn-primary {
+            background-color: var(--outlook-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--outlook-light-blue);
+        }
+
+        .destinataire-item {
+            display: inline-block;
+            background-color: #f3f2f1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        .destinataire-item span {
+            cursor: pointer;
+            margin-left: 5px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        #suggestions {
+            background-color: white;
+            border: 1px solid #d2d0ce;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        #suggestions .list-group-item {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        #suggestions .list-group-item:hover {
+            background-color: var(--outlook-hover);
+        }
+
+        #destinataires-list {
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                padding: 15px;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+            
+            .message-sender {
+                width: 120px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <h3>TCHS.</h3>
+            
+        </div>
+<!-- Bouton Retour dynamique selon le rôle -->
+    {% if session.get('role') == 'admin' %}
+        <a href="{{ url_for('admin') }}" class="nav-item nav-link active">
+            <i class="fa fa-arrow-left"></i> Retour
+        </a>
+    {% elif session.get('role') == 'directeur_technique' %}
+        <a href="{{ url_for('directeur') }}" class="nav-item nav-link active">
+            <i class="fa fa-arrow-left"></i> Retour
+        </a>
+    {% elif session.get('role') == 'entraineur' %}
+        <a href="{{ url_for('entraineur') }}" class="nav-item nav-link active">
+            <i class="fa fa-arrow-left"></i> Retour
+        </a>
+    {% else %}
+        <a href="{{ url_for('login') }}" class="nav-item nav-link active">
+            <i class="fa fa-arrow-left"></i> Retour
+        </a>
+    {% endif %}
+        
+        <button id="compose-trigger" class="compose-btn">
+            <i class="fas fa-plus mr-2"></i> Nouveau message
+        </button>
+        
+        <ul class="folder-list">
+            <li class="folder-item active" data-tab="inbox">
+                <i class="folder-icon fas fa-inbox"></i>
+                <span class="folder-name">Boîte de réception</span>
+                <span class="message-count">{{ messages_recus|length }}</span>
+            </li>
+            <li class="folder-item" data-tab="sent">
+                <i class="folder-icon fas fa-paper-plane"></i>
+                <span class="folder-name">Messages envoyés</span>
+            </li>
+            <li class="folder-item" data-tab="compose">
+                <i class="folder-icon fas fa-edit"></i>
+                <span class="folder-name">Nouveau message</span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div id="compose-tab" class="tab-content">
+            <h2>Nouveau message</h2>
+            <div class="message-form">
+                <form method="POST">
+                    <div class="form-group">
+                        <label for="destinataires">Destinataires</label>
+                        <div id="destinataires-container" style="position: relative;">
+                            <input 
+                                type="text" 
+                                id="destinataires-input" 
+                                class="form-control" 
+                                placeholder="Tapez le nom ou prénom" 
+                                autocomplete="off"
+                            />
+                            <div id="suggestions" class="list-group" style="position: absolute; z-index: 1000; width: 100%;"></div>
+                        </div>
+                    </div>
+                
+                    <input type="hidden" id="destinataires-hidden" name="destinataires" />
+                
+                    <div id="destinataires-list">
+                        <!-- Les destinataires sélectionnés s'affichent ici -->
+                    </div>
+                
+                    <div class="form-group">
+                        <label for="objet">Objet</label>
+                        <input type="text" id="objet" name="objet" class="form-control" required />
+                    </div>
+                
+                    <div class="form-group">
+                        <label for="corps">Message</label>
+                        <textarea id="corps" name="corps" class="form-control" rows="10" required></textarea>
+                    </div>
+                
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane mr-2"></i> Envoyer
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div id="inbox-tab" class="tab-content active">
+            <h2>Boîte de réception</h2>
+            <div class="search-bar">
+                <input 
+                    type="text" 
+                    id="searchInputInbox" 
+                    class="search-input" 
+                    placeholder="Rechercher dans la boîte de réception..." 
+                    onkeyup="searchMessages('inbox')"
+                />
+            </div>
+            
+            <div id="messages-recus" class="message-list">
+                {% for message in messages_recus %}
+                <div class="message-item {% if not message.lu %}unread{% endif %}" onclick="toggleMessage('recu-{{ message.id }}')">
+                    <div class="message-sender">{{ message.expediteur }}</div>
+                    <div class="message-subject">{{ message.objet }}</div>
+                    <div class="message-date">{{ message.date }}</div>
+                    
+                    <div id="recu-{{ message.id }}" class="message-content" style="display: none;">
+                        <div class="message-preview">{{ message.corps }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div id="sent-tab" class="tab-content">
+            <h2>Messages envoyés</h2>
+            <div class="search-bar">
+                <input 
+                    type="text" 
+                    id="searchInputSent" 
+                    class="search-input" 
+                    placeholder="Rechercher dans les messages envoyés..." 
+                    onkeyup="searchMessages('sent')"
+                />
+            </div>
+            
+            <div id="messages-envoyes" class="message-list">
+                {% for message in messages_envoyes %}
+                <div class="message-item" onclick="toggleMessage('envoye-{{ message.id }}')">
+                    <div class="message-sender">À: {{ message.destinataires }}</div>
+                    <div class="message-subject">{{ message.objet }}</div>
+                    <div class="message-date">{{ message.date }}</div>
+                    
+                    <div id="envoye-{{ message.id }}" class="message-content" style="display: none;">
+                        <div class="message-preview">{{ message.corps }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Gestion des onglets
+            const tabItems = document.querySelectorAll('.folder-item');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            function switchTab(tabId) {
+                // Désactiver tous les onglets
+                tabItems.forEach(item => item.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Activer l'onglet sélectionné
+                document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+            }
+            
+            tabItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+            
+            // Bouton "Nouveau message"
+            document.getElementById('compose-trigger').addEventListener('click', function() {
+                switchTab('compose');
+            });
+            
+            // Gestion des destinataires
+            const destinatairesInput = document.getElementById("destinataires-input");
+            const suggestionsContainer = document.getElementById("suggestions");
+            const destinatairesList = document.getElementById("destinataires-list");
+            const hiddenInput = document.getElementById("destinataires-hidden");
+            
+            const usersList = {{ users | tojson }}; // Liste des utilisateurs rendue par Flask
+            
+            destinatairesInput.addEventListener("input", function () {
+                const searchTerm = destinatairesInput.value.trim().toLowerCase();
+            
+                if (searchTerm) {
+                    suggestionsContainer.innerHTML = ""; // Efface les suggestions précédentes
+            
+                    // Filtrer les utilisateurs par le terme recherché
+                    const filteredUsers = usersList.filter((user) =>
+                        user.username.toLowerCase().includes(searchTerm)
+                    );
+            
+                    // Afficher les suggestions filtrées
+                    filteredUsers.forEach((user) => {
+                        const suggestionItem = document.createElement("div");
+                        suggestionItem.classList.add("list-group-item");
+                        suggestionItem.textContent = user.username;
+            
+                        // Ajouter un événement pour sélectionner un utilisateur
+                        suggestionItem.addEventListener("click", function () {
+                            // Ajouter le destinataire sélectionné
+                            let destinataires = hiddenInput.value
+                                ? hiddenInput.value.split(",")
+                                : [];
+                            if (!destinataires.includes(user.username)) {
+                                destinataires.push(user.username);
+            
+                                // Créer un élément de destinataire affiché
+                                const recipientItem = document.createElement("div");
+                                recipientItem.classList.add("destinataire-item");
+                                recipientItem.textContent = user.username;
+            
+                                // Bouton "x" pour supprimer
+                                const removeButton = document.createElement("span");
+                                removeButton.textContent = " ×";
+                                removeButton.style.color = "red";
+                                removeButton.style.cursor = "pointer";
+            
+                                // Supprimer le destinataire sélectionné
+                                removeButton.addEventListener("click", function () {
+                                    destinatairesList.removeChild(recipientItem);
+                                    destinataires = destinataires.filter(
+                                        (d) => d !== user.username
+                                    );
+                                    hiddenInput.value = destinataires.join(",");
+                                });
+            
+                                recipientItem.appendChild(removeButton);
+                                destinatairesList.appendChild(recipientItem);
+            
+                                // Mettre à jour l'input caché
+                                hiddenInput.value = destinataires.join(",");
+            
+                                // Réinitialiser le champ de recherche et suggestions
+                                destinatairesInput.value = "";
+                                suggestionsContainer.innerHTML = "";
+                            }
+                        });
+            
+                        suggestionsContainer.appendChild(suggestionItem);
+                    });
+                } else {
+                    suggestionsContainer.innerHTML = ""; // Effacer les suggestions si aucun terme de recherche
+                }
+            });
+        });
+        
+        // Fonction pour rechercher des messages
+        function searchMessages(type) {
+            const input = document.getElementById(type === 'inbox' ? 'searchInputInbox' : 'searchInputSent');
+            const filter = input.value.toLowerCase();
+            const messagesContainer = document.getElementById(type === 'inbox' ? 'messages-recus' : 'messages-envoyes');
+            const messageItems = messagesContainer.querySelectorAll('.message-item');
+            
+            messageItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(filter) ? "" : "none";
+            });
+        }
+        
+        // Fonction pour afficher/masquer le contenu d'un message
+        function toggleMessage(id) {
+            const content = document.getElementById(id);
+            if (content) {
+                content.style.display = content.style.display === "none" ? "block" : "none";
+            }
+        }
+    </script>
+</body>
+</html>
+   

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>TCHS Dashboard - Présences</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <link href="{{ url_for('static', filename='css/presence.css') }}" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Sidebar Start -->
+    {% include 'sidebar.html' %}
+    <!-- Sidebar End -->
+
+    <!-- Content Start -->
+    <div class="content">
+        <!-- Navbar Start -->
+        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+            <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                <h2 class="text-primary mb-0"></h2>
+            </a>
+            <a href="#" class="sidebar-toggler flex-shrink-0">
+                <i class="fa fa-bars"></i>
+            </a>
+        </nav>
+        <!-- Navbar End -->
+        
+        <div class="container">
+            <div class="page-header">
+                <h1 class="page-title">Dashboard Présences</h1>
+                <p class="page-subtitle">Suivi et analyse des présences des adhérents, entraîneurs et groupes</p>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">Filtres de Recherche</h2>
+                    <p class="card-description">Sélectionnez la période et le type de données à analyser</p>
+                </div>
+                <div class="card-body">
+                    <div class="filters-section">
+                        <div class="form-group">
+                            <label class="form-label">Date de début</label>
+                            <input type="date" class="form-input" id="startDate">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Date de fin</label>
+                            <input type="date" class="form-input" id="endDate">
+                        </div>
+                    </div>
+
+                    <div class="type-selector">
+                        <div class="type-option">
+                            <input type="radio" name="searchType" value="adherent" class="type-radio" id="typeAdherent">
+                            <label for="typeAdherent" class="type-card">
+                                <i class="fas fa-users type-icon"></i>
+                                <div class="type-title">Adhérents</div>
+                                <div class="type-description">Membres du club</div>
+                            </label>
+                        </div>
+                        <div class="type-option">
+                            <input type="radio" name="searchType" value="entraineur" class="type-radio" id="typeEntraineur">
+                            <label for="typeEntraineur" class="type-card">
+                                <i class="fas fa-user-tie type-icon"></i>
+                                <div class="type-title">Entraîneurs</div>
+                                <div class="type-description">Équipe pédagogique</div>
+                            </label>
+                        </div>
+                        <div class="type-option">
+                            <input type="radio" name="searchType" value="groupe" class="type-radio" id="typeGroupe">
+                            <label for="typeGroupe" class="type-card">
+                                <i class="fas fa-users-cog type-icon"></i>
+                                <div class="type-title">Groupes</div>
+                                <div class="type-description">Groupes d'entraînement</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="search-section" id="searchSection">
+                        <div class="search-toggle">
+                            <label class="toggle-switch">
+                                <input type="checkbox" class="toggle-input" id="searchToggle">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span>Rechercher un élément spécifique</span>
+                        </div>
+                        
+                        <div class="form-group" id="searchInputGroup" style="display: none;">
+                            <label class="form-label" id="searchLabel">Rechercher</label>
+                            <div class="search-input-container">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" class="form-input search-input" id="searchInput" placeholder="Tapez pour rechercher...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="searchBtn">
+                            <i class="fas fa-search"></i>
+                            Rechercher
+                        </button>
+                        <button class="btn btn-outline" id="exportBtn" disabled>
+                            <i class="fas fa-file-excel"></i>
+                            Exporter Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h2 class="card-title">Résultats</h2>
+                        <div class="results-header">
+                            <span class="results-count" id="resultsCount">0 résultat(s)</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="loading-spinner" id="loadingSpinner">
+                            <div class="spinner"></div>
+                        </div>
+                        
+                        <div id="resultsContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour les détails de présence -->
+    <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detailsModalLabel">Détails des présences</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 id="adherentName"></h6>
+                        <button class="btn btn-sm btn-success" id="exportDetailsBtn">
+                            <i class="fas fa-file-excel"></i> Exporter XLSX
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="detailsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Groupe</th>
+                                    <th>Entraîneur</th>
+                                    <th>Heure début</th>
+                                    <th>Durée</th>
+                                    <th>État</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Les données seront insérées ici dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+    
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/presence.js') }}"></script>
+<style>
+    /* Ajoutez à votre fichier presence.css */
+
+/* Dates cliquables pour les groupes */
+.attendance-day-clickable {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.attendance-day-clickable:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+/* Lignes expandables */
+.expand-row {
+    background-color: #f8f9fa;
+}
+
+.adherents-list-container {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Amélioration des badges */
+.badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
+}
+
+/* Tables dans les lignes expandables */
+.expand-row table {
+    margin-bottom: 0;
+}
+
+.expand-row .table-responsive {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* Sticky headers pour les tables scrollables */
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Amélioration des rows mixtes */
+.row-mixte {
+    background-color: #fff3cd !important;
+}
+</style>
+</body>
+</html>

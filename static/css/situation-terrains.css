@@ -1,0 +1,508 @@
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --accent-color: #e74c3c;
+    --success-color: #2ecc71;
+    --warning-color: #f1c40f;
+    --background-color: #f5f6fa;
+    --card-background: #ffffff;
+    --text-color: #2c3e50;
+    --border-radius: 10px;
+    --transition: all 0.3s ease;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Layout de base */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--background-color);
+}
+
+.main-container {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    background-color: var(--primary-color);
+    padding: 2rem;
+    color: white;
+}
+
+.logo-container {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.logo {
+    max-width: 120px;
+    height: auto;
+}
+
+.sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sidebar a {
+    color: white;
+    text-decoration: none;
+    padding: 0.8rem 1rem;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.sidebar a:hover, .sidebar a.active {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Content Area */
+.content {
+    padding: 2rem;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logout-btn {
+    color: var(--accent-color);
+    text-decoration: none;
+    font-size: 1.2rem;
+}
+/* Filters Section */
+        .filters-container {
+            background-color: var(--card-background);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .search-filters {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .date-picker, .time-picker {
+            position: relative;
+        }
+
+        .date-picker i, .time-picker i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-color);
+            z-index: 1;
+        }
+
+        .date-picker input, .time-picker input {
+            padding: 0.8rem 0.8rem 0.8rem 2.5rem;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            transition: var(--transition);
+            min-width: 180px;
+            position: relative;
+        }
+
+        .date-picker input:focus, .time-picker input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            outline: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-primary, .btn-export, .btn-print {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-export {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-print {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-primary:hover, .btn-export:hover, .btn-print:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Courts Grid */
+        .courts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .court-card {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border-top: 4px solid var(--primary-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .court-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .court-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .court-header h3 {
+            margin: 0;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-badge.available {
+            background-color: rgba(46, 204, 113, 0.15);
+            color: #27ae60;
+        }
+
+        .status-badge.occupied {
+            background-color: rgba(231, 76, 60, 0.15);
+            color: #e74c3c;
+        }
+
+        .status-badge.reserved {
+            background-color: rgba(241, 196, 15, 0.15);
+            color: #f39c12;
+        }
+
+        .court-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .occupation-info, .next-occupation {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            color: #777;
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        /* Statistics Section */
+        .stats-container {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .stats-container h2 {
+            color: var(--secondary-color);
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        .stats-filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .stats-filters .date-picker {
+            position: relative;
+        }
+
+        .stats-filters .date-picker i {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-color);
+        }
+
+        .stats-filters .date-picker input {
+            padding: 8px 8px 8px 30px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .stats-filters .date-picker input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            outline: none;
+        }
+
+        .stats-charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .chart-container {
+            height: 300px;
+            background: white;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        /* History Section */
+        .history-container {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .history-container h2 {
+            color: var(--secondary-color);
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        .history-filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        #terrain-select {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            min-width: 200px;
+        }
+
+        .history-table-container {
+            overflow-x: auto;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        .history-table th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            text-align: left;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+        }
+
+        .history-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .history-table tr {
+            transition: var(--transition);
+        }
+
+        .history-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .history-table tr:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .pagination button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: var(--border-radius);
+            background-color: #eee;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .pagination button:hover {
+            background-color: #ddd;
+        }
+
+        .pagination button.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 200px 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .filters-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-filters {
+                flex-direction: column;
+            }
+
+            .action-buttons {
+                justify-content: space-between;
+                width: 100%;
+            }
+
+            .stats-charts {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .content {
+                padding: 1rem;
+            }
+
+            .courts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+
+        /* Animation for court cards */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .court-card {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Custom flatpickr styling */
+        .flatpickr-calendar {
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border: none;
+        }
+
+        .flatpickr-day.selected {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        /* Print Styles */
+        @media print {
+            .sidebar,
+            .filters-container,
+            .action-buttons {
+                display: none;
+            }
+
+            .content {
+                padding: 0;
+            }
+
+            .courts-grid {
+                gap: 1rem;
+            }
+
+            .court-card {
+                break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+        }

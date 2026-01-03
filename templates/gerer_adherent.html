@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <!-- Favicon -->
+<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Libraries Stylesheet -->
+<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+<!-- Customized Bootstrap Stylesheet -->
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+<!-- Template Stylesheet -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+<style>
+    /* Custom Stylesheet for Table Sorting */
+.sortable th {
+    cursor: pointer;
+}
+.sortable th .arrow {
+    font-size: 12px;
+    margin-left: 5px;
+    display: none;
+}
+.sortable th.sort-asc .arrow.asc,
+.sortable th.sort-desc .arrow.desc {
+    display: inline;
+}
+
+</style>
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+    
+        
+        <div class="content">
+ <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-0 py-0">
+                <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                    <h2 class="text-primary mb-0"></h2>
+                </a>
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
+
+                
+
+                
+
+                
+            </nav>
+            <div class="container-fluid">
+                <!-- Bouton d'exportation avec menu déroulant -->
+<div class="export-container">
+  <button class="export-main-btn" id="exportButton">
+    <i class="fa-solid fa-file-export"></i> Exporter
+  </button>
+  <div class="export-dropdown" id="exportDropdown">
+    <a href="#" id="exportXlsx"><i class="fa-solid fa-file-excel"></i> Exporter en Excel</a>
+    
+  </div>
+</div>
+
+<style>
+/* Styles pour le bouton d'exportation */
+.export-container {
+  position: relative;
+  margin: 15px 0;
+  display: inline-block;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.export-main-btn {
+  background: linear-gradient(135deg, #4361ee, #3f37c9);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.export-main-btn:hover {
+  background: linear-gradient(135deg, #3f37c9, #3a0ca3);
+  transform: translateY(-2px);
+  box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+}
+
+.export-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: white;
+  min-width: 200px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 8px 0;
+  z-index: 1000;
+  display: none;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+.export-dropdown a {
+  color: #333;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background-color 0.2s;
+}
+
+.export-dropdown a:hover {
+  background-color: #f5f7fd;
+  color: #4361ee;
+}
+
+/* Styles pour l'impression */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #AdherentsTable, #AdherentsTable * {
+    visibility: visible;
+  }
+  #AdherentsTable {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+</style>
+
+<script>
+// Script pour le bouton d'exportation
+document.addEventListener('DOMContentLoaded', function() {
+  // Références aux éléments
+  const exportButton = document.getElementById('exportButton');
+  const exportDropdown = document.getElementById('exportDropdown');
+  const exportXlsx = document.getElementById('exportXlsx');
+  const printTable = document.getElementById('printTable');
+  const adherentsTable = document.getElementById('AdherentsTable');
+  
+  // Afficher/masquer le menu déroulant
+  exportButton.addEventListener('click', function(e) {
+    e.stopPropagation();
+    exportDropdown.style.display = exportDropdown.style.display === 'block' ? 'none' : 'block';
+  });
+  
+  // Fermer le menu si on clique ailleurs
+  document.addEventListener('click', function() {
+    exportDropdown.style.display = 'none';
+  });
+  
+  // Empêcher la fermeture quand on clique sur le menu
+  exportDropdown.addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+  
+  // Fonction pour exporter en Excel
+  exportXlsx.addEventListener('click', function(e) {
+    e.preventDefault();
+    exportTableToExcel();
+  });
+  
+  // Fonction pour imprimer
+  printTable.addEventListener('click', function(e) {
+    e.preventDefault();
+    window.print();
+  });
+  
+  // Fonction d'exportation en Excel
+  function exportTableToExcel() {
+    // Créer une copie du tableau pour l'exportation
+    const tableClone = adherentsTable.cloneNode(true);
+    
+    // Supprimer la colonne "Actions" (dernière colonne)
+    const rows = tableClone.querySelectorAll('tr');
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('th, td');
+      if (cells.length > 0) {
+        // Supprimer la dernière cellule (Actions)
+        cells[cells.length - 1].remove();
+      }
+    });
+    
+    // Créer un tableau de données pour l'export
+    const data = [];
+    
+    // Ajouter les en-têtes
+    const headers = [];
+    tableClone.querySelectorAll('thead th').forEach(th => {
+      // Récupérer uniquement le texte de l'en-tête (sans les flèches de tri)
+      const headerText = th.textContent.replace(/[▲▼]|[\u25B2\u25BC]/g, '').trim();
+      headers.push(headerText);
+    });
+    data.push(headers);
+    
+    // Ajouter les données
+    tableClone.querySelectorAll('tbody tr').forEach(tr => {
+      const rowData = [];
+      tr.querySelectorAll('td').forEach(td => {
+        // Pour les cellules qui contiennent des spans de statut, récupérer "Actif" ou "Non Actif"
+        if (td.querySelector('.status-actif')) {
+          rowData.push('Actif');
+        } else if (td.querySelector('.status-non-actif')) {
+          rowData.push('Non Actif');
+        } else {
+          rowData.push(td.textContent.trim());
+        }
+      });
+      data.push(rowData);
+    });
+    
+    // Créer un classeur et une feuille de calcul
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Adhérents");
+    
+    // Générer le fichier Excel
+    const today = new Date();
+    const date = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
+    XLSX.writeFile(wb, `Liste_Adherents_${date}.xlsx`);
+  }
+});
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+                <div class="row h-200 align-items-center justify-content-center" style="min-height: 100vh;">
+                    
+                        <div class="col-12 col-sm-20 ">
+                            
+                            <form class="d-none d-md-flex ">
+                                <input id="searchInput" class="form-control border-1" type="search" placeholder="Rechercher un adhérent" onkeyup="rechercherAdherent()">
+                            </form>
+                            <div class="table-responsive" style=" overflow-y: auto;">
+    <table id="AdherentsTable" class="table text-start align-middle table-bordered table-hover mb-0 sortable" style="background: linear-gradient(135deg, #d4d6d5e3 0%, #ffffff 100%);">
+        <thead>
+            <tr class="text-dark" style="position: sticky; top: 0; background: linear-gradient(135deg, #d4d6d5e3 0%, #ffffff 100%); z-index: 10;">
+                <th onclick="sortTable(0)">Status<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(1)">Matricule<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(2)">Nom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(3)">Prénom<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(4)">Date de Naissance<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(5)">Sexe<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(6)">Téléphone 1<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(7)">Téléphone 2<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(8)">Type d'abonnement<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(9)">Date d'Inscription<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(10)">Groupe<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(11)">Entraîneur<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th onclick="sortTable(12)">Payé<span class="arrow asc">&#9650;</span><span class="arrow desc">&#9660;</span></th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        
+        <tbody>
+            {% for adherent in adherents %}
+            <tr>
+                <td> {% if adherent.status == 'Actif' %} 
+                    <span class="status-actif"></span> 
+                    {% else %} <span class="status-non-actif"></span> 
+                    {% endif %} 
+                </td>
+                <td>{{ adherent.matricule }}</td>
+                <td>{{ adherent.nom }}</td>
+                <td>{{ adherent.prenom }}</td>
+                <td>{{ adherent.date_naissance }}</td>
+                <td>{{ adherent.sexe }}</td>
+                <td>{{ adherent.tel1 }}</td>
+                <td>{{ adherent.tel2 }}</td>
+                <td>{{ adherent.type_abonnement }}</td>
+                <td>{{ adherent.date_inscription }}</td>
+                <td>{{ adherent.groupe }}</td>
+                <td>{{ adherent.entraineur }}</td>
+                <td>{{ adherent.paye }}</td>
+                <td>
+                    <a class="btn btn-sm btn-primary" href="{{ url_for('modifier_adherent', id=adherent.adherent_id) }}">Modifier</a>
+                    <a class="btn btn-sm btn-danger" href="{{ url_for('supprimer_adherent', id=adherent.adherent_id) }}">Supprimer</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+                            
+                        </div>
+                    
+                </div>
+            </div>
+
+        </div>
+    
+<style>
+                                        /* Custom Styles for Status Indicator */
+                                        .status-actif {
+                                        height: 15px;
+                                        width: 15px;
+                                        background-color: green;
+                                        border-radius: 50%;
+                                        display: inline-block;
+                                        }
+
+                                        .status-non-actif {
+                                        height: 15px;
+                                        width: 15px;
+                                        background-color: red;
+                                        border-radius: 50%;
+                                        display: inline-block;
+                                        }
+
+                                    </style>
+    <!-- JavaScript Libraries -->
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}" rel="stylesheet"></script>
+
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}" rel="stylesheet"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}" rel="stylesheet"></script>
+<script>
+function sortTable(columnIndex) {
+    var table = document.getElementById("AdherentsTable");
+    var rows = Array.prototype.slice.call(table.tBodies[0].rows, 0);
+    var sortedRows;
+    var currentSortOrder = table.querySelector('th:nth-child(' + (columnIndex + 1) + ')').classList.contains('sort-asc') ? 'asc' : 'desc';
+
+    // Inverser l'ordre de tri
+    if (currentSortOrder === 'asc') {
+        sortedRows = rows.sort(function(a, b) {
+            return a.cells[columnIndex].textContent.localeCompare(b.cells[columnIndex].textContent);
+        });
+        table.querySelectorAll('th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+        table.querySelector('th:nth-child(' + (columnIndex + 1) + ')').classList.add('sort-desc');
+    } else {
+        sortedRows = rows.sort(function(a, b) {
+            return b.cells[columnIndex].textContent.localeCompare(a.cells[columnIndex].textContent);
+        });
+        table.querySelectorAll('th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+        table.querySelector('th:nth-child(' + (columnIndex + 1) + ')').classList.add('sort-asc');
+    }
+
+    // Réattacher les lignes triées
+    var tbody = table.tBodies[0];
+    tbody.innerHTML = '';
+    sortedRows.forEach(function(row) {
+        tbody.appendChild(row);
+    });
+}
+
+function rechercherAdherent() {
+    var input = document.getElementById("searchInput");
+    var filter = input.value.toLowerCase();
+    var table = document.getElementById("AdherentsTable");
+    var lignes = table.querySelectorAll("tbody tr");
+
+    lignes.forEach(ligne => {
+        if (ligne.innerHTML.toLowerCase().includes(filter)) {
+            ligne.style.display = "";
+        } else {
+            ligne.style.display = "none";
+        }
+    });
+}
+
+</script>
+</body>
+
+</html>

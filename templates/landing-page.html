@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tennis Club Future</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #00c3ff;
+            --secondary-color: #ff00c8;
+            --dark-color: #121212;
+            --light-color: #f5f5f5;
+            --accent-color: #7000ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--dark-color);
+            color: var(--light-color);
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 3rem;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            background: rgba(18, 18, 18, 0.85);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo i {
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links li a {
+            color: var(--light-color);
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links li a:hover {
+            color: var(--primary-color);
+        }
+
+        .nav-links li a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 0;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            transition: width 0.3s ease;
+        }
+
+        .nav-links li a:hover::after {
+            width: 100%;
+        }
+
+        .login-btn {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: var(--light-color);
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 195, 255, 0.3);
+        }
+
+        .login-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 195, 255, 0.5);
+        }
+
+        .burger {
+            display: none;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .burger .line {
+            width: 25px;
+            height: 3px;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            margin: 5px;
+            transition: all 0.3s ease;
+            border-radius: 3px;
+        }
+
+        /* Main Content */
+        .main-container {
+            margin-top: 100px;
+            padding: 1rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Carousel */
+        .carousel-container {
+            position: relative;
+            width: 100%;
+            height: 70vh;
+            overflow: hidden;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .carousel {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .carousel-slide {
+            min-width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .carousel-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .carousel-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+        }
+
+        .carousel-content h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .carousel-content p {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            max-width: 600px;
+        }
+
+        .carousel-btn {
+            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+            color: var(--light-color);
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 195, 255, 0.3);
+        }
+
+        .carousel-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 195, 255, 0.5);
+        }
+
+        .carousel-dots {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background: var(--primary-color);
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        /* Features Section */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(0, 195, 255, 0.2);
+            border-color: rgba(0, 195, 255, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(18, 18, 18, 0.9);
+            padding: 3rem 0;
+            margin-top: 3rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+
+        .footer-col h4 {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+
+        .footer-col h4::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+        .footer-col ul li {
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-col ul li a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .footer-col ul li a:hover {
+            color: var(--primary-color);
+            padding-left: 5px;
+        }
+
+        .footer-col .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .footer-col .social-links a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            color: var(--light-color);
+            transition: all 0.3s ease;
+        }
+
+        .footer-col .social-links a:hover {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            transform: translateY(-5px);
+        }
+
+        .copyright {
+            text-align: center;
+            padding-top: 2rem;
+            margin-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .features {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .footer-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem 2rem;
+            }
+            
+            .burger {
+                display: block;
+            }
+            
+            .nav-links {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                height: 100vh;
+                width: 80%;
+                max-width: 300px;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: rgba(18, 18, 18, 0.95);
+                backdrop-filter: blur(10px);
+                transition: all 0.5s ease;
+                z-index: 1000;
+                gap: 3rem;
+            }
+            
+            .nav-links.active {
+                right: 0;
+            }
+            
+            .carousel-container {
+                height: 50vh;
+            }
+            
+            .carousel-content h2 {
+                font-size: 2rem;
+            }
+            
+            .carousel-content p {
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .features {
+                grid-template-columns: 1fr;
+            }
+            
+            .footer-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .carousel-container {
+                height: 40vh;
+            }
+            
+            .carousel-content h2 {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Burger Animation */
+        .burger.active .line:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        .burger.active .line:nth-child(2) {
+            opacity: 0;
+        }
+
+        .burger.active .line:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+    </style>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-tennis-ball"></i>
+            Tennis Club Future
+        </div>
+        <ul class="nav-links">
+            <li><a href="#">Accueil</a></li>
+            <li><a href="#">À propos</a></li>
+            <li><a href="#">Services</a></li>
+            <li><a href="#">Réservations</a></li>
+            <li><a href="#">Contact</a></li>
+        </ul>
+        <button href="{{ url_for('admin') }}" class="login-btn">Connexion</button>
+        <div class="burger">
+            <div class="line"></div>
+            <div class="line"></div>
+            <div class="line"></div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Carousel -->
+        <div class="carousel-container">
+            <div class="carousel">
+                <div class="carousel-slide">
+                    <img src="/api/placeholder/1200/600" alt="Tennis Court">
+                    <div class="carousel-content">
+                        <h2>Bienvenue au Tennis Club Future</h2>
+                        <p>Découvrez nos installations ultramodernes et nos programmes d'entraînement innovants.</p>
+                        <button class="carousel-btn">Découvrir</button>
+                    </div>
+                </div>
+                <div class="carousel-slide">
+                    <img src="/api/placeholder/1200/600" alt="Tennis Player">
+                    <div class="carousel-content">
+                        <h2>Cours professionnels</h2>
+                        <p>Nos entraîneurs certifiés vous aideront à améliorer votre technique et votre stratégie.</p>
+                        <button class="carousel-btn">Nos cours</button>
+                    </div>
+                </div>
+                <div class="carousel-slide">
+                    <img src="/api/placeholder/1200/600" alt="Tennis Equipment">
+                    <div class="carousel-content">
+                        <h2>Équipement de pointe</h2>
+                        <p>Accédez à des terrains de haute qualité et à des équipements technologiques avancés.</p>
+                        <button class="carousel-btn">Équipements</button>
+                    </div>
+                </div>
+            </div>
+            <div class="carousel-dots">
+                <div class="dot active"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <section class="features">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <h3>Réservation en ligne</h3>
+                <p>Réservez facilement vos terrains de tennis à tout moment via notre plateforme intuitive.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3>Programmes pour tous</h3>
+                <p>Des cours adaptés à tous les niveaux, des débutants aux joueurs professionnels.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h3>Compétitions</h3>
+                <p>Participez à nos tournois réguliers et testez vos compétences contre d'autres membres.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-col">
+                <h4>Tennis Club Future</h4>
+                <p>Le club de tennis le plus moderne avec des installations de pointe et des programmes innovants.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Liens rapides</h4>
+                <ul>
+                    <li><a href="#">Accueil</a></li>
+                    <li><a href="#">À propos</a></li>
+                    <li><a href="#">Services</a></li>
+                    <li><a href="#">Réservations</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Services</h4>
+                <ul>
+                    <li><a href="#">Cours privés</a></li>
+                    <li><a href="#">Cours collectifs</a></li>
+                    <li><a href="#">Stages intensifs</a></li>
+                    <li><a href="#">Location de terrains</a></li>
+                    <li><a href="#">Boutique</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Contact</h4>
+                <ul>
+                    <li><i class="fas fa-map-marker-alt"></i> 123 Avenue des Sports, 75000 Paris</li>
+                    <li><i class="fas fa-phone"></i> +33 1 23 45 67 89</li>
+                    <li><i class="fas fa-envelope"></i> contact@tennisclubfuture.fr</li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2025 Tennis Club Future. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Burger Menu Toggle
+        const burger = document.querySelector('.burger');
+        const navLinks = document.querySelector('.nav-links');
+
+        burger.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            burger.classList.toggle('active');
+        });
+
+        // Carousel Functionality
+        const carousel = document.querySelector('.carousel');
+        const slides = document.querySelectorAll('.carousel-slide');
+        const dots = document.querySelectorAll('.dot');
+        let currentIndex = 0;
+        const slideWidth = 100; // in percentage
+
+        // Set initial position
+        carousel.style.transform = `translateX(0%)`;
+
+        // Function to move to selected slide
+        function moveToSlide(index) {
+            carousel.style.transform = `translateX(-${index * slideWidth}%)`;
+            currentIndex = index;
+            updateDots();
+        }
+
+        // Update dots
+        function updateDots() {
+            dots.forEach((dot, index) => {
+                if (index === currentIndex) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        // Set up dot click events
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                moveToSlide(index);
+            });
+        });
+
+        // Auto slide every 3 seconds
+        setInterval(() => {
+            currentIndex = (currentIndex + 1) % slides.length;
+            moveToSlide(currentIndex);
+        }, 3000);
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.style.padding = '1rem 3rem';
+                navbar.style.background = 'rgba(18, 18, 18, 0.95)';
+            } else {
+                navbar.style.padding = '1.5rem 3rem';
+                navbar.style.background = 'rgba(18, 18, 18, 0.85)';
+            }
+        });
+    </script>
+</body>
+</html>

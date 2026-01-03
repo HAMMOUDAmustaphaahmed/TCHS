@@ -1,0 +1,922 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS Dashboard</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <!-- Favicon -->
+<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Libraries Stylesheet -->
+<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+<!-- Customized Bootstrap Stylesheet -->
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+<!-- Template Stylesheet -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+</head>
+
+<body>
+  <div class="container-xxl position-relative d-flex p-0">
+
+    <div class="sidebar pe-4 pb-3">
+      <nav class="navbar bg-light navbar-light">
+        <a href="{{ url_for('entraineur') }}" class="navbar-brand mx-4 mb-3">
+          <h3 class="text-primary">TCHS</h3>
+        </a>
+        <div class="d-flex align-items-center ms-4 mb-4">
+          <div class="position-relative">
+            <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
+          </div>
+
+        </div>
+        <div class="navbar-nav w-100">
+          <a href="{{ url_for('entraineur') }}" class="nav-item nav-link active">
+            <i class="fa fa-tachometer-alt me-2"></i>Dashboard
+          </a>
+          <div class="nav-item">
+            <a href="javascript:void(0);" class="nav-link" id="changePasswordLink">
+              <i class="fa fa-key"></i> Mot de Passe
+            </a>
+          </div>
+          
+          <!-- Formulaire dans une fenêtre modale -->
+          <div id="modalChangerMotDePasse" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000;">
+            <h4>Changer le mot de passe</h4>
+            <div>
+              <label for="nouveauMotDePasse">Nouveau mot de passe :</label>
+              <input type="password" id="nouveauMotDePasse" required><br>
+            </div>
+            <div>
+              <label for="confirmationMotDePasse">Confirmer le mot de passe :</label>
+              <input type="password" id="confirmationMotDePasse" required><br>
+            </div>
+            <button id="submitMotDePasse" style="margin-top: 10px;">Soumettre</button>
+            <button onclick="fermerModal()" style="margin-top: 10px;">Annuler</button>
+          </div>
+<script>
+    // Fonction pour ouvrir la fenêtre modale
+function ouvrirModal() {
+  document.getElementById('modalChangerMotDePasse').style.display = 'block';
+}
+
+// Fonction pour fermer la fenêtre modale
+function fermerModal() {
+  document.getElementById('modalChangerMotDePasse').style.display = 'none';
+}
+
+// Attacher un événement au clic sur le lien "Mot de Passe"
+document.getElementById('changePasswordLink').addEventListener('click', function() {
+  ouvrirModal(); // Ouvre la modale lorsque le lien est cliqué
+});
+
+// Soumettre le changement de mot de passe
+document.getElementById('submitMotDePasse').addEventListener('click', function() {
+  const nouveauMotDePasse = document.getElementById('nouveauMotDePasse').value;
+  const confirmationMotDePasse = document.getElementById('confirmationMotDePasse').value;
+
+  // Vérification des mots de passe
+  if (nouveauMotDePasse !== confirmationMotDePasse) {
+    alert("Les mots de passe ne correspondent pas.");
+    return;
+  }
+
+  // Créer l'objet pour la requête
+  const data = {
+    nouveau_mot_de_passe: nouveauMotDePasse,
+    confirmation_mot_de_passe: confirmationMotDePasse
+  };
+
+  // Envoyer la requête POST pour changer le mot de passe
+  fetch('/changer_mot_de_passe', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.message) {
+      alert(data.message);
+    } else {
+      alert(data.error);
+    }
+    fermerModal(); // Fermer la fenêtre modale après soumission
+  })
+  .catch(error => {
+    console.error('Erreur:', error);
+    alert('Une erreur est survenue.');
+    fermerModal(); // Fermer la fenêtre modale en cas d'erreur
+  });
+});
+
+</script>          
+         <div class="nav-item">
+    <a href="#" class="nav-link" id="showReservationSection">
+        <i class="fa fa-clipboard me-2"></i>Reserver Terrain
+    </a>
+</div>
+
+
+        
+        <div class="nav-item">
+          <a href="{{ url_for('discussions') }}" class="nav-link">
+            <i class="fab fa-facebook-messenger"></i>Discussions
+          </a>
+      </div>
+
+        
+        <!-- Déconnexion -->
+        <div class="nav-item">
+            <a href="{{ url_for('logout') }}" class="nav-link">
+                <i class="fa fa-sign-out-alt me-2"></i>Déconnecter
+            </a>
+        </div>
+        </div>
+      </nav>
+    </div>
+    <div class="content">
+      <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+        <a href="" class="navbar-brand d-flex d-lg-none me-4">
+          <h2 class="text-primary mb-0"></h2>
+        </a>
+        <a href="#" class="sidebar-toggler flex-shrink-0">
+          <i class="fa fa-bars"></i>
+        </a>
+
+
+      </nav>
+
+
+
+      <div class="container-fluid pt-4 px-4">
+        <div class="bg-light text-center rounded p-4">
+          <div class="d-flex align-items-center justify-content-between mb-4">
+                <a href="{{ url_for('entraineur') }}" class="navbar-brand mx-4 mb-3">
+                    <h3 class="text-primary">TCHS</h3>
+                </a>
+                
+              <h6>Bienvenue {{ entraineur.nom }} {{ entraineur.prenom }}</h6>
+            </div>
+            <!-- Emploi du Temps de l'Entraîneur -->
+            <div class="mt-5">
+              <!-- Reservation section (hidden by default) -->
+    <!-- Reservation section -->
+    <div id="reservationSection" class="bg-light rounded p-4" style="display: none;">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <h5 class="mb-0">Réservation de Terrain</h5>
+        </div>
+
+        <!-- Reservation Form -->
+        <form id="reservationForm" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-control" id="dateReservation" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Heure début</label>
+                <input type="time" class="form-control" id="heureDebut" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Heure fin</label>
+                <input type="time" class="form-control" id="heureFin" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Terrain</label>
+                <select class="form-select" id="numeroTerrain" required>
+                    <option value="">Sélectionner un terrain</option>
+                    {% for i in range(1, 10) %}
+                    <option value="{{ i }}">Terrain {{ i }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12">
+                <label class="form-label">Commentaire</label>
+                <textarea class="form-control" id="commentaire" rows="3"></textarea>
+            </div>
+            <div class="col-12">
+                <button type="button" class="btn btn-primary" id="submitBtn" onclick="soumettreReservation()">
+    <span class="normal-state">
+        <i class="fas fa-save me-2"></i>Enregistrer la réservation
+    </span>
+    <span class="loading-state">
+        <i class="fas fa-spinner fa-spin me-2"></i>En cours...
+    </span>
+</button>
+            </div>
+        </form>
+
+        <!-- Reservations List -->
+        <div class="mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6>Mes réservations</h6>
+        <button onclick="chargerReservations()" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-sync-alt"></i> Rafraîchir
+        </button>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Heure</th>
+                    <th>Terrain</th>
+                    <th>Status</th>
+                    <th>Commentaire</th>
+                </tr>
+            </thead>
+            <tbody id="reservationsList">
+                <!-- Les réservations seront chargées ici dynamiquement -->
+            </tbody>
+        </table>
+    </div>
+</div>
+    </div>
+<style>
+    #reservationSection {
+        margin-top: 20px;
+        background-color: white;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .table-responsive {
+        margin-top: 20px;
+    }
+
+    #reservationSection.show {
+        display: block !important;
+    }
+
+    .badge {
+        padding: 8px 12px;
+        font-size: 0.9em;
+    }
+
+    #reservationsList tr {
+        transition: background-color 0.2s;
+    }
+
+    #reservationsList tr:hover {
+        background-color: rgba(0,0,0,0.05);
+    }
+
+    .loading-state {
+        display: none;
+    }
+    
+    .btn:disabled .normal-state {
+        display: none;
+    }
+    
+    .btn:disabled .loading-state {
+        display: inline;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const showReservationButton = document.getElementById('showReservationSection');
+    const reservationSection = document.getElementById('reservationSection');
+    
+    if (!showReservationButton || !reservationSection) {
+        console.error('Required elements not found');
+        return;
+    }
+
+    showReservationButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Toggle the display of the reservation section
+        const currentDisplay = reservationSection.style.display;
+        reservationSection.style.display = currentDisplay === 'none' ? 'block' : 'none';
+        
+        // Scroll reservationSection into view if it's being shown
+        if (reservationSection.style.display === 'block') {
+            reservationSection.scrollIntoView({ behavior: 'smooth' });
+            chargerReservations(); // Load reservations when section is shown
+        }
+    });
+
+    // Initial load of reservations
+    chargerReservations();
+});
+
+function resetReservationForm() {
+    document.getElementById('reservationForm').reset();
+}
+
+function getBadgeClass(status) {
+    switch(status) {
+        case 'acceptée':
+            return 'bg-success';
+        case 'refusée':
+            return 'bg-danger';
+        default:
+            return 'bg-warning';
+    }
+}
+
+function chargerReservations() {
+    fetch('/api/mes_reservations', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erreur réseau');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            afficherReservations(data.reservations);
+        } else {
+            console.error('Erreur:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors du chargement des réservations:', error);
+    });
+}
+
+function afficherReservations(reservations) {
+    const tbody = document.getElementById('reservationsList');
+    tbody.innerHTML = ''; // Clear the table
+
+    reservations.forEach(reservation => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${reservation.date}</td>
+            <td>${reservation.heure_debut} - ${reservation.heure_fin}</td>
+            <td>${reservation.numero_terrain}</td>
+            <td>
+                <span class="badge ${getBadgeClass(reservation.status)}">
+                    ${reservation.status}
+                </span>
+            </td>
+            <td>${reservation.commentaire || ''}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function soumettreReservation() {
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+
+    // Get form values
+    const dateReservation = document.getElementById('dateReservation').value;
+    const heureDebut = document.getElementById('heureDebut').value;
+    const heureFin = document.getElementById('heureFin').value;
+    const numeroTerrain = document.getElementById('numeroTerrain').value;
+    const commentaire = document.getElementById('commentaire').value;
+
+    // Validation
+    if (!dateReservation || !heureDebut || !heureFin || !numeroTerrain) {
+        alert('Veuillez remplir tous les champs obligatoires');
+        submitBtn.disabled = false;
+        return;
+    }
+
+    // Check end time is after start time
+    if (heureDebut >= heureFin) {
+        alert("L'heure de fin doit être après l'heure de début");
+        submitBtn.disabled = false;
+        return;
+    }
+
+    // Create data object
+    const data = {
+        date: dateReservation,
+        heure_debut: heureDebut,
+        heure_fin: heureFin,
+        numero_terrain: parseInt(numeroTerrain),
+        commentaire: commentaire
+    };
+
+    // Send request
+    fetch('/api/reserver_terrain', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(data),
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert('Réservation créée avec succès');
+            resetReservationForm();
+            chargerReservations(); // Reload reservations instead of page refresh
+        } else {
+            alert('Erreur : ' + (data.error || 'Une erreur est survenue'));
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la création de la réservation : ' + (error.message || error));
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+    });
+}
+</script>
+              <h4 class="text-start mb-4">Emploi du Temps</h4>
+          
+              <!-- Navigation double -->
+              <div class="mb-3 d-flex justify-content-between">
+                  <div>
+                      <a href="{{ url_for('entraineur', week_offset=week_offset-1, day_offset=0) }}" class="btn btn-secondary">
+                          ← Semaine précédente
+                      </a>
+                      <a href="{{ url_for('entraineur', week_offset=week_offset+1, day_offset=0) }}" class="btn btn-secondary">
+                          Semaine suivante →
+                      </a>
+                  </div>
+                  <div>
+                      <a href="{{ url_for('entraineur', week_offset=week_offset, day_offset=day_offset-1) }}" 
+                         class="btn btn-info {% if current_day.weekday() == 0 %}disabled{% endif %}">
+                          ← Jour précédent
+                      </a>
+                      <a href="{{ url_for('entraineur', week_offset=week_offset, day_offset=day_offset+1) }}" 
+                         class="btn btn-info {% if current_day.weekday() == 6 %}disabled{% endif %}">
+                          Jour suivant →
+                      </a>
+                  </div>
+              </div>
+          
+              <!-- Exportation -->
+              <div class="mb-3">
+                  <div class="btn-group">
+                      <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                          <i class="fa fa-file-export"></i> Exporter
+                      </button>
+                      <ul class="dropdown-menu">
+                          <li>
+                              <a class="dropdown-item" href="#" onclick="prepareExport('pdf')">
+                                  <i class="fas fa-file-pdf mr-2"></i> PDF
+                              </a>
+                          </li>
+                          <li>
+                              <a class="dropdown-item" href="#" onclick="prepareExport('excel')">
+                                  <i class="fas fa-file-excel mr-2"></i> Excel
+                              </a>
+                          </li>
+                      </ul>
+                  </div>
+                  <div id="exportScope" style="display:none; margin-top:5px">
+                      <div class="btn-group">
+                          <button type="button" class="btn btn-secondary" onclick="triggerExport('day')">Jour actuel</button>
+                          <button type="button" class="btn btn-secondary" onclick="triggerExport('week')">Semaine actuelle</button>
+                      </div>
+                  </div>
+              </div>
+          
+              <!-- Tableau de l'emploi du temps -->
+              <!-- Tableau de l'emploi du temps -->
+<!-- Tableau de l'emploi du temps -->
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <colgroup>
+            <col style="width: 12%">
+            <col style="width: 8%">
+            {% for _ in creneaux %}
+                <col style="width: 10%">
+            {% endfor %}
+        </colgroup>
+        <thead class="table-dark">
+            <tr>
+                <th colspan="2">{{ current_day.strftime('%A %d/%m/%Y') }}</th>
+                {% for creneau in creneaux %}
+                    <th>{{ creneau.start.strftime('%H:%M') }} - {{ creneau.end.strftime('%H:%M') }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td rowspan="9" class="align-middle text-center bg-light">
+                    <h6>Terrain</h6>
+                </td>
+                <td>Terrain 1</td>
+                {% for creneau in creneaux %}
+                    {% set key = "1_" ~ creneau.start.strftime('%H:%M') %}
+                    {% set seance = seances_par_terrain_et_heure.get(key) %}
+                    <td class="time-slot">
+                        {% if seance %}
+                            {% if seance.entraineur == nom_complet_entraineur %}
+                                <div class="session-card">
+                                    <small>{{ seance.groupe }}</small>
+                                    <div class="text-muted">{{ seance.entraineur }}</div>
+                                    <button type="button" 
+                                            class="btn btn-warning btn-sm presence-btn mt-2" 
+                                            data-groupe="{{ seance.groupe }}"
+                                            data-date="{{ seance.date }}"
+                                            data-heure="{{ seance.heure_debut.strftime('%H:%M') }}"
+                                            data-entraineur="{{ seance.entraineur }}"
+                                            data-seance-id="{{ seance.id }}"
+                                            onclick="openPresenceModal(this)">
+                                        <i class="fas fa-clipboard-check"></i> Présence
+                                    </button>
+                                </div>
+                            {% else %}
+                                <div class="session-card bg-danger text-white p-2 text-center">
+                                    <small>Occupé</small>
+                                    <div class="small">{{ seance.entraineur }}</div>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="text-center text-success p-2">
+                                <i class="fas fa-check-circle"></i> Disponible
+                            </div>
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+            
+            {% for terrain in range(2,10) %}
+                <tr>
+                    <td>Terrain {{ terrain }}</td>
+                    {% for creneau in creneaux %}
+                        {% set key = terrain|string ~ "_" ~ creneau.start.strftime('%H:%M') %}
+                        {% set seance = seances_par_terrain_et_heure.get(key) %}
+                        <td class="time-slot">
+                            {% if seance %}
+                                {% if seance.entraineur == nom_complet_entraineur %}
+                                    <div class="session-card">
+                                        <small>{{ seance.groupe }}</small>
+                                        <div class="text-muted">{{ seance.entraineur }}</div>
+                                        <button type="button" 
+                                                class="btn btn-warning btn-sm presence-btn mt-2" 
+                                                data-groupe="{{ seance.groupe }}"
+                                                data-date="{{ seance.date }}"
+                                                data-heure="{{ seance.heure_debut.strftime('%H:%M') }}"
+                                                data-entraineur="{{ seance.entraineur }}"
+                                                data-seance-id="{{ seance.id }}"
+                                                onclick="openPresenceModal(this)">
+                                            <i class="fas fa-clipboard-check"></i> Présence
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    <div class="session-card bg-danger text-white p-2 text-center">
+                                        <small>Occupé</small>
+                                        <div class="small">{{ seance.entraineur }}</div>
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="text-center text-success p-2">
+                                    <i class="fas fa-check-circle"></i> Disponible
+                                </div>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<style>
+.session-card {
+    padding: 5px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+
+.session-card.bg-danger {
+    text-align: center;
+}
+
+.time-slot {
+    height: 120px;
+    vertical-align: top;
+}
+
+.text-success {
+    font-weight: bold;
+}
+
+.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.text-white {
+    color: white !important;
+}
+</style>
+          </div>
+          
+          <script>
+            let currentExportType = null;
+        
+            function prepareExport(type) {
+                currentExportType = type;
+                document.getElementById('exportScope').style.display = 'block';
+            }
+        
+            function triggerExport(scope) {
+                const url = new URL(window.location.href);
+                const params = {
+                    week_offset: {{ week_offset }},
+                    day_offset: {{ day_offset }},
+                    export_type: currentExportType,
+                    scope: scope
+                };
+        
+                window.location.href = `/export-schedule?${new URLSearchParams(params)}`;
+                document.getElementById('exportScope').style.display = 'none';
+            }
+        </script>
+          <!-- Modal Présence -->
+<!-- Modal Présence -->
+<div class="modal fade" id="presenceModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">
+          <i class="fas fa-clipboard-check"></i>
+          Gestion des Présences
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="session-info mb-3">
+          <p><strong>Groupe:</strong> <span id="modalGroupe"></span></p>
+          <p><strong>Date:</strong> <span id="modalDate"></span></p>
+          <p><strong>Heure:</strong> <span id="modalHeure"></span></p>
+        </div>
+
+        <!-- Section for marking trainer presence -->
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i>
+          Veuillez marquer votre présence en tant qu'entraîneur.
+        </div>
+        <div class="text-center mb-4">
+          <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="trainerPresence" id="trainerPresent" value="O" required>
+            <label class="btn btn-outline-success" for="trainerPresent">
+              <i class="fas fa-check"></i> Présent(e)
+            </label>
+
+            <input type="radio" class="btn-check" name="trainerPresence" id="trainerAbsent" value="N" required>
+            <label class="btn btn-outline-danger" for="trainerAbsent">
+              <i class="fas fa-times"></i> Absent(e)
+            </label>
+          </div>
+        </div>
+
+        <!-- Adherents Table -->
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i>
+          Veuillez marquer la présence pour chaque adhérent.
+        </div>
+        <form id="presenceForm">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Matricule</th>
+                  <th>Nom</th>
+                  <th>Prénom</th>
+                  <th class="text-center">Présence</th>
+                </tr>
+              </thead>
+              <tbody id="adherentsList">
+                <!-- Les adhérents seront ajoutés ici dynamiquement -->
+              </tbody>
+            </table>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-warning" onclick="savePresences()">
+          <i class="fas fa-save"></i> Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Function to open the modal
+  function openPresenceModal(button) {
+    const groupe = button.dataset.groupe;
+    const date = button.dataset.date;
+    const heure = button.dataset.heure;
+    const entraineur = button.dataset.entraineur;
+    const seanceId = button.dataset.seanceId;
+
+    // Update modal fields
+    document.getElementById('modalGroupe').textContent = groupe;
+    document.getElementById('modalDate').textContent = date;
+    document.getElementById('modalHeure').textContent = heure;
+
+    // Fetch adherents for the group
+    fetch(`/api/adherents/${groupe}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch adherents.");
+        }
+        return response.json();
+      })
+      .then(adherents => {
+        const adherentsList = document.getElementById('adherentsList');
+        adherentsList.innerHTML = '';
+
+        adherents.forEach(adherent => {
+          const row = `
+            <tr>
+              <td>${adherent.matricule}</td>
+              <td>${adherent.nom}</td>
+              <td>${adherent.prenom}</td>
+              <td class="text-center">
+                <div class="btn-group" role="group">
+                  <input type="radio" class="btn-check" name="presence_${adherent.matricule}" id="present_${adherent.matricule}" value="O" required>
+                  <label class="btn btn-outline-success" for="present_${adherent.matricule}">
+                    <i class="fas fa-check"></i> Présent(e)
+                  </label>
+                  <input type="radio" class="btn-check" name="presence_${adherent.matricule}" id="absent_${adherent.matricule}" value="N" required>
+                  <label class="btn btn-outline-danger" for="absent_${adherent.matricule}">
+                    <i class="fas fa-times"></i> Absent(e)
+                  </label>
+                </div>
+              </td>
+            </tr>
+          `;
+          adherentsList.insertAdjacentHTML('beforeend', row);
+        });
+      })
+      .catch(error => {
+        console.error('Erreur lors du chargement des adhérents:', error);
+        alert("Une erreur s'est produite lors du chargement des adhérents.");
+      });
+
+    // Show the modal
+    const presenceModal = new bootstrap.Modal(document.getElementById('presenceModal'));
+    presenceModal.show();
+  }
+
+  // Function to save presences
+function savePresences() {
+    const groupe = document.getElementById('modalGroupe').textContent;
+    const date = document.getElementById('modalDate').textContent;
+    const heure = document.getElementById('modalHeure').textContent;
+
+    const trainerPresence = document.querySelector('input[name="trainerPresence"]:checked');
+    if (!trainerPresence) {
+        alert("Veuillez marquer votre présence en tant qu'entraîneur.");
+        return;
+    }
+
+    const presences = [];
+    document.querySelectorAll('#adherentsList tr').forEach(row => {
+        const matricule = row.cells[0].textContent;
+        const presence = row.querySelector('input[type="radio"]:checked');
+        const seanceId = document.querySelector('[data-seance-id]').dataset.seanceId; // Fetch seance_id dynamically
+        if (presence && seanceId) {
+            presences.push({
+                groupe_nom: groupe,
+                adherent_matricule: matricule,
+                date_seance: date,
+                heure_debut: heure,
+                est_present: presence.value,
+                seance_id: seanceId
+            });
+        }
+    });
+
+    const data = {
+        trainerPresence: {
+            groupe_nom: groupe,
+            entraineur_nom: document.querySelector('[data-entraineur]').dataset.entraineur,
+            date_seance: date,
+            heure_debut: heure,
+            est_present: trainerPresence.value
+        },
+        adherentsPresence: presences
+    };
+
+    // Send the data to the server
+    fetch('/api/presences', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Failed to save presences.");
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert("Présences enregistrées avec succès!");
+            bootstrap.Modal.getInstance(document.getElementById('presenceModal')).hide();
+        } else {
+            alert(`Erreur: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de l\'enregistrement des présences:', error);
+        alert("Une erreur est survenue lors de l'enregistrement des présences.");
+    });
+}
+</script>
+<style>
+  /* Styles pour le modal de présence */
+.session-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.btn-check:checked + .btn-outline-success {
+    background-color: #198754;
+    color: white;
+}
+
+.btn-check:checked + .btn-outline-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.btn-group label {
+    min-width: 100px;
+}
+</style>
+            <!-- Footer Start -->
+            <div class="container-fluid pt-4 px-4">
+                <div class="bg-light rounded-top p-4">
+                    <div class="row">
+                        <div class="col-12 col-sm-6 text-center text-sm-start">
+                            &copy; <a href="#">TCHS</a>, All Right Reserved. 
+                        </div>
+                        <div class="col-12 col-sm-6 text-center text-sm-end">
+                            <!--/*** This template is free as long as you keep the footer author’s credit link/attribution link/backlink. If you'd like to use the template without the footer author’s credit link/attribution link/backlink, you can purchase the Credit Removal License from "https://htmlcodex.com/credit-removal". Thank you for your support. ***/-->
+                            Designed by <a>AMH</a>
+                        </br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer End -->
+        </div>
+        <!-- Content End -->
+
+
+        <!-- Back to Top -->
+        <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+    </div>
+
+    <!-- JavaScript Libraries -->
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+<!-- Template Javascript -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+</body>
+
+</html>

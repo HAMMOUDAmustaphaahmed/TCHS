@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS Dashboard</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+    <style>
+        .stat-card {
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        .payment-detail-table {
+            font-size: 0.85rem;
+        }
+        .payment-detail-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .payment-detail-table td {
+            vertical-align: middle;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .chart-container canvas {
+            max-height: 280px !important;
+        }
+        .filter-section {
+            background: linear-gradient(135deg, #77aed3 0%, #47a5d1 100%);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+        }
+        .indicator-card {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .indicator-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgb(124, 174, 221);
+        }
+        .badge-custom {
+            font-size: 0.75rem;
+            padding: 0.5em 0.75em;
+            border-radius: 20px;
+        }
+        .season-badge {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+        
+    <!-- Sidebar Start -->
+    {% include 'sidebar.html' %}
+    <!-- Sidebar End -->
+
+    <!-- Content Start -->
+    <div class="content">
+        <!-- Navbar Start -->
+        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+            <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                <h2 class="text-primary mb-0"></h2>
+            </a>
+            <a href="#" class="sidebar-toggler flex-shrink-0">
+                <i class="fa fa-bars"></i>
+            </a>
+            
+        </nav>
+        <!-- Navbar End -->
+
+        <!-- Section Filtres -->
+        <div class="container-fluid pt-4 px-4">
+            <div class="filter-section">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <h5 class="mb-0 text-white">
+                        <i class="fa fa-filter me-2"></i>Filtres Dynamiques
+                    </h5>
+                    <button class="btn btn-light btn-sm" onclick="resetFilters()">
+                        <i class="fa fa-refresh me-1"></i>Réinitialiser
+                    </button>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="mb-3 text-white">Type d'Abonnement:</h6>
+                        <div id="typeAbonnementFilters" class="d-flex flex-wrap gap-2"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="mb-3 text-white">Groupe:</h6>
+                        <div id="groupeFilters" class="d-flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+                
+                <div class="mt-3 text-center">
+                    <small id="filterStatus" class="text-white-50">Tous les adhérents</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Indicateurs Financiers Principaux -->
+        <div class="container-fluid pt-4 px-4">
+            <div class="row g-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="indicator-card bg-gradient-primary text-white p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-black-50 mb-2">Total Collecté</h6>
+                                <h3 class="mb-0" id="totalCollecte">{{ total_collecte }} TND</h3>
+                            </div>
+                            <i class="fa fa-wallet fa-3x opacity-50"></i>
+                        </div>
+                        <div class="mt-3">
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-black" role="progressbar" style="width: 0%" id="progressBar"></div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="indicator-card bg-gradient-warning text-white p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-black-50 mb-2">Total Dû</h6>
+                                <h3 class="mb-0" id="totalRestant">{{ total_reste }} TND</h3>
+                            </div>
+                            <i class="fa fa-clock fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="indicator-card bg-gradient-info text-white p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-black-50 mb-2">Total Adhérents</h6>
+                                <h3 class="mb-0" id="totalAdherents">0</h3>
+                            </div>
+                            <i class="fa fa-users fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="indicator-card bg-gradient-success text-white p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-black-50 mb-2">Taux de Collecte</h6>
+                                <h3 class="mb-0" id="tauxCollecte">0%</h3>
+                            </div>
+                            <i class="fa fa-chart-line fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphiques Répartition -->
+        <div class="container-fluid pt-4 px-4">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="bg-white rounded-3 shadow-sm p-4">
+                        <h6 class="mb-3 text-primary">
+                            <i class="fa fa-pie-chart me-2"></i>Répartition par Type
+                        </h6>
+                        <div class="chart-container">
+                            <canvas id="typeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="bg-white rounded-3 shadow-sm p-4">
+                        <h6 class="mb-3 text-primary">
+                            <i class="fa fa-pie-chart me-2"></i>Répartition par Groupe
+                        </h6>
+                        <div class="chart-container">
+                            <canvas id="groupeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Indicateurs de Paiement Améliorés -->
+        <div class="container-fluid pt-4 px-4">
+            <div class="bg-white rounded-3 shadow-sm p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <h5 class="mb-0 text-primary">
+                        <i class="fa fa-credit-card me-2"></i>Analyse des Paiements
+                    </h5>
+                    <button class="btn btn-outline-primary btn-sm" onclick="refreshPaymentData()">
+                        <i class="fa fa-sync-alt me-1"></i>Actualiser
+                    </button>
+                </div>
+                
+                <!-- Tableau Paiements Complets -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">
+                                    <i class="fa fa-check-circle me-2"></i>Paiements Complets
+                                    <span class="badge bg-light text-success ms-2" id="totalPaiementsComplets">0</span>
+                                </h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table payment-detail-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th width="40%">Type d'Abonnement</th>
+                                            <th width="30%" class="text-center">Nombre</th>
+                                            <th width="30%" class="text-end">Montant</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="completPaymentDetails">
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">Chargement...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tableau Paiements Partiels -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-warning">
+                            <div class="card-header bg-warning text-white">
+                                <h6 class="mb-0">
+                                    <i class="fa fa-clock me-2"></i>Paiements Partiels
+                                    <span class="badge bg-light text-warning ms-2" id="totalPaiementsPartiels">0</span>
+                                </h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table payment-detail-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th width="40%">Type d'Abonnement</th>
+                                            <th width="30%" class="text-center">Nombre</th>
+                                            <th width="30%" class="text-end">Montant Payé</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="partialPaymentDetails">
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">Chargement...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tableau Impayés -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-danger">
+                            <div class="card-header bg-danger text-white">
+                                <h6 class="mb-0">
+                                    <i class="fa fa-times-circle me-2"></i>Impayés
+                                    <span class="badge bg-light text-danger ms-2" id="totalPaiementsImpaye">0</span>
+                                </h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table payment-detail-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th width="40%">Type d'Abonnement</th>
+                                            <th width="30%" class="text-center">Nombre</th>
+                                            <th width="30%" class="text-end">Montant Dû</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="unpaidPaymentDetails">
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">Chargement...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistiques Supplémentaires -->
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="bg-light rounded-3 p-3 h-100">
+                            <h6 class="mb-3 text-primary">Répartition par Règlement</h6>
+                            <canvas id="reglementChart" style="max-height: 200px;"></canvas>
+                            <div id="reglementDetails" class="mt-2 small"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="bg-light rounded-3 p-3 h-100">
+                            <h6 class="mb-3 text-primary">Paiements Récents</h6>
+                            <div id="paiementsRecents" style="max-height: 280px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="bg-light rounded-3 p-3 h-100 text-center">
+                            <h6 class="mb-3 text-primary">Résumé Financier</h6>
+                            <div class="mb-3">
+                                <h4 class="text-success mb-1" id="totalMontantPercu">0 TND</h4>
+                                <small class="text-muted">Montant Total Perçu</small>
+                            </div>
+                            <div class="progress mb-2" style="height: 15px;">
+                                <div class="progress-bar bg-success" role="progressbar" id="financialProgress" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted" id="globalProgressText">0% collecté</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tableau Derniers Paiements -->
+        <div class="container-fluid pt-4 px-4">
+            <div class="bg-white rounded-3 shadow-sm p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <h6 class="mb-0 text-primary">
+                        <i class="fa fa-history me-2"></i>Derniers Paiements
+                    </h6>
+                    <a href="/recherche-paiements" class="btn btn-outline-primary btn-sm">Voir tous</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Matricule</th>
+                                <th>Montant Payé</th>
+                                <th>Type</th>
+                                <th>Saison</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in paiements_recent %}
+                            <tr>
+                                <td>{{ p.date_paiement.strftime('%d/%m/%Y') if p.date_paiement else 'N/A' }}</td>
+                                <td><span class="badge badge-custom bg-primary">{{ p.matricule_adherent }}</span></td>
+                                <td><strong class="text-success">{{ p.montant_paye }} TND</strong></td>
+                                <td>{{ p.type_reglement or 'Non spécifié' }}</td>
+                                <td>{{ p.code_saison }}</td>
+                                <td>
+                                    {% if p.numero_bon %}
+                                    <a class="btn btn-sm btn-outline-primary" href="/static/bons_paiements/paiement_{{p.numero_bon}}.pdf" target="_blank">
+                                        <i class="fa fa-file-pdf me-1"></i>PDF
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Start -->
+        <div class="container-fluid pt-4 px-4">
+            <div class="bg-light rounded-top p-4">
+                <div class="row">
+                    <div class="col-12 col-sm-6 text-center text-sm-start">
+                        &copy; <a href="#">TCHS</a>, All Right Reserved. 
+                    </div>
+                    <div class="col-12 col-sm-6 text-center text-sm-end">
+                        Designed by <a href="https://github.com/HAMMOUDAmustaphaahmed">AMH</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Footer End -->
+    </div>
+    <!-- Content End -->
+
+    <!-- Back to Top -->
+    <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <script>
+        // Variables globales
+        let adherentsData = [];
+        let allAdherents = [];
+        let selectedTypes = new Set();
+        let selectedGroupes = new Set();
+        let paiementsData = [];
+        let charts = {};
+        let currentSaison = null;
+        let saisonType = null;
+        let saisonYear = null;
+
+        // Configuration Chart.js
+        Chart.defaults.font.family = "'Heebo', sans-serif";
+        Chart.defaults.color = '#6c757d';
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApplication();
+        });
+
+        function updateSeasonDisplay() {
+            const seasonDisplay = document.getElementById('currentSeason');
+            if (seasonDisplay && currentSaison) {
+                seasonDisplay.textContent = `${currentSaison}`;
+            }
+        }
+
+        async function initializeApplication() {
+            try {
+                // Get season information first
+                const response = await fetch('/api/current-season');
+                const seasonData = await response.json();
+                
+                if (seasonData.success) {
+                    currentSaison = seasonData.saison_code;
+                    saisonType = seasonData.saison_type;
+                    saisonYear = seasonData.saison_year;
+                    
+                    console.log('Season data loaded:', seasonData);
+                    
+                    // Update season display
+                    updateSeasonDisplay();
+                    
+                    // Load data with season information
+                    await loadAdherentsData();
+                    await loadPaiementsData();
+                    await updateAllIndicators();
+                } else {
+                    console.error('Failed to load season data');
+                    showError('filterStatus', 'Erreur de chargement des données de saison');
+                }
+            } catch (error) {
+                console.error('Erreur initialisation:', error);
+                showError('filterStatus', 'Erreur d\'initialisation');
+            }
+        }
+
+        // Chargement des données adhérents
+        async function loadAdherentsData() {
+            try {
+                if (!currentSaison) {
+                    console.error('No season selected');
+                    return;
+                }
+
+                const response = await fetch(`/api/adherents-data?saison=${currentSaison}`);
+                const data = await response.json();
+                
+                console.log('Adherents data:', data);
+                
+                if (data.success) {
+                    allAdherents = data.adherents || [];
+                    adherentsData = [...allAdherents];
+                    generateTypeFilters(data.types_abonnement || []);
+                    generateGroupeFilters(data.groupes || []);
+                    updateBasicStats();
+                } else {
+                    console.error('Failed to load adherents data:', data);
+                }
+            } catch (error) {
+                console.error('Error loading adherents data:', error);
+            }
+        }
+
+        // Générer filtres types
+        function generateTypeFilters(types) {
+            const container = document.getElementById('typeAbonnementFilters');
+            container.innerHTML = '';
+            
+            types.forEach(type => {
+                const div = document.createElement('div');
+                div.className = 'form-check form-check-inline';
+                const id = 'type_' + type.replace(/[^a-zA-Z0-9]/g, '_');
+                
+                div.innerHTML = `
+                    <input class="form-check-input" type="checkbox" id="${id}" 
+                           data-value="${type}" onchange="toggleTypeFilter(this)">
+                    <label class="form-check-label text-white-75" for="${id}">${type}</label>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Générer filtres groupes
+        function generateGroupeFilters(groupes) {
+            const container = document.getElementById('groupeFilters');
+            container.innerHTML = '';
+            
+            groupes.forEach(groupe => {
+                const div = document.createElement('div');
+                div.className = 'form-check form-check-inline';
+                const id = 'groupe_' + groupe.replace(/[^a-zA-Z0-9]/g, '_');
+                
+                div.innerHTML = `
+                    <input class="form-check-input" type="checkbox" id="${id}" 
+                           data-value="${groupe}" onchange="toggleGroupeFilter(this)">
+                    <label class="form-check-label text-white-75" for="${id}">${groupe}</label>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Toggle filtres
+        function toggleTypeFilter(checkbox) {
+            const type = checkbox.getAttribute('data-value');
+            if (checkbox.checked) {
+                selectedTypes.add(type);
+            } else {
+                selectedTypes.delete(type);
+            }
+            applyFilters();
+        }
+
+        function toggleGroupeFilter(checkbox) {
+            const groupe = checkbox.getAttribute('data-value');
+            if (checkbox.checked) {
+                selectedGroupes.add(groupe);
+            } else {
+                selectedGroupes.delete(groupe);
+            }
+            applyFilters();
+        }
+
+        // Appliquer filtres
+        function applyFilters() {
+            adherentsData = allAdherents.filter(adherent => {
+                const typeMatch = selectedTypes.size === 0 || selectedTypes.has(adherent.type_abonnement);
+                const groupeMatch = selectedGroupes.size === 0 || selectedGroupes.has(adherent.groupe);
+                return typeMatch && groupeMatch;
+            });
+            
+            updateAllIndicators();
+        }
+
+        // Réinitialiser filtres
+        function resetFilters() {
+            document.querySelectorAll('#typeAbonnementFilters input, #groupeFilters input').forEach(cb => {
+                cb.checked = false;
+            });
+            selectedTypes.clear();
+            selectedGroupes.clear();
+            applyFilters();
+        }
+
+        // Mettre à jour tous les indicateurs
+        async function updateAllIndicators() {
+            updateBasicStats();
+            updateFilterStatus();
+            updateCharts();
+            await updateFinancialIndicators();
+            await updatePaiementsIndicators();
+        }
+
+        // Stats de base
+        function updateBasicStats() {
+            document.getElementById('totalAdherents').textContent = adherentsData.length;
+        }
+
+        // Statut filtres
+        function updateFilterStatus() {
+            const status = document.getElementById('filterStatus');
+            const totalFilters = selectedTypes.size + selectedGroupes.size;
+            
+            if (totalFilters === 0) {
+                status.textContent = 'Tous les adhérents';
+            } else {
+                const filters = [];
+                if (selectedTypes.size > 0) filters.push(`${selectedTypes.size} type(s)`);
+                if (selectedGroupes.size > 0) filters.push(`${selectedGroupes.size} groupe(s)`);
+                status.textContent = `Filtré par: ${filters.join(', ')}`;
+            }
+        }
+
+        // Mettre à jour graphiques
+        function updateCharts() {
+            updateTypeChart();
+            updateGroupeChart();
+        }
+
+        function updateTypeChart() {
+            const typeCount = {};
+            adherentsData.forEach(a => {
+                typeCount[a.type_abonnement] = (typeCount[a.type_abonnement] || 0) + 1;
+            });
+
+            const ctx = document.getElementById('typeChart').getContext('2d');
+            
+            if (charts.typeChart) {
+                charts.typeChart.destroy();
+            }
+
+            charts.typeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(typeCount),
+                    datasets: [{
+                        data: Object.values(typeCount),
+                        backgroundColor: ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        function updateGroupeChart() {
+            const groupeCount = {};
+            adherentsData.forEach(a => {
+                groupeCount[a.groupe] = (groupeCount[a.groupe] || 0) + 1;
+            });
+
+            const ctx = document.getElementById('groupeChart').getContext('2d');
+            
+            if (charts.groupeChart) {
+                charts.groupeChart.destroy();
+            }
+
+            charts.groupeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(groupeCount),
+                    datasets: [{
+                        data: Object.values(groupeCount),
+                        backgroundColor: ['#4e79a7', '#f28e2c', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        // Indicateurs financiers
+        async function updateFinancialIndicators() {
+            try {
+                const params = new URLSearchParams();
+                selectedTypes.forEach(type => params.append('types[]', type));
+                selectedGroupes.forEach(groupe => params.append('groupes[]', groupe));
+                params.append('saison', currentSaison);
+
+                const response = await fetch(`/api/financial-indicators?${params}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const totalCollecte = data.total_collecte;
+                    const totalRestant = data.total_reste;
+                    const totalGeneral = totalCollecte + totalRestant;
+                    const taux = totalGeneral > 0 ? (totalCollecte / totalGeneral * 100) : 0;
+
+                    document.getElementById('totalCollecte').textContent = totalCollecte.toFixed(2) + ' TND';
+                    document.getElementById('totalRestant').textContent = totalRestant.toFixed(2) + ' TND';
+                    document.getElementById('tauxCollecte').textContent = taux.toFixed(1) + '%';
+
+                    // Update progress bars
+                    const progressBar = document.getElementById('progressBar');
+                    const progressText = document.getElementById('progressText');
+                    if (progressBar) {
+                        progressBar.style.width = taux.toFixed(1) + '%';
+                    }
+                    if (progressText) {
+                        progressText.textContent = taux.toFixed(1) + '% collecté';
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur indicateurs financiers:', error);
+            }
+        }
+
+        // Chargement données paiements
+        async function loadPaiementsData() {
+            await updatePaiementsIndicators();
+        }
+
+        // Indicateurs paiements
+        async function updatePaiementsIndicators() {
+            try {
+                const params = new URLSearchParams();
+                selectedTypes.forEach(type => params.append('types[]', type));
+                selectedGroupes.forEach(groupe => params.append('groupes[]', groupe));
+                params.append('saison', currentSaison);
+
+                const response = await fetch(`/api/paiements-indicators?${params}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    paiementsData = data.paiements;
+                    updatePaymentStats(data);
+                    updatePaymentTables(data);
+                    updateAdditionalCharts(data);
+                }
+            } catch (error) {
+                console.error('Erreur indicateurs paiements:', error);
+            }
+        }
+
+        // Mettre à jour stats paiements
+        function updatePaymentStats(data) {
+            const stats = data.statistics;
+            document.getElementById('totalPaiementsComplets').textContent = stats.complets || 0;
+            document.getElementById('totalPaiementsPartiels').textContent = stats.partiels || 0;
+            document.getElementById('totalPaiementsImpaye').textContent = stats.impayes || 0;
+            document.getElementById('totalMontantPercu').textContent = (stats.montant_total || 0).toLocaleString('fr-FR') + ' TND';
+
+            // Mise à jour du résumé financier
+            const totalCollecte = parseFloat(document.getElementById('totalCollecte').textContent.replace(' TND', '').replace(/\s/g, ''));
+            const totalRestant = parseFloat(document.getElementById('totalRestant').textContent.replace(' TND', '').replace(/\s/g, ''));
+            const totalGeneral = totalCollecte + totalRestant;
+            
+            if (totalGeneral > 0) {
+                const progress = (totalCollecte / totalGeneral) * 100;
+                const progressBar = document.getElementById('financialProgress');
+                const progressText = document.getElementById('globalProgressText');
+                
+                if (progressBar) progressBar.style.width = progress.toFixed(1) + '%';
+                if (progressText) progressText.textContent = progress.toFixed(1) + '% collecté';
+            }
+        }
+
+        // Mettre à jour tableaux détaillés
+        function updatePaymentTables(data) {
+            const typeStats = data.type_abonnement_payment_stats || {};
+            const typeMontants = data.type_abonnement_montants || {};
+
+            // Tableau paiements complets
+            updatePaymentTable('completPaymentDetails', typeStats, typeMontants, 'complet');
+            
+            // Tableau paiements partiels
+            updatePaymentTable('partialPaymentDetails', typeStats, typeMontants, 'partiel');
+            
+            // Tableau impayés
+            updatePaymentTable('unpaidPaymentDetails', typeStats, typeMontants, 'impaye');
+        }
+
+        function updatePaymentTable(tableId, typeStats, typeMontants, status) {
+            const tbody = document.getElementById(tableId);
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+            
+            if (!typeStats || Object.keys(typeStats).length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Aucune donnée</td></tr>';
+                return;
+            }
+
+            const hasData = Object.values(typeStats).some(stat => stat[status] > 0);
+            
+            if (!hasData) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Aucun paiement dans cette catégorie</td></tr>';
+                return;
+            }
+
+            // Trier par nombre décroissant
+            const sortedTypes = Object.entries(typeStats)
+                .filter(([type, stat]) => stat[status] > 0)
+                .sort((a, b) => b[1][status] - a[1][status]);
+
+            sortedTypes.forEach(([type, stat]) => {
+                const count = stat[status];
+                const montant = typeMontants[type] ? typeMontants[type][status] || 0 : 0;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <strong>${type}</strong>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-primary">${count}</span>
+                    </td>
+                    <td class="text-end">
+                        <strong class="text-success">${montant.toLocaleString('fr-FR')} TND</strong>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Ligne total
+            const totalCount = Object.values(typeStats).reduce((sum, stat) => sum + (stat[status] || 0), 0);
+            const totalMontant = Object.values(typeMontants).reduce((sum, montant) => sum + (montant[status] || 0), 0);
+            
+            if (totalCount > 0) {
+                const totalRow = document.createElement('tr');
+                totalRow.className = 'table-active fw-bold';
+                totalRow.innerHTML = `
+                    <td><strong>TOTAL</strong></td>
+                    <td class="text-center"><span class="badge bg-secondary">${totalCount}</span></td>
+                    <td class="text-end"><strong>${totalMontant.toLocaleString('fr-FR')} TND</strong></td>
+                `;
+                tbody.appendChild(totalRow);
+            }
+        }
+
+        // Charts additionnels
+        function updateAdditionalCharts(data) {
+            updateReglementChart(data);
+            updateRecentPayments(data.paiements_recents);
+        }
+
+        function updateReglementChart(data) {
+            const reglementStats = data.reglement_stats || {};
+            const ctx = document.getElementById('reglementChart').getContext('2d');
+
+            if (charts.reglementChart) {
+                charts.reglementChart.destroy();
+            }
+
+            const labels = Object.keys(reglementStats);
+            const values = Object.values(reglementStats);
+
+            if (labels.length === 0) {
+                document.getElementById('reglementDetails').innerHTML = '<p class="text-muted small">Aucune donnée</p>';
+                return;
+            }
+
+            charts.reglementChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ['#28a745', '#17a2b8', '#ffc107', '#dc3545', '#6f42c1']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // Détails règlement
+            const details = document.getElementById('reglementDetails');
+            details.innerHTML = '';
+            const total = values.reduce((sum, val) => sum + val, 0);
+            
+            Object.entries(reglementStats).forEach(([type, count]) => {
+                const percent = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+                details.innerHTML += `<div class="d-flex justify-content-between mb-1">
+                    <small>${type}:</small>
+                    <small><strong>${count}</strong> (${percent}%)</small>
+                </div>`;
+            });
+        }
+
+        function updateRecentPayments(recentPayments) {
+            const container = document.getElementById('paiementsRecents');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            if (!recentPayments || recentPayments.length === 0) {
+                container.innerHTML = '<p class="text-muted">Aucun paiement récent</p>';
+                return;
+            }
+
+            recentPayments.slice(0, 8).forEach(payment => {
+                const date = payment.date_paiement ? 
+                    new Date(payment.date_paiement).toLocaleDateString('fr-FR') : 
+                    'Date inconnue';
+                
+                const statusClass = payment.status_paiement === 'complet' ? 'success' : 
+                                   payment.status_paiement === 'partiel' ? 'warning' : 'danger';
+                
+                const statusText = payment.status_paiement === 'complet' ? 'Complet' : 
+                                  payment.status_paiement === 'partiel' ? 'Partiel' : 'Impayé';
+
+                container.innerHTML += `
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong class="text-primary">${payment.nom_adherent || 'Inconnu'}</strong>
+                                <br><small class="text-muted">${date}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-${statusClass}">${statusText}</span>
+                                <br><small class="text-success fw-bold">${payment.montant_paye} TND</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Fonction de rafraîchissement
+        async function refreshPaymentData() {
+            const button = document.querySelector('button[onclick="refreshPaymentData()"]');
+            const originalContent = button.innerHTML;
+            
+            button.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Chargement...';
+            button.disabled = true;
+            
+            try {
+                await updatePaiementsIndicators();
+            } finally {
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            }
+        }
+
+        // Fonctions utilitaires
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('fr-FR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount) + ' TND';
+        }
+
+        function showError(elementId, message) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = message;
+                element.classList.add('text-danger');
+            }
+        }
+
+        // Gestion des erreurs globales
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Erreur non gérée:', event.reason);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <!-- Favicon -->
+<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Libraries Stylesheet -->
+<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+<!-- Customized Bootstrap Stylesheet -->
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+<!-- Template Stylesheet -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+    <div class="content">
+    
+    <!-- Navbar Start -->
+            <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+                <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                    <h2 class="text-primary mb-0"></h2>
+                </a>
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
+
+                
+
+                
+
+                
+            </nav>
+            <!-- Navbar End -->
+        
+
+
+        <!-- Sign In Start -->
+         <div class="container-fluid">     
+        <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
+            <div class="col-12 col-lg-8 col-xl-6">
+                <div class="form-container rounded p-4 p-sm-5 my-4 mx-3">
+                    <div class="d-flex align-items-center justify-content-center mb-4">
+                        <h2>Nouveau Entraineur</h2>
+                    </div>
+                    
+                    <form method="post" action="{{ url_for('ajouter_entraineur') }}">    
+                        <div class="row">
+                            <!-- Colonne de gauche -->
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" name="nom" id="nom" placeholder="Nom" required>
+                                    <label for="nom">Nom<span class="text-danger">*</span></label>
+                                </div>
+                                
+                                <div class="form mb-3">
+                                    <label for="sexe" class="form-label">Sexe<span class="text-danger">*</span></label>
+                                    <select id="sexe" name="sexe" class="form-control" required>
+                                        <option value="" disabled selected>Sélectionner...</option>
+                                        <option value="M">Homme</option>
+                                        <option value="F">Femme</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" name="addresse" id="addresse" placeholder="Adresse" required>
+                                    <label for="addresse">Adresse<span class="text-danger">*</span></label>
+                                </div>
+                                
+                                <div class="form mb-3">
+        <label for="role_technique" class="form-label">Rôle Technique<span class="text-danger">*</span></label>
+        <select id="role_technique" name="role_technique" class="form-control" onchange="toggleCategorie()" required>
+            <option value="" disabled selected>Sélectionner...</option>
+            <option value="Entraineur">Entraineur</option>
+            <option value="Prep Physique">Prep Physique</option>
+            <option value="Directeur Technique">Directeur Technique</option>
+            <option value="Adjoint">Adjoint</option>
+        </select>
+    </div>
+    <script>
+function toggleCategorie() {
+    const roleTechnique = document.getElementById('role_technique').value;
+    const categorieContainer = document.getElementById('categorie-container');
+    const categorieSelect = document.getElementById('type_abonnement');
+    
+    if (roleTechnique === 'Entraineur') {
+        categorieContainer.style.display = 'block';
+        categorieSelect.required = true;
+    } else {
+        categorieContainer.style.display = 'none';
+        categorieSelect.required = false;
+        categorieSelect.value = ''; // Réinitialiser la valeur
+    }
+}
+
+// Initialiser au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    toggleCategorie();
+});
+</script>
+    <div class="form mb-3" id="categorie-container" style="display: none;">
+        <label for="type_abonnement" class="form-label">Catégorie à Entraîner</label>
+        <select id="type_abonnement" name="type_abonnement" class="form-control">
+            <option value="">Aucune</option>
+            <option value="Loisir">Loisir</option>
+            <option value="Ecole">Ecole</option>
+            <option value="Compétitif">Compétitif</option>
+            <option value="Pré-Compétitif">Pré-Compétitif</option>
+            <option value="Ecole d'été">Ecole d'été</option>
+            <option value="Adulte">Adulte</option>
+        </select>
+    </div>
+                            </div>
+                            
+                            <!-- Colonne de droite -->
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" name="prenom" id="prenom" placeholder="Prénom" required>
+                                    <label for="prenom">Prénom<span class="text-danger">*</span></label>
+                                </div>
+                                
+                                <div class="form-floating mb-3">
+                                    <input type="tel" class="form-control" name="tel" id="tel" placeholder="Téléphone" required>
+                                    <label for="tel">Téléphone<span class="text-danger">*</span></label>
+                                </div>
+                                
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" name="compte_bancaire" id="compte_bancaire" placeholder="Compte Bancaire" required>
+                                    <label for="compte_bancaire">Compte Bancaire<span class="text-danger">*</span></label>
+                                </div>
+                                <div class="form mb-3">
+        <label for="saison_type" class="form-label">Type de Saison<span class="text-danger">*</span></label>
+        <select id="saison_type" name="saison_type" class="form-control" required>
+            <option value="S" {% if current_season_type == 'S' %}selected{% endif %}>Saison Normale (S)</option>
+            <option value="E" {% if current_season_type == 'E' %}selected{% endif %}>École d'été (E)</option>
+        </select>
+    </div>
+    
+    <div class="form-floating mb-3">
+        <input type="number" class="form-control" name="annee_saison" id="annee_saison" 
+               placeholder="Année" value="{{ current_season_year }}" min="2020" max="2030" required>
+        <label for="annee_saison">Année de Saison<span class="text-danger">*</span></label>
+    </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary py-3 w-100">
+                                    Ajouter l'Entraineur
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+        <style>
+        body {
+            background: linear-gradient(135deg, #009CFF 0%, #009CFF 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .form-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid #e0e6ed;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #009CFF;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #009CFF 0%, #009CFF 100%);
+            border: none;
+            border-radius: 8px;
+            transition: transform 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .text-danger {
+            color: #dc3545 !important;
+        }
+        
+        h2 {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .form-floating label {
+            color: #6c757d;
+        }
+        
+        select.form-control {
+            padding: 12px;
+            height: calc(3.5rem + 2px);
+        }
+    </style>
+        <!-- Sign In End -->
+    
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}" rel="stylesheet"></script>
+
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}" rel="stylesheet"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}" rel="stylesheet"></script>
+
+</body>
+
+</html>

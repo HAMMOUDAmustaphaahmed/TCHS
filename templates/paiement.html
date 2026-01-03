@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Gestion des Paiements - TCHS</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Libraries -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+    
+    <!-- Bootstrap & Template -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <style>
+        #autocomplete-list {
+            position: absolute;
+            top: 100% !important;
+            left: 0;
+            right: 0;
+            z-index: 9999 !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #ddd;
+            border-top: none;
+            background-color: white;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        #autocomplete-list .list-group-item {
+            cursor: pointer;
+            border-left: none;
+            border-right: none;
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        #autocomplete-list .list-group-item:hover,
+        #autocomplete-list .list-group-item.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+
+        .autocomplete-name {
+            font-weight: 600;
+            color: #0d6efd;
+        }
+
+        .autocomplete-matricule {
+            font-size: 0.85em;
+            color: #6c757d;
+        }
+
+        .input-group {
+            position: relative !important;
+        }
+        
+        .paiement-annule {
+            background-color: #f8d7da !important;
+            opacity: 0.7;
+            text-decoration: line-through;
+        }
+        
+        .badge-annule {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .form-control:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+        
+        .btn:focus {
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+
+        .numero-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .numero-display .label {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .numero-display .value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+    
+    <div class="content">
+        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+            <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                <h2 class="text-primary mb-0"></h2>
+            </a>
+            <a href="#" class="sidebar-toggler flex-shrink-0">
+                <i class="fa fa-bars"></i>
+            </a>
+        </nav>
+
+        <div class="container-xxl position-relative bg-white d-flex p-0">
+            <div class="container mt-5">
+                {% if saison_type == 'ete' %}
+                    <h1 class="mb-4">Gestion des Paiements École d'Été {{ saison_year }}</h1>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Vous gérez les paiements pour la saison <strong>{{ code_saison }}</strong> (École d'Été)
+                    </div>
+                {% else %}
+                    <h1 class="mb-4">Gestion des Paiements Abonnements Annuels {{ saison_year - 1 }}/{{ saison_year }}</h1>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Vous gérez les paiements pour la saison <strong>{{ code_saison }}</strong> (Abonnement Annuel)
+                    </div>
+                {% endif %}
+                
+                <!-- Formulaire de recherche -->
+                <form method="POST" class="mb-4" id="searchForm">
+                    <div class="input-group position-relative">
+                        <input 
+                            type="text" 
+                            name="matricule" 
+                            id="matriculeInput"
+                            class="form-control" 
+                            placeholder="Nom, Prénom ou Matricule de l'adhérent" 
+                            autocomplete="off"
+                            required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search me-2"></i>Rechercher
+                        </button>
+                        
+                        <div id="autocomplete-list" class="list-group position-absolute w-100"></div>
+                    </div>
+                </form>
+
+                {% if adherent %}
+                    <!-- Infos adhérent -->
+                    <div class="card shadow-sm border-0 rounded-3 mb-4">
+                        <div class="card-body p-4">
+                            <h5 class="card-title d-flex align-items-center mb-4">
+                                <i class="bi bi-person-circle text-primary me-2 fs-3 shadow-sm p-1 rounded-circle bg-light"></i>
+                                <span class="fw-bold">{{ adherent.nom }} {{ adherent.prenom }}</span>
+                                <span class="badge bg-gradient bg-info text-dark ms-3 shadow-sm">
+                                    Matricule : {{ adherent.matricule }}
+                                </span>
+                            </h5>
+
+                            <div class="row g-4">
+                                <div class="col-lg-4 col-md-6 col-12">
+                                    <div class="p-3 bg-light rounded-3 h-100">
+                                        <h6 class="fw-bold text-primary mb-3 border-bottom border-primary pb-2">
+                                            <i class="bi bi-person-vcard me-2"></i>Coordonnées
+                                        </h6>
+                                        <ul class="list-unstyled mb-0">
+                                            <li class="mb-2"><i class="bi bi-person text-secondary me-2"></i>
+                                                <strong>Nom :</strong> {{ adherent.nom }}</li>
+                                            <li class="mb-2"><i class="bi bi-person text-secondary me-2"></i>
+                                                <strong>Prénom :</strong> {{ adherent.prenom }}</li>
+                                            <li class="mb-2"><i class="bi bi-hash text-secondary me-2"></i>
+                                                <strong>Matricule :</strong> {{ adherent.matricule }}</li>
+                                            <li class="mb-0"><i class="bi bi-calendar-check text-success me-2"></i>
+                                                <strong>Date d'inscription :</strong> {{ adherent.date_inscription.strftime('%d/%m/%Y') }}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4 col-md-6 col-12">
+                                    <div class="p-3 bg-light rounded-3 h-100">
+                                        <h6 class="fw-bold text-info mb-3 border-bottom border-info pb-2">
+                                            <i class="bi bi-building me-2"></i>Infos Club
+                                        </h6>
+                                        <ul class="list-unstyled mb-0">
+                                            <li class="mb-2"><i class="bi bi-calendar2 text-info me-2"></i>
+                                                <strong>Code Saison :</strong> {{ code_saison }}</li>
+                                            <li class="mb-2"><i class="bi bi-card-checklist text-info me-2"></i>
+                                                <strong>Type d'abonnement :</strong> {{ adherent.type_abonnement }}</li>
+                                            <li class="mb-0"><i class="bi bi-people text-info me-2"></i>
+                                                <strong>Groupe :</strong> {{ adherent.groupe|default("Non défini") }}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4 col-12">
+                                    <div class="p-3 bg-light rounded-3 h-100">
+                                        <h6 class="fw-bold text-warning mb-3 border-bottom border-warning pb-2">
+                                            <i class="bi bi-credit-card me-2"></i>Paiements
+                                        </h6>
+                                        <ul class="list-unstyled mb-3">
+                                            <li class="mb-2"><i class="bi bi-cash text-warning me-2"></i>
+                                                <strong>Cotisation :</strong> {{ "%.2f"|format(cotisation) }} TND</li>
+                                            <li class="mb-2"><i class="bi bi-percent text-primary me-2"></i>
+                                                <strong>Remise :</strong> {{ remise }}%
+                                                <span class="badge bg-light text-dark ms-2">-{{ "%.2f"|format(remise_montant) }} TND</span>
+                                            </li>
+                                            <li class="mb-2"><i class="bi bi-cash me-2"></i>
+                                                <strong>Montant net :</strong> {{ "%.2f"|format(montant_net) }} TND</li>
+                                        </ul>
+
+                                        <div class="alert {% if reste_a_payer == 0 %}alert-success{% else %}alert-danger{% endif %} d-flex align-items-center mb-0" role="alert">
+                                            <i class="bi {% if reste_a_payer == 0 %}bi-check-circle-fill{% else %}bi-exclamation-triangle-fill{% endif %} me-2"></i>
+                                            <div><strong>Reste à payer :</strong> {{ "%.2f"|format(reste_a_payer) }} TND</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulaire de paiement -->
+                    <div class="card shadow-sm border-0 rounded-3 mb-4">
+                        <div class="card-header bg-primary text-white py-3">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-plus-circle me-2"></i>Nouveau Paiement
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <form method="POST" id="paiementForm" onsubmit="return validatePaiement()">
+                                <input type="hidden" name="matricule" value="{{ adherent.matricule }}">
+                                
+                                <!-- Affichage des numéros de bon et carnet -->
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-6">
+                                        <div class="numero-display">
+                                            <div class="label">
+                                                <i class="bi bi-journal-text me-1"></i>Numéro de Carnet
+                                            </div>
+                                            <div class="value">{{ numero_carnet }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="numero-display">
+                                            <div class="label">
+                                                <i class="bi bi-receipt me-1"></i>Numéro de Bon
+                                            </div>
+                                            <div class="value">{{ numero_bon }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label for="montant_paye" class="form-label fw-bold">Montant à payer <span class="text-danger">*</span></label>
+                                        <input type="number" 
+                                               class="form-control" 
+                                               id="montant_paye" 
+                                               name="montant_paye" 
+                                               step="0.01" 
+                                               min="0.01"
+                                               max="{{ reste_a_payer }}"
+                                               required
+                                               onkeydown="return preventEnter(event)">
+                                        <div class="form-text text-danger fw-bold">
+                                            Maximum: {{ "%.2f"|format(reste_a_payer) }} TND
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <label for="type_reglement" class="form-label fw-bold">Type de règlement <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="type_reglement" name="type_reglement" required onkeydown="return preventEnter(event)" onchange="toggleChequeFields()">
+                                            <option value="">Choisir...</option>
+                                            <option value="espèce">Espèce</option>
+                                            <option value="chèque">Chèque</option>
+                                            <option value="virement">Virement</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="col-md-4" id="cheque_field" style="display: none;">
+                                        <label for="numero_cheque" class="form-label fw-bold">Numéro de chèque <span class="text-danger">*</span></label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="numero_cheque" 
+                                               name="numero_cheque"
+                                               onkeydown="return preventEnter(event)"
+                                               placeholder="Numéro du chèque">
+                                    </div>
+                                    
+                                    <div class="col-md-6" id="banque_field" style="display: none;">
+                                        <label for="banque" class="form-label fw-bold">Banque <span class="text-danger">*</span></label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="banque" 
+                                               name="banque"
+                                               onkeydown="return preventEnter(event)"
+                                               placeholder="Nom de la banque">
+                                    </div>
+                                    
+                                    <div class="col-md-6 d-flex align-items-end">
+                                        <button type="submit" 
+                                                class="btn btn-success w-100 py-2 fw-bold"
+                                                id="btnAjouterPaiement">
+                                            <i class="bi bi-check-circle me-2"></i>
+                                            Valider le Paiement
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-warning mt-3 d-flex align-items-center">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <div>
+                                        <strong>Attention :</strong> Le montant payé ne peut pas dépasser le reste à payer de {{ "%.2f"|format(reste_a_payer) }} TND
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Historique des paiements -->
+                    {% if paiements %}
+                    <h3 class="mt-4 mb-3">
+                        <i class="bi bi-receipt me-2"></i>Historique des Paiements
+                    </h3>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Saison</th>
+                                    <th>N° Carnet</th>
+                                    <th>N° Bon</th>
+                                    <th>Montant</th>
+                                    <th>Type de Règlement</th>
+                                    <th>N° Chèque</th>
+                                    <th>Banque</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for paiement in paiements %}
+                                <tr class="{% if paiement.etat == 'annule' %}paiement-annule{% endif %}" id="paiement-{{ paiement.id_paiement }}">
+                                    <td>{{ paiement.date_paiement.strftime('%d/%m/%Y') }}</td>
+                                    <td><span class="badge bg-info">{{ paiement.code_saison }}</span></td>
+                                    <td>{{ paiement.numero_carnet }}</td>
+                                    <td>{{ paiement.numero_bon }}</td>
+                                    <td><strong>{{ "%.2f"|format(paiement.montant_paye) }} TND</strong></td>
+                                    <td>
+                                        {% if paiement.type_reglement == 'espèce' %}
+                                            <span class="badge bg-success">Espèce</span>
+                                        {% elif paiement.type_reglement == 'chèque' %}
+                                            <span class="badge bg-warning text-dark">Chèque</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">Virement</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ paiement.numero_cheque or '-' }}</td>
+                                    <td>{{ paiement.banque or '-' }}</td>
+                                    <td>
+                                        {% if paiement.etat == 'annule' %}
+                                            <span class="badge badge-annule">
+                                                <i class="bi bi-x-circle me-1"></i>Annulé
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle me-1"></i>Actif
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if paiement.etat == 'actif' %}
+                                        <button type="button" 
+                                                class="btn btn-sm btn-danger" 
+                                                onclick="annulerPaiement({{ paiement.id_paiement }})"
+                                                title="Annuler ce paiement">
+                                            <i class="bi bi-x-circle"></i> Annuler
+                                        </button>
+                                        {% else %}
+                                        <span class="text-muted small">
+                                            {% if paiement.date_annulation %}
+                                                Annulé le {{ paiement.date_annulation.strftime('%d/%m/%Y') }}
+                                            {% else %}
+                                                Annulé
+                                            {% endif %}
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="4" class="text-end"><strong>Total Payé (actif) :</strong></td>
+                                    <td colspan="6"><strong class="text-success">{{ "%.2f"|format(total_montant_paye) }} TND</strong></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4" class="text-end"><strong>Reste à Payer :</strong></td>
+                                    <td colspan="6"><strong class="text-danger">{{ "%.2f"|format(reste_a_payer) }} TND</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info text-center">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Aucun paiement enregistré pour cet adhérent.
+                    </div>
+                    {% endif %}
+
+                {% else %}
+                    <!-- Message quand aucun adhérent n'est sélectionné -->
+                    <div class="text-center py-5">
+                        <i class="bi bi-person-x display-1 text-muted"></i>
+                        <h3 class="text-muted mt-3">Aucun adhérent sélectionné</h3>
+                        <p class="text-muted">Veuillez rechercher un adhérent pour gérer ses paiements.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <script>
+        // Afficher/masquer les champs selon le type de règlement
+        function toggleChequeFields() {
+            const typeReglement = document.getElementById('type_reglement').value;
+            const chequeField = document.getElementById('cheque_field');
+            const banqueField = document.getElementById('banque_field');
+            const numeroChequeInput = document.getElementById('numero_cheque');
+            const banqueInput = document.getElementById('banque');
+            
+            if (typeReglement === 'chèque') {
+                chequeField.style.display = 'block';
+                banqueField.style.display = 'block';
+                numeroChequeInput.required = true;
+                banqueInput.required = true;
+            } else {
+                chequeField.style.display = 'none';
+                banqueField.style.display = 'none';
+                numeroChequeInput.required = false;
+                banqueInput.required = false;
+                numeroChequeInput.value = '';
+                banqueInput.value = '';
+            }
+        }
+
+        // Empêcher la soumission par Entrée
+        function preventEnter(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                return false;
+            }
+            return true;
+        }
+
+        // Validation du formulaire de paiement
+        function validatePaiement() {
+            const montantInput = document.getElementById('montant_paye');
+            const montant = parseFloat(montantInput.value);
+            const resteAPayer = parseFloat('{{ reste_a_payer }}');
+            
+            if (montant > resteAPayer) {
+                alert('Erreur : Le montant payé (' + montant.toFixed(2) + ' TND) dépasse le reste à payer (' + resteAPayer.toFixed(2) + ' TND)');
+                montantInput.focus();
+                return false;
+            }
+            
+            if (montant <= 0) {
+                alert('Erreur : Le montant doit être supérieur à 0');
+                montantInput.focus();
+                return false;
+            }
+
+            const typeReglement = document.getElementById('type_reglement').value;
+            if (typeReglement === 'chèque') {
+                const numeroCheque = document.getElementById('numero_cheque').value.trim();
+                const banque = document.getElementById('banque').value.trim();
+                
+                if (!numeroCheque) {
+                    alert('Erreur : Veuillez saisir le numéro de chèque');
+                    document.getElementById('numero_cheque').focus();
+                    return false;
+                }
+                
+                if (!banque) {
+                    alert('Erreur : Veuillez saisir le nom de la banque');
+                    document.getElementById('banque').focus();
+                    return false;
+                }
+            }
+            
+            // Désactiver le bouton pour éviter les doubles clics
+            document.getElementById('btnAjouterPaiement').disabled = true;
+            document.getElementById('btnAjouterPaiement').innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Génération du bon en cours...';
+            
+            return true;
+        }
+
+        // Fonction pour annuler un paiement
+        function annulerPaiement(idPaiement) {
+            if (!confirm('Êtes-vous sûr de vouloir annuler ce paiement ? Cette action est irréversible.')) {
+                return;
+            }
+            
+            fetch('/annuler_paiement/' + idPaiement, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mettre à jour l'interface
+                    const row = document.getElementById('paiement-' + idPaiement);
+                    if (row) {
+                        row.classList.add('paiement-annule');
+                        row.cells[8].innerHTML = '<span class="badge badge-annule"><i class="bi bi-x-circle me-1"></i>Annulé</span>';
+                        row.cells[9].innerHTML = '<span class="text-muted small">Annulé maintenant</span>';
+                    }
+                    
+                    // Mettre à jour les totaux
+                    location.reload(); // Recharger pour les nouveaux calculs
+                } else {
+                    alert('Erreur: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Une erreur est survenue lors de l\'annulation du paiement.');
+            });
+        }
+
+        // Autocomplétion
+        document.addEventListener('DOMContentLoaded', function() {
+            const matriculeInput = document.getElementById('matriculeInput');
+            const autocompleteList = document.getElementById('autocomplete-list');
+            const adherentsData = {{ adherents_list | tojson }};
+
+            matriculeInput.addEventListener('input', function() {
+                const query = this.value.toLowerCase();
+                autocompleteList.innerHTML = '';
+                
+                if (query.length < 2) {
+                    autocompleteList.style.display = 'none';
+                    return;
+                }
+
+                const filtered = adherentsData.filter(adh => 
+                    adh.nom.toLowerCase().includes(query) ||
+                    adh.prenom.toLowerCase().includes(query) ||
+                    adh.matricule.toLowerCase().includes(query)
+                );
+
+                if (filtered.length === 0) {
+                    autocompleteList.style.display = 'none';
+                    return;
+                }
+
+                autocompleteList.style.display = 'block';
+                
+                filtered.forEach(adh => {
+                    const item = document.createElement('div');
+                    item.className = 'list-group-item';
+                    item.innerHTML = `
+                        <div class="autocomplete-name">${adh.nom} ${adh.prenom}</div>
+                        <div class="autocomplete-matricule">Matricule: ${adh.matricule}</div>
+                    `;
+                    item.addEventListener('click', function() {
+                        matriculeInput.value = adh.matricule;
+                        autocompleteList.style.display = 'none';
+                    });
+                    autocompleteList.appendChild(item);
+                });
+            });
+
+            // Cacher l'autocomplétion quand on clique ailleurs
+            document.addEventListener('click', function(e) {
+                if (!matriculeInput.contains(e.target) && !autocompleteList.contains(e.target)) {
+                    autocompleteList.style.display = 'none';
+                }
+            });
+
+            // Navigation au clavier dans l'autocomplétion
+            let selectedIndex = -1;
+            
+            matriculeInput.addEventListener('keydown', function(e) {
+                const items = autocompleteList.querySelectorAll('.list-group-item');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                    updateSelection(items);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    selectedIndex = Math.max(selectedIndex - 1, -1);
+                    updateSelection(items);
+                } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                    e.preventDefault();
+                    items[selectedIndex].click();
+                }
+            });
+
+            function updateSelection(items) {
+                items.forEach((item, index) => {
+                    item.classList.toggle('active', index === selectedIndex);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

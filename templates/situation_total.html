@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Bootstrap & Template Styles -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+    <div class="content">
+
+        <!-- Navbar Start -->
+        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+            <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                <h2 class="text-primary mb-0"></h2>
+            </a>
+            <a href="#" class="sidebar-toggler flex-shrink-0">
+                <i class="fa fa-bars"></i>
+            </a>
+        </nav>
+        <!-- Navbar End -->
+
+        <div class="container-fluid mt-4">
+            <h1 class="dashboard-title">Situation Financière des Adhérents</h1>
+            <style>
+                .dashboard-title {
+            font-family: 'Orbitron', sans-serif;
+            color: #1976d2;
+            margin: 0;
+            font-size: 28px;
+        }
+            </style>
+
+            <!-- Totaux généraux redesign -->
+           
+
+            <style>
+                .totaux-generaux {
+                    margin-top: 30px;
+                }
+                .totaux-card {
+                    min-width: 220px;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                    transition: transform 0.3s, box-shadow 0.3s;
+                }
+                .totaux-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+                }
+                .totaux-card h4 {
+                    margin: 0;
+                    font-weight: 700;
+                }
+                .totaux-card h6 {
+                    margin: 0;
+                    font-weight: 500;
+                    font-size: 0.9rem;
+                }
+                @media (max-width: 768px) {
+                    .totaux-generaux {
+                        flex-direction: column;
+                    }
+                }
+
+                /* Styles pour les détails des paiements */
+                .details-row {
+                    background-color: #f8f9fa;
+                    border-left: 3px solid #007bff;
+                }
+                .details-content {
+                    padding: 15px;
+                }
+                .toggle-btn {
+                    background: none;
+                    border: none;
+                    color: #007bff;
+                    cursor: pointer;
+                    font-size: 1.2em;
+                    transition: transform 0.3s ease;
+                }
+                .toggle-btn:hover {
+                    color: #0056b3;
+                }
+                .toggle-btn.rotated {
+                    transform: rotate(180deg);
+                }
+                .paiement-item {
+                    margin-bottom: 10px;
+                    padding: 8px;
+                    background-color: white;
+                    border-radius: 5px;
+                    border: 1px solid #dee2e6;
+                }
+                .paiement-total {
+                    font-weight: bold;
+                    color: #28a745;
+                    margin-top: 10px;
+                    padding-top: 10px;
+                    border-top: 2px solid #28a745;
+                }
+            </style>
+
+            <!-- Filtre par saison -->
+            <div class="mb-3">
+                <label for="filter-saison" class="form-label">Filtrer par saison :</label>
+                <select id="filter-saison" class="form-select">
+                    <option value="">Toutes les saisons</option>
+                </select>
+            </div>
+
+            <!-- Barre de recherche -->
+            <div class="mb-3">
+                <input type="text" id="search-adherent-total" class="form-control" placeholder="Rechercher par nom, prénom ou matricule...">
+            </div>
+
+            <!-- Boutons export / impression -->
+            <div class="mb-3 d-flex gap-2">
+                <button id="export-xlsx" class="btn btn-success"><i class="fas fa-file-excel"></i> Exporter XLSX</button>
+                <button id="print-table" class="btn btn-primary"><i class="fas fa-print"></i> Imprimer</button>
+            </div>
+
+            <!-- Spinner de chargement -->
+            <div id="spinner" style="display:none;" class="mb-2">Chargement des données...</div>
+
+            <!-- Tableau -->
+            <div class="table-responsive">
+    <table class="table table-striped table-bordered" id="table-situation-total" style="background: linear-gradient(135deg, #d4d6d5e3 0%, #ffffff 100%);" >
+        <thead class="table-dark">
+            <tr>
+                <th>Matricule</th>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Groupe</th>
+                <th>Type d'abonnement</th>
+                <th>Entraîneur</th>
+                <th>Cotisation (TND)</th>
+                <th>Montant Net (TND)</th>
+                <th>Total payé (TND)</th>
+                <th>Remise (%)</th>
+                <th>Reste à payer (TND)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+        </div>
+
+    </div>
+
+    <!-- Librairies JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- Script principal -->
+<script>
+$(document).ready(function () {
+    const tableBody = $('#table-situation-total tbody');
+    const spinner = $('#spinner');
+    let saisonsDisponibles = [];
+    let currentSessionSeason = null;
+
+    // Charger la saison active de la session
+    async function loadCurrentSessionSeason() {
+        try {
+            const response = await fetch('/api/current-season');
+            const seasonData = await response.json();
+            if (seasonData.success) {
+                currentSessionSeason = seasonData.saison_code;
+                console.log('Saison active de la session:', currentSessionSeason);
+                
+                // Mettre à jour l'affichage de la saison
+                updateSeasonDisplay();
+            }
+        } catch (error) {
+            console.error('Erreur chargement saison session:', error);
+        }
+    }
+
+    // Mettre à jour l'affichage de la saison
+    function updateSeasonDisplay() {
+        if (currentSessionSeason) {
+            // Option 1: Afficher la saison active au-dessus du tableau
+            if (!$('#currentSeasonDisplay').length) {
+                $('.dashboard-title').after(`
+                    <div id="currentSeasonDisplay" class="alert alert-info mb-3">
+                        <strong>Saison active :</strong> ${currentSessionSeason}
+                    </div>
+                `);
+            } else {
+                $('#currentSeasonDisplay').html(`<strong>Saison active :</strong> ${currentSessionSeason}`);
+            }
+
+            // Option 2: Sélectionner automatiquement la saison dans le dropdown
+            $('#filter-saison').val(currentSessionSeason);
+        }
+    }
+
+   // Charger les saisons de l'année courante seulement
+async function loadSaisons() {
+    try {
+        // Récupérer l'année de la session
+        const seasonResponse = await fetch('/api/current-season');
+        const seasonData = await seasonResponse.json();
+        
+        if (!seasonData.success) {
+            console.error('Erreur chargement saison courante:', seasonData.error);
+            return;
+        }
+
+        const currentYear = seasonData.saison_year;
+        const currentSeasonType = seasonData.saison_type;
+        
+        console.log('Année courante:', currentYear, 'Type:', currentSeasonType);
+
+        // Générer les codes de saison pour cette année
+        const seasonCodes = {
+            'normal': `S${currentYear}`,
+            'summer': `E${currentYear}`
+        };
+
+        // Vérifier quelles saisons existent dans la base de données
+        const response = await fetch('/api/saisons');
+        const allSaisons = await response.json();
+        const existingSaisons = allSaisons.map(s => s.code);
+        
+        console.log('Toutes les saisons disponibles:', existingSaisons);
+
+        // Filtrer pour ne garder que les saisons de l'année courante
+        const saisonsThisYear = [];
+        
+        // Vérifier si S{year} existe
+        if (existingSaisons.includes(seasonCodes.normal)) {
+            saisonsThisYear.push(seasonCodes.normal);
+        }
+        
+        // Vérifier si E{year} existe
+        if (existingSaisons.includes(seasonCodes.summer)) {
+            saisonsThisYear.push(seasonCodes.summer);
+        }
+
+        console.log('Saisons de l\'année courante:', saisonsThisYear);
+
+        const select = $('#filter-saison');
+        select.find('option:not(:first)').remove();
+        
+        saisonsThisYear.forEach(saison => {
+            select.append(`<option value="${saison}">${saison}</option>`);
+        });
+
+        // Sélectionner automatiquement la saison de la session si disponible
+        if (seasonData.saison_code && saisonsThisYear.includes(seasonData.saison_code)) {
+            select.val(seasonData.saison_code);
+        } else if (saisonsThisYear.length > 0) {
+            // Sélectionner la première saison disponible
+            select.val(saisonsThisYear[0]);
+        }
+
+    } catch (error) {
+        console.error('Erreur chargement saisons:', error);
+    }
+}
+    // Fonction pour basculer les détails des paiements
+    function toggleDetails(matricule) {
+        const detailsRow = $(`#details-${matricule}`);
+        const toggleBtn = $(`.toggle-btn[data-matricule="${matricule}"]`);
+        
+        if (detailsRow.is(':visible')) {
+            detailsRow.hide();
+            toggleBtn.removeClass('rotated');
+        } else {
+            detailsRow.show();
+            toggleBtn.addClass('rotated');
+        }
+    }
+
+    // Charger les détails des paiements pour un adhérent
+    async function loadPaiementDetails(matricule) {
+        try {
+            const saison = $('#filter-saison').val();
+            const url = saison ? `/api/adherent-paiements/${matricule}?saison=${saison}` : `/api/adherent-paiements/${matricule}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            return data;
+        } catch (error) {
+            console.error('Erreur chargement détails paiements:', error);
+            return { paiements: [], total_paye: 0 };
+        }
+    }
+
+    // Charger la situation totale
+    async function loadSituationTotale() {
+        spinner.show();
+        try {
+            const saison = $('#filter-saison').val();
+            const url = saison ? `/api/situation-totale?saison=${saison}` : '/api/situation-totale';
+            const response = await fetch(url);
+            const data = await response.json();
+            spinner.hide();
+
+            tableBody.empty();
+            
+            if (!data.situation_par_adherent || data.situation_par_adherent.length === 0) {
+                tableBody.append(`
+                    <tr>
+                        <td colspan="12" class="text-center text-muted">
+                            Aucune donnée disponible pour la saison sélectionnée
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+            
+            for (let a of data.situation_par_adherent) {
+                const resteClass = (a.reste_a_payer > 0) ? 'text-danger fw-bold' : '';
+
+                const cotisation = (a.cotisation === null) ? 0 : Number(a.cotisation);
+                const totalPaye = (a.total_paye === null || a.total_paye === 0) ? 0 : Number(a.total_paye);
+                const totalRemiseValue = (a.total_remise === null || a.total_remise === 0) ? 0 : Number(a.total_remise);
+                const reste = (a.reste_a_payer === null) ? 0 : Number(a.reste_a_payer);
+                
+                // Formatage pour l'affichage
+                const cotisationAffichage = cotisation.toFixed(2);
+                const totalPayeAffichage = totalPaye.toFixed(2);
+                const totalRemiseAffichage = totalRemiseValue === 0 ? '0%' : totalRemiseValue.toFixed(0) + '%';
+                const resteAffichage = reste.toFixed(2);
+                
+                // Calcul du montant net (corrigé)
+                const montantNet = totalRemiseValue > 0 ? cotisation * (1 - totalRemiseValue/100) : cotisation;
+
+                // Ligne principale de l'adhérent
+                tableBody.append(`
+                    <tr data-matricule="${a.matricule}">
+                        <td>${a.matricule}</td>
+                        <td>${a.nom}</td>
+                        <td>${a.prenom}</td>
+                        <td>${a.groupe || ''}</td>
+                        <td>${a.type_abonnement || ''}</td>
+                        <td>${a.entraineur || ''}</td>
+                        <td>${cotisationAffichage}</td>
+                        <td>${montantNet.toFixed(2)}</td>
+                        <td>${totalPayeAffichage}</td>
+                        <td>${totalRemiseAffichage}</td>
+                        <td class="${resteClass}">${resteAffichage}</td>
+                        <td>
+                            <button class="toggle-btn" data-matricule="${a.matricule}" onclick="toggleDetailsAndLoad('${a.matricule}')">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `);
+
+                // Ligne des détails (cachée par défaut)
+                tableBody.append(`
+                    <tr id="details-${a.matricule}" class="details-row" style="display: none;">
+                        <td colspan="12">
+                            <div class="details-content">
+                                <div id="details-content-${a.matricule}">
+                                    <div class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Chargement...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `);
+            }
+
+        } catch (error) {
+            spinner.hide();
+            console.error(error);
+            alert('Erreur lors du chargement de la situation totale.');
+        }
+    }
+
+    // Fonction globale pour basculer et charger les détails
+    window.toggleDetailsAndLoad = async function(matricule) {
+        const detailsRow = $(`#details-${matricule}`);
+        const toggleBtn = $(`.toggle-btn[data-matricule="${matricule}"]`);
+        const detailsContent = $(`#details-content-${matricule}`);
+        
+        if (detailsRow.is(':visible')) {
+            detailsRow.hide();
+            toggleBtn.removeClass('rotated');
+        } else {
+            detailsRow.show();
+            toggleBtn.addClass('rotated');
+            
+            // Charger les détails si pas encore chargés
+            if (detailsContent.find('.spinner-border').length > 0) {
+                const paiementData = await loadPaiementDetails(matricule);
+                
+                let detailsHtml = '';
+                
+                if (paiementData.paiements && paiementData.paiements.length > 0) {
+                    detailsHtml = '<h6 class="mb-3">Détails des paiements :</h6>';
+                    
+                    paiementData.paiements.forEach(p => {
+                        const dateFormatted = new Date(p.date_paiement).toLocaleDateString('fr-FR');
+                        detailsHtml += `
+                            <div class="paiement-item">
+                                <div class="row">
+                                    <div class="col-md-2"><strong>Date:</strong> ${dateFormatted}</div>
+                                    <div class="col-md-2"><strong>Saison:</strong> ${p.code_saison || ''}</div>
+                                    <div class="col-md-2"><strong>Numéro Carnet:</strong> ${p.numero_carnet || ''}</div>
+                                    <div class="col-md-2"><strong>Numéro Bon:</strong> ${p.numero_bon || ''}</div>
+                                    <div class="col-md-2"><strong>Montant Payé:</strong> ${Number(p.montant_paye || 0).toFixed(2)} TND</div>
+                                    <div class="col-md-2"><strong>Type de Règlement:</strong> ${p.type_reglement || ''}</div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-6"><strong>Numéro Chèque:</strong> ${p.numero_cheque || '--'}</div>
+                                    <div class="col-md-6"><strong>Banque:</strong> ${p.banque || '--'}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    detailsHtml += `
+                        <div class="paiement-total">
+                            <strong>Total : ${Number(paiementData.total_paye || 0).toFixed(2)} TND</strong>
+                        </div>
+                    `;
+                } else {
+                    detailsHtml = '<p class="text-muted">Aucun paiement enregistré pour cet adhérent.</p>';
+                }
+                
+                detailsContent.html(detailsHtml);
+            }
+        }
+    };
+
+    // Filtre par saison
+    $('#filter-saison').on('change', loadSituationTotale);
+
+    // Recherche texte
+    $('#search-adherent-total').on('keyup', function () {
+        const value = $(this).val().toLowerCase();
+        $('#table-situation-total tbody tr').each(function() {
+            const $row = $(this);
+            if ($row.hasClass('details-row')) {
+                return; // Skip details rows
+            }
+            
+            const text = $row.text().toLowerCase();
+            const shouldShow = text.indexOf(value) > -1;
+            $row.toggle(shouldShow);
+            
+            // Hide associated details row and reset toggle button
+            const matricule = $row.data('matricule');
+            if (matricule) {
+                const detailsRow = $(`#details-${matricule}`);
+                const toggleBtn = $(`.toggle-btn[data-matricule="${matricule}"]`);
+                
+                if (shouldShow) {
+                    // Hide details but keep them available
+                    detailsRow.hide();
+                    toggleBtn.removeClass('rotated');
+                } else {
+                    // Hide both main row and details
+                    detailsRow.hide();
+                    toggleBtn.removeClass('rotated');
+                }
+            }
+        });
+    });
+
+    // Export XLSX
+    $('#export-xlsx').click(function () {
+        // Créer une version simplifiée du tableau pour l'export (sans les détails)
+        const exportTable = $('#table-situation-total').clone();
+        exportTable.find('.details-row').remove();
+        exportTable.find('.toggle-btn').parent().remove();
+        
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.table_to_sheet(exportTable[0]);
+        XLSX.utils.book_append_sheet(wb, ws, "SituationTotale");
+        XLSX.writeFile(wb, "situation_totale.xlsx");
+    });
+
+    // Imprimer
+    $('#print-table').click(function () {
+        // Créer une version simplifiée du tableau pour l'impression
+        const printTable = $('#table-situation-total').clone();
+        printTable.find('.details-row').remove();
+        printTable.find('.toggle-btn').parent().remove();
+        
+        const printContent = printTable[0].outerHTML;
+        const win = window.open('', '', 'width=900,height=600');
+        win.document.write('<html><head><title>Impression</title>');
+        win.document.write('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">');
+        win.document.write('</head><body>');
+        win.document.write(printContent);
+        win.document.write('</body></html>');
+        win.document.close();
+        win.print();
+    });
+
+    // Initialisation
+    async function init() {
+        await loadCurrentSessionSeason();
+        await loadSaisons();
+        await loadSituationTotale();
+    }
+
+    init();
+});
+</script>
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>

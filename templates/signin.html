@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+    <style>
+        .unified-season-input {
+            display: flex;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            overflow: hidden;
+            background: white;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .unified-season-input:focus-within {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+
+        .season-type-wrapper {
+            flex: 0 0 auto;
+            border-right: 1px solid #ced4da;
+            background: #f8f9fa;
+        }
+
+        .season-type-wrapper select {
+            border: none;
+            background: transparent;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #0d6efd;
+            cursor: pointer;
+            outline: none;
+            width: 80px;
+        }
+
+        .season-type-wrapper select:focus {
+            outline: none;
+        }
+
+        .season-year-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .season-year-wrapper input {
+            border: none;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .season-year-wrapper input:focus {
+            outline: none;
+        }
+
+        .season-label {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: white;
+            padding: 0 5px;
+            font-size: 0.875rem;
+            color: #6c757d;
+            z-index: 1;
+        }
+
+        .season-input-container {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="background-image: url(https://th.bing.com/th/id/R.fa522dcb573b32e14ad9cba3761e1463?rik=yOa2gwe67MNQNQ&riu=http%3a%2f%2fres.cloudinary.com%2fybmedia%2fimage%2fupload%2fc_crop%2ch_1123%2cw_2000%2cx_0%2cy_74%2fc_fill%2cf_auto%2ch_900%2cq_auto%2cw_1600%2fv1%2fm%2fc%2f6%2fc605f3b6ee68ad13c9a32d170c8802448a3aaa50%2faustralian-open-sets-attendance-record.jpg&ehk=776fLeQdmy6a4WtWsv60u9qsow18%2bmg3Y90ML2Sq6%2fM%3d&risl=&pid=ImgRaw&r=0);">
+        <!-- Sign In Start -->
+        <div class="container-fluid">
+            <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
+                <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
+                    <div class="bg-light rounded p-4 p-sm-5 my-4 mx-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <a class="">
+                                <h3 class="text-primary">TCHS.</h3>
+                            </a>
+                        </div>
+                        <form method="POST" action="{{ url_for('login') }}">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="utilisateur" name="utilisateur" placeholder="name@example.com" required>
+                                <label for="utilisateur">Utilisateur</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                                <label for="password">Mot de Passe</label>
+                            </div>
+                            
+                            <!-- Input Unifié pour la Saison -->
+                            <div class="season-input-container">
+                                <label class="season-label">Saison</label>
+                                <div class="unified-season-input">
+                                    <div class="season-type-wrapper">
+                                        <select id="saison_type" name="saison_type" required>
+                                            <option value="S">S</option>
+                                            <option value="E">E</option>
+                                        </select>
+                                    </div>
+                                    <div class="season-year-wrapper">
+                                        <input type="number" 
+                                               id="annee_saison" 
+                                               name="annee_saison" 
+                                               min="2020" 
+                                               max="2030"
+                                               placeholder="2025"
+                                               required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Champ caché pour le code saison complet -->
+                            <input type="hidden" id="saison" name="saison">
+
+                            <button type="submit" class="btn btn-primary py-3 w-100 mb-4">Se Connecter</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Sign In End -->
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const saisonTypeSelect = document.getElementById('saison_type');
+            const anneeSaisonInput = document.getElementById('annee_saison');
+            const saisonHiddenInput = document.getElementById('saison');
+            const form = document.querySelector('form');
+            
+            // Calculer les valeurs par défaut
+            const currentDate = new Date();
+            const currentMonth = currentDate.getMonth() + 1; // 1-12
+            const currentYear = currentDate.getFullYear();
+            
+            // Déterminer l'année par défaut
+            const defaultYear = (currentMonth >= 10) ? currentYear + 1 : currentYear;
+            
+            // Déterminer le type de saison par défaut
+            const defaultType = (currentMonth >= 7 && currentMonth <= 9) ? 'E' : 'S';
+            
+            // Définir les valeurs par défaut
+            saisonTypeSelect.value = defaultType;
+            anneeSaisonInput.value = defaultYear;
+            
+            // Fonction pour mettre à jour le champ caché
+            function updateSaisonCode() {
+                const type = saisonTypeSelect.value;
+                const annee = anneeSaisonInput.value;
+                if (type && annee) {
+                    saisonHiddenInput.value = type + annee;
+                }
+            }
+            
+            // Mettre à jour lors du changement
+            saisonTypeSelect.addEventListener('change', updateSaisonCode);
+            anneeSaisonInput.addEventListener('input', updateSaisonCode);
+            
+            // Mettre à jour avant la soumission du formulaire
+            form.addEventListener('submit', function(e) {
+                updateSaisonCode();
+                
+                // Validation
+                if (!saisonHiddenInput.value || saisonHiddenInput.value.length !== 5) {
+                    e.preventDefault();
+                    alert('Veuillez sélectionner une saison et une année valides.');
+                }
+            });
+            
+            // Initialiser le code saison
+            updateSaisonCode();
+        });
+    </script>
+</body>
+
+</html>

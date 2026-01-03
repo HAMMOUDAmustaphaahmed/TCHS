@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS Dashboard</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <!-- Custom CSS for this page -->
+    <link href="{{ url_for('static', filename='css/entraineur.css') }}" rel="stylesheet">
+    
+    <style>
+        /* Styles pour les différents types de séances */
+        .session-card {
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 12px;
+            margin: 2px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .session-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Séance d'entraînement classique */
+        .session-card.entrainement {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border-left: 4px solid #2E7D32;
+        }
+
+        /* Séance de préparation physique */
+        .session-card.prep_physique {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+            color: white;
+            border-left: 4px solid #E65100;
+        }
+
+        /* Séance de match */
+        .session-card.match {
+            background: linear-gradient(135deg, #F44336, #D32F2F);
+            color: white;
+            border-left: 4px solid #B71C1C;
+        }
+
+        /* Séance de stage */
+        .session-card.stage {
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+            color: white;
+            border-left: 4px solid #4A148C;
+        }
+
+        /* Séance par défaut */
+        .session-card.autre {
+            background: linear-gradient(135deg, #607D8B, #455A64);
+            color: white;
+            border-left: 4px solid #263238;
+        }
+
+        .session-card .session-type {
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            opacity: 0.9;
+            margin-bottom: 3px;
+        }
+
+        .session-card .session-groupe {
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+
+        .session-card .session-entraineur {
+            font-size: 11px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .session-card .btn {
+            font-size: 10px;
+            padding: 3px 6px;
+            border-radius: 3px;
+        }
+
+        .time-slot {
+            min-height: 80px;
+            vertical-align: middle;
+            position: relative;
+        }
+
+        /* Légende des couleurs */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .legend-color.entrainement {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+
+        .legend-color.prep_physique {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+        }
+
+        .legend-color.match {
+            background: linear-gradient(135deg, #F44336, #D32F2F);
+        }
+
+        .legend-color.stage {
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+        }
+
+        .legend-color.autre {
+            background: linear-gradient(135deg, #607D8B, #455A64);
+        }
+
+        .legend-text {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* Badge pour indiquer si c'est notre séance */
+        .my-session {
+            border: 2px solid #FFD700 !important;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .other-session {
+            opacity: 0.85;
+        }
+
+        /* Icônes pour les types de séances */
+        .session-icon {
+            font-size: 14px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+
+<body>
+<!-- Ajouter cet élément caché pour le type de séance -->
+<input type="hidden" id="globalSeanceType" value="{{ type_seance_global }}">
+        <div class="sidebar pe-4 pb-3">
+            <nav class="navbar bg-light navbar-light">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+    <a href="{{ url_for('entraineur') }}" class="navbar-brand mx-4 mb-3">
+        <h3 class="text-primary">
+            TCHS 🎾
+            {% if session.get('saison_code') %}
+                <span class="badge bg-light text-primary" style="font-size: 0.5em;">
+                    {{ session['saison_code'] }}
+                </span>
+            {% endif %}
+        </h3>
+    </a>
+    
+</div>
+                
+                <div class="navbar-nav w-100">
+                    <a href="{{ url_for('entraineur') }}" class="nav-item nav-link active">
+                        <i class="fa fa-tachometer-alt me-2"></i>Dashboard
+                    </a>
+                    
+                    <div class="nav-item">
+                        <a href="javascript:void(0);" class="nav-link" id="changePasswordLink">
+                            <i class="fa fa-key"></i> Mot de Passe
+                        </a>
+                    </div>
+
+                    <!-- Modal pour changer mot de passe -->
+<!-- Modal pour changer mot de passe - VERSION AMÉLIORÉE -->
+<div id="modalChangerMotDePasse" class="password-modal" style="display:none;">
+    <div class="password-modal-content">
+        <div class="password-modal-header">
+            <h4>
+                <i class="fas fa-key me-2"></i>
+                Changer le mot de passe
+            </h4>
+            <button type="button" class="btn-close-custom" onclick="fermerModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="password-modal-body">
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Votre mot de passe doit contenir au moins 6 caractères
+            </div>
+            
+            <form id="changePasswordFormEntraineur">
+                <div class="form-group mb-3">
+                    <label for="nouveauMotDePasse" class="form-label">
+                        <i class="fas fa-key me-2"></i>
+                        Nouveau mot de passe
+                    </label>
+                    <div class="input-group">
+                        <input type="password" 
+                               id="nouveauMotDePasse" 
+                               class="form-control" 
+                               placeholder="Entrez votre nouveau mot de passe"
+                               minlength="6"
+                               required>
+                        <button class="btn btn-outline-secondary toggle-password" 
+                                type="button" 
+                                onclick="togglePassword('nouveauMotDePasse')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="password-strength mt-2" id="passwordStrength"></div>
+                </div>
+                
+                <div class="form-group mb-4">
+                    <label for="confirmationMotDePasse" class="form-label">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Confirmer le mot de passe
+                    </label>
+                    <div class="input-group">
+                        <input type="password" 
+                               id="confirmationMotDePasse" 
+                               class="form-control" 
+                               placeholder="Confirmez votre nouveau mot de passe"
+                               minlength="6"
+                               required>
+                        <button class="btn btn-outline-secondary toggle-password" 
+                                type="button" 
+                                onclick="togglePassword('confirmationMotDePasse')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="password-match mt-2" id="passwordMatch"></div>
+                </div>
+                
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" class="btn btn-secondary" onclick="fermerModal()">
+                        <i class="fas fa-times me-2"></i>
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Styles du Modal de Mot de Passe */
+.password-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1050;
+    animation: fadeIn 0.3s ease;
+}
+
+.password-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.075);
+    backdrop-filter: blur(5px);
+    z-index: 1;
+}
+
+.password-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    width: 90%;
+    max-width: 520px;
+    animation: slideDown 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    z-index: 2;
+    overflow: hidden;
+}
+
+.password-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: rgba(255, 255, 255, 0);
+    padding: 25px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+.password-modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.1;
+}
+
+.password-modal-header h4 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+.btn-close-custom {
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+}
+
+.btn-close-custom:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: rotate(90deg) scale(1.1);
+}
+
+.password-modal-body {
+    padding: 35px 30px;
+    background: linear-gradient(to bottom, #ffffff13 0%, #f8f9fc 100%);
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border: none;
+    border-left: 5px solid #2196f3;
+    color: #0d47a1;
+    padding: 15px 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.input-group {
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.input-group:focus-within {
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.25);
+    transform: translateY(-2px);
+}
+
+.input-group .form-control {
+    border: 2px solid #e0e6ed;
+    padding: 14px 18px;
+    padding-right: 55px;
+    font-size: 15px;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.input-group .form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    background: #f8f9fc;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 50px;
+    border: none;
+    background: transparent;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.toggle-password:hover {
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.password-strength {
+    height: 6px;
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.password-strength-bar {
+    height: 100%;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    border-radius: 10px;
+}
+
+.strength-weak {
+    width: 33%;
+    background: linear-gradient(90deg, #dc3545, #ff6b6b);
+}
+
+.strength-medium {
+    width: 66%;
+    background: linear-gradient(90deg, #ffc107, #ffdd57);
+}
+
+.strength-strong {
+    width: 100%;
+    background: linear-gradient(90deg, #28a745, #51cf66);
+}
+
+.password-match {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.match-success {
+    color: #28a745;
+}
+
+.match-error {
+    color: #dc3545;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+@media (max-width: 576px) {
+    .password-modal-content {
+        width: 95%;
+    }
+    
+    .password-modal-body {
+        padding: 20px;
+    }
+}
+</style>
+                    <div class="nav-item">
+    <a href="#" class="nav-link" onclick="toggleReservationSection(event)">
+        <i class="fa fa-clipboard me-2"></i>Reserver Terrain
+    </a>
+</div>
+
+
+                    <div class="nav-item">
+                        <a href="{{ url_for('discussions') }}" class="nav-link">
+                            <i class="fab fa-facebook-messenger"></i>Discussions
+                        </a>
+                    </div>
+
+                    <!-- Déconnexion -->
+                    <div class="nav-item">
+                        <a href="{{ url_for('logout') }}" class="nav-link">
+                            <i class="fa fa-sign-out-alt me-2"></i>Déconnecter
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        
+        <div class="content">
+            <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+                <a href="" class="navbar-brand d-flex d-lg-none me-4">
+                    <h2 class="text-primary mb-0"></h2>
+                </a>
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
+            </nav>
+
+            <div class="container-fluid pt-4 px-4">
+                <div class="bg-light text-center rounded p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <a href="{{ url_for('entraineur') }}" class="navbar-brand mx-4 mb-3">
+                            <h3 class="text-primary">TCHS</h3>
+                        </a>
+                        <h6>Bienvenue {{ entraineur.nom }} {{ entraineur.prenom }}</h6>
+                    </div>
+                    
+                    <!-- Section Réservation -->
+<!-- Section Réservation -->
+<div id="reservationSection" class="bg-light rounded p-4 mb-4" style="display: none;">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> Réservation de Terrain</h5>
+        <button type="button" class="btn btn-danger btn-sm" onclick="toggleReservationSection(event)" title="Fermer">
+            <i class="fas fa-times"></i> Fermer
+        </button>
+    </div>
+
+    <!-- Formulaire de réservation -->
+    <form id="reservationForm" class="row g-3">
+        <div class="col-md-6">
+            <label for="dateReservation" class="form-label">Date *</label>
+            <input type="date" class="form-control" id="dateReservation" required>
+        </div>
+        <div class="col-md-3">
+            <label for="heureDebut" class="form-label">Heure début *</label>
+            <input type="time" class="form-control" id="heureDebut" required>
+        </div>
+        <div class="col-md-3">
+            <label for="heureFin" class="form-label">Heure fin *</label>
+            <input type="time" class="form-control" id="heureFin" required>
+        </div>
+        <div class="col-md-6">
+            <label for="numeroTerrain" class="form-label">Terrain *</label>
+            <select class="form-select" id="numeroTerrain" required>
+                <option value="">Sélectionner un terrain</option>
+                {% for i in range(1, 10) %}
+                <option value="{{ i }}">Terrain {{ i }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12">
+            <label for="commentaire" class="form-label">Commentaire</label>
+            <textarea class="form-control" id="commentaire" rows="3" 
+                      placeholder="Ajoutez des détails sur votre réservation..."></textarea>
+        </div>
+        <div class="col-12">
+            <button type="button" class="btn btn-primary" id="submitBtn" onclick="soumettreReservation()">
+                <span class="normal-state">
+                    <i class="fas fa-save me-2"></i>Enregistrer la réservation
+                </span>
+                <span class="loading-state" style="display: none;">
+                    <i class="fas fa-spinner fa-spin me-2"></i>En cours...
+                </span>
+            </button>
+            <button type="reset" class="btn btn-secondary">
+                <i class="fas fa-undo"></i> Réinitialiser
+            </button>
+        </div>
+    </form>
+
+    <!-- Liste des réservations -->
+    <div class="mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6><i class="fas fa-list"></i> Mes réservations</h6>
+            <button onclick="chargerReservations()" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-sync-alt"></i> Rafraîchir
+            </button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Date</th>
+                        <th>Heure</th>
+                        <th>Terrain</th>
+                        <th>Status</th>
+                        <th>Commentaire</th>
+                    </tr>
+                </thead>
+                <tbody id="reservationsList">
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">
+                            Cliquez sur "Rafraîchir" pour charger vos réservations
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+                    <!-- Emploi du Temps -->
+                    <div class="mt-5">
+                        <h4 class="text-start mb-4">Emploi du Temps</h4>
+
+                        <!-- Légende des couleurs -->
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-color entrainement"></div>
+                                <span class="legend-text">Entraînement</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color prep_physique"></div>
+                                <span class="legend-text">Préparation Physique</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color match"></div>
+                                <span class="legend-text">Match</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color stage"></div>
+                                <span class="legend-text">Stage</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color autre"></div>
+                                <span class="legend-text">Autre</span>
+                            </div>
+                            <div class="legend-item">
+                                <div style="width: 16px; height: 16px; border: 2px solid #FFD700; border-radius: 3px; background: rgba(255, 215, 0, 0.1);"></div>
+                                <span class="legend-text">Mes séances</span>
+                            </div>
+                        </div>
+
+
+
+<!-- Navigation de la semaine -->
+<div class="mb-3 d-flex justify-content-between align-items-center">
+    <div>
+        <a href="{{ url_for('entraineur', week_offset=week_offset-1) }}" class="btn btn-secondary">
+            <i class="fas fa-chevron-left"></i> Semaine précédente
+        </a>
+        <button class="btn btn-primary" onclick="window.location.href='{{ url_for('entraineur', week_offset=0) }}'">
+            <i class="fas fa-calendar-day"></i> Aujourd'hui
+        </button>
+        <a href="{{ url_for('entraineur', week_offset=week_offset+1) }}" class="btn btn-secondary">
+            Semaine suivante <i class="fas fa-chevron-right"></i>
+        </a>
+    </div>
+    <div>
+        <h5 class="mb-0">Semaine du {{ start_of_week.strftime('%d/%m/%Y') }}</h5>
+    </div>
+</div>
+
+                        <!-- Exportation -->
+                        <div class="mb-3">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="fa fa-file-export"></i> Exporter
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="prepareExport('pdf')">
+                                            <i class="fas fa-file-pdf mr-2"></i> PDF
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="prepareExport('excel')">
+                                            <i class="fas fa-file-excel mr-2"></i> Excel
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div id="exportScope" style="display:none; margin-top:5px">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-secondary" onclick="triggerExport('day')">Jour actuel</button>
+                                    <button type="button" class="btn btn-secondary" onclick="triggerExport('week')">Semaine actuelle</button>
+                                </div>
+                            </div>
+                        </div>
+
+<!-- Tableau de l'emploi du temps (JOURS EN LIGNES, CRÉNEAUX EN COLONNES) -->
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th style="width: 120px;">Jour</th>
+                {% for creneau in creneaux %}
+                    <th class="text-center" style="min-width: 150px;">
+                        {{ creneau.start.strftime('%H:%M') }}<br>
+                        <small>{{ creneau.end.strftime('%H:%M') }}</small>
+                    </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for jour in jours_semaine %}
+                <tr>
+                    <td class="text-center align-middle bg-light">
+                        <strong>{{ jour.strftime('%A') }}</strong><br>
+                        <small>{{ jour.strftime('%d/%m') }}</small>
+                    </td>
+                    
+                    {% for creneau in creneaux %}
+                        {% set jour_str = jour.strftime('%Y-%m-%d') %}
+                        {% set heure_str = creneau.start.strftime('%H:%M') %}
+                        {% set key = jour_str + "_" + heure_str %}
+                        {% set seances = seances_par_jour_et_heure.get(key, []) %}
+                        
+                        {# Vérifier si cette cellule est déjà occupée par une séance précédente #}
+                        {% set cell_occupied = namespace(value=False) %}
+                        {% for prev_creneau in creneaux %}
+                            {% if prev_creneau.start < creneau.start %}
+                                {% set prev_key = jour_str + "_" + prev_creneau.start.strftime('%H:%M') %}
+                                {% set prev_seances = seances_par_jour_et_heure.get(prev_key, []) %}
+                                {% for seance in prev_seances %}
+                                    {% if seance.heure_fin > creneau.start %}
+                                        {% set cell_occupied.value = True %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if not cell_occupied.value %}
+                            {% if seances %}
+                                {% for seance in seances %}
+                                    {# Calculer le colspan basé sur la durée de la séance #}
+                                    {% set duree_minutes = ((seance.heure_fin.hour * 60 + seance.heure_fin.minute) - (seance.heure_debut.hour * 60 + seance.heure_debut.minute)) %}
+                                    {% set colspan = (duree_minutes / 60) | round(0, 'ceil') | int %}
+                                    
+                                    {% set type_seance = seance.type_seance or 'entrainement' %}
+                                    
+                                    <td class="time-slot" colspan="{{ colspan }}">
+                                        <div class="session-card {{ type_seance }} my-session">
+                                            <!-- Type de séance -->
+                                            <div class="session-type">
+                                                {% if type_seance == 'prep_physique' %}
+                                                    <i class="fas fa-dumbbell session-icon"></i>PRÉPA PHYSIQUE
+                                                {% elif type_seance == 'match' %}
+                                                    <i class="fas fa-trophy session-icon"></i>MATCH
+                                                {% elif type_seance == 'stage' %}
+                                                    <i class="fas fa-graduation-cap session-icon"></i>STAGE
+                                                {% elif type_seance == 'entrainement' %}
+                                                    <i class="fas fa-running session-icon"></i>ENTRAÎNEMENT
+                                                {% else %}
+                                                    <i class="fas fa-circle session-icon"></i>{{ type_seance.upper() }}
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <!-- Horaire -->
+                                            <div class="session-time">
+                                                <i class="fas fa-clock"></i> {{ seance.heure_debut.strftime('%H:%M') }} - {{ seance.heure_fin.strftime('%H:%M') }}
+                                            </div>
+                                            
+                                            <!-- Groupe -->
+                                            <div class="session-groupe">{{ seance.groupe }}</div>
+                                            
+                                            <!-- Terrain -->
+                                            <div class="session-entraineur">
+                                                <i class="fas fa-map-marker-alt"></i> Terrain {{ seance.terrain }}
+                                            </div>
+                                            
+                                            <!-- Bouton présence -->
+                                            <button type="button" 
+                                                    class="btn btn-light btn-sm presence-btn mt-2 w-100" 
+                                                    data-groupe="{{ seance.groupe }}"
+                                                    data-date="{{ seance.date }}"
+                                                    data-heure="{{ seance.heure_debut.strftime('%H:%M') }}"
+                                                    data-entraineur="{{ seance.entraineur }}"
+                                                    data-seance-id="{{ seance.seance_id }}"
+                                                    data-type-seance="{{ type_seance }}"
+                                                    onclick="openPresenceModal(this)"
+                                                    title="Gérer les présences">
+                                                <i class="fas fa-clipboard-check"></i> Présence
+                                            </button>
+                                        </div>
+                                    </td>
+                                {% endfor %}
+                            {% else %}
+                                <td class="time-slot">
+                                    <div class="text-center text-muted p-2" style="font-size: 0.85em;">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                </td>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+/* Ajustements CSS pour le nouveau layout */
+.time-slot {
+    min-height: 80px;
+    vertical-align: middle;
+    position: relative;
+    padding: 5px;
+}
+
+.session-card {
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.session-time {
+    font-size: 11px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.table td {
+    padding: 0.5rem;
+}
+
+.session-card .session-type {
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    opacity: 0.9;
+    margin-bottom: 5px;
+}
+
+.session-card .session-groupe {
+    font-weight: bold;
+    font-size: 13px;
+    margin-bottom: 5px;
+}
+
+.session-card .session-entraineur {
+    font-size: 11px;
+    opacity: 0.9;
+    margin-bottom: 3px;
+}
+
+/* Types de séances */
+.session-card.entrainement {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    border-left: 4px solid #2E7D32;
+}
+
+.session-card.prep_physique {
+    background: linear-gradient(135deg, #FF9800, #F57C00);
+    color: white;
+    border-left: 4px solid #E65100;
+}
+
+.session-card.match {
+    background: linear-gradient(135deg, #F44336, #D32F2F);
+    color: white;
+    border-left: 4px solid #B71C1C;
+}
+
+.session-card.stage {
+    background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+    color: white;
+    border-left: 4px solid #4A148C;
+}
+
+.session-card.autre {
+    background: linear-gradient(135deg, #607D8B, #455A64);
+    color: white;
+    border-left: 4px solid #263238;
+}
+
+.my-session {
+    border: 2px solid #FFD700 !important;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.other-session {
+    opacity: 0.85;
+}
+
+.session-icon {
+    font-size: 12px;
+    margin-right: 5px;
+}
+
+.session-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+</style>
+
+                        <!-- Modal Présence -->
+                        <div class="modal fade" id="presenceModal" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header" id="modalHeader">
+                                        <h5 class="modal-title">
+                                            <i class="fas fa-clipboard-check"></i>
+                                            Gestion des Présences
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="session-info mb-3">
+                                            <div class="alert" id="sessionTypeAlert">
+                                                <div class="d-flex align-items-center">
+                                                    <span id="sessionTypeIcon" class="me-2"></span>
+                                                    <strong id="sessionTypeName"></strong>
+                                                </div>
+                                            </div>
+                                            <p><strong>Groupe:</strong> <span id="modalGroupe"></span></p>
+                                            <p><strong>Date:</strong> <span id="modalDate"></span></p>
+                                            <p><strong>Heure:</strong> <span id="modalHeure"></span></p>
+                                        </div>
+
+                                        <!-- Section pour marquer présence entraîneur -->
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i>
+                                            Veuillez marquer votre présence en tant qu'entraîneur.
+                                        </div>
+                                        <div class="text-center mb-4">
+                                            <div class="btn-group" role="group">
+                                                <input type="radio" class="btn-check" name="trainerPresence" id="trainerPresent" value="O" required>
+                                                <label class="btn btn-outline-success" for="trainerPresent">
+                                                    <i class="fas fa-check"></i> Présent(e)
+                                                </label>
+
+                                                <input type="radio" class="btn-check" name="trainerPresence" id="trainerAbsent" value="N" required>
+                                                <label class="btn btn-outline-danger" for="trainerAbsent">
+                                                    <i class="fas fa-times"></i> Absent(e)
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Tableau des adhérents -->
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i>
+                                            Veuillez marquer la présence pour chaque adhérent.
+                                        </div>
+                                        <form id="presenceForm">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Matricule</th>
+                                                            <th>Nom</th>
+                                                            <th>Prénom</th>
+                                                            <th class="text-center">Présence</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="adherentsList">
+                                                        <!-- Les adhérents seront ajoutés ici dynamiquement -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                        <button type="button" class="btn btn-warning" onclick="savePresences()">
+                                            <i class="fas fa-save"></i> Enregistrer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer Start -->
+                    <div class="container-fluid pt-4 px-4">
+                        <div class="bg-light rounded-top p-4">
+                            <div class="row">
+                                <div class="col-12 col-sm-6 text-center text-sm-start">
+                                    &copy; <a href="#">TCHS</a>, All Right Reserved. 
+                                </div>
+                                <div class="col-12 col-sm-6 text-center text-sm-end">
+                                    Designed by <a>AMH</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Footer End -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Back to Top -->
+        <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Custom JavaScript for this page -->
+    <script src="{{ url_for('static', filename='js/entraineur.js') }}"></script>
+
+<script>
+// ============================================
+// GESTION DES PRÉSENCES
+// ============================================
+
+// Fonction pour ouvrir le modal de présence avec support des types de séances
+function openPresenceModal(button) {
+    const groupe = button.getAttribute('data-groupe');
+    const date = button.getAttribute('data-date');
+    const heure = button.getAttribute('data-heure');
+    const entraineur = button.getAttribute('data-entraineur');
+    const seanceId = button.getAttribute('data-seance-id');
+    const typeSeance = button.getAttribute('data-type-seance') || 'entrainement';
+    
+    // Mettre à jour les informations de la séance
+    document.getElementById('modalGroupe').textContent = groupe;
+    document.getElementById('modalDate').textContent = date;
+    document.getElementById('modalHeure').textContent = heure;
+    
+    // Mettre à jour l'affichage du type de séance
+    const sessionTypeAlert = document.getElementById('sessionTypeAlert');
+    const sessionTypeIcon = document.getElementById('sessionTypeIcon');
+    const sessionTypeName = document.getElementById('sessionTypeName');
+    const modalHeader = document.getElementById('modalHeader');
+    
+    // Configurer l'affichage selon le type de séance
+    switch(typeSeance) {
+        case 'prep_physique':
+            sessionTypeAlert.className = 'alert alert-warning';
+            sessionTypeIcon.innerHTML = '<i class="fas fa-dumbbell"></i>';
+            sessionTypeName.textContent = 'Séance de Préparation Physique';
+            modalHeader.className = 'modal-header bg-warning';
+            break;
+        case 'match':
+            sessionTypeAlert.className = 'alert alert-danger';
+            sessionTypeIcon.innerHTML = '<i class="fas fa-trophy"></i>';
+            sessionTypeName.textContent = 'Match';
+            modalHeader.className = 'modal-header bg-danger text-white';
+            break;
+        case 'stage':
+            sessionTypeAlert.className = 'alert alert-info';
+            sessionTypeIcon.innerHTML = '<i class="fas fa-graduation-cap"></i>';
+            sessionTypeName.textContent = 'Stage';
+            modalHeader.className = 'modal-header bg-info text-white';
+            break;
+        case 'entrainement':
+        default:
+            sessionTypeAlert.className = 'alert alert-success';
+            sessionTypeIcon.innerHTML = '<i class="fas fa-running"></i>';
+            sessionTypeName.textContent = 'Séance d\'Entraînement';
+            modalHeader.className = 'modal-header bg-success text-white';
+            break;
+    }
+    
+    // Charger la liste des adhérents pour ce groupe
+    loadAdherentsForGroup(groupe, seanceId);
+    
+    // Ouvrir le modal
+    const modal = new bootstrap.Modal(document.getElementById('presenceModal'));
+    modal.show();
+}
+
+// Fonction pour charger les adhérents d'un groupe
+function loadAdherentsForGroup(groupe, seanceId) {
+    const adherentsList = document.getElementById('adherentsList');
+    if (!adherentsList) {
+        console.error('Element adherentsList non trouvé');
+        return;
+    }
+    
+    adherentsList.innerHTML = '<tr><td colspan="4" class="text-center"><i class="fas fa-spinner fa-spin"></i> Chargement...</td></tr>';
+    
+    fetch(`/api/get_adherents_groupe/${encodeURIComponent(groupe)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            adherentsList.innerHTML = '';
+            if (data.adherents && data.adherents.length > 0) {
+                data.adherents.forEach(adherent => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${adherent.matricule}</td>
+                        <td>${adherent.nom}</td>
+                        <td>${adherent.prenom}</td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+                                <input type="radio" class="btn-check" name="presence_${adherent.matricule}" 
+                                       id="present_${adherent.matricule}" value="O" required>
+                                <label class="btn btn-outline-success btn-sm" for="present_${adherent.matricule}">
+                                    <i class="fas fa-check"></i>
+                                </label>
+                                
+                                <input type="radio" class="btn-check" name="presence_${adherent.matricule}" 
+                                       id="absent_${adherent.matricule}" value="N" required>
+                                <label class="btn btn-outline-danger btn-sm" for="absent_${adherent.matricule}">
+                                    <i class="fas fa-times"></i>
+                                </label>
+                            </div>
+                        </td>
+                    `;
+                    adherentsList.appendChild(row);
+                });
+            } else {
+                adherentsList.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Aucun adhérent trouvé pour ce groupe</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement des adhérents:', error);
+            adherentsList.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Erreur lors du chargement des adhérents</td></tr>';
+        });
+}
+
+// Fonction pour sauvegarder les présences
+function savePresences() {
+    const trainerPresence = document.querySelector('input[name="trainerPresence"]:checked');
+    
+    if (!trainerPresence) {
+        alert('Veuillez marquer votre présence en tant qu\'entraîneur');
+        return;
+    }
+    
+    const presences = {
+        trainer_presence: trainerPresence.value,
+        adherents: []
+    };
+    
+    const adherentRows = document.querySelectorAll('#adherentsList tr');
+    let hasError = false;
+    
+    adherentRows.forEach((row) => {
+        const matriculeCell = row.querySelector('td:first-child');
+        if (matriculeCell && matriculeCell.textContent.trim() !== '') {
+            const matricule = matriculeCell.textContent.trim();
+            const presenceInput = document.querySelector(`input[name="presence_${matricule}"]:checked`);
+            
+            if (presenceInput) {
+                presences.adherents.push({
+                    matricule: matricule,
+                    presence: presenceInput.value
+                });
+            } else {
+                alert(`Veuillez sélectionner la présence pour l'adhérent ${matricule}`);
+                hasError = true;
+                return;
+            }
+        }
+    });
+    
+    if (hasError) return;
+    
+    if (presences.adherents.length === 0) {
+        alert('Aucune présence d\'adhérent n\'a été sélectionnée');
+        return;
+    }
+    
+    const groupe = document.getElementById('modalGroupe').textContent.trim();
+    const date = document.getElementById('modalDate').textContent.trim();
+    const heure = document.getElementById('modalHeure').textContent.trim();
+    
+    // Récupérer automatiquement le type depuis l'élément global
+    const globalSeanceType = document.getElementById('globalSeanceType');
+    const seanceType = globalSeanceType ? globalSeanceType.value : 'entrainement';
+    
+    console.log(`Groupe: ${groupe}, Date: ${date}, Heure: ${heure}, Type: ${seanceType}`);
+    
+    const dataToSend = {
+        groupe: groupe,
+        date: date,
+        heure: heure,
+        seance_type: seanceType,
+        presences: presences
+    };
+    
+    fetch('/api/save_presences', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erreur réseau: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Présences enregistrées avec succès');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('presenceModal'));
+            if (modal) {
+                modal.hide();
+            }
+            location.reload();
+        } else {
+            alert('Erreur lors de l\'enregistrement: ' + (data.error || 'Erreur inconnue'));
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de l\'enregistrement des présences: ' + error.message);
+    });
+}
+
+// Fonction pour vérifier si toutes les présences sont sélectionnées
+function validateAllPresences() {
+    const adherentRows = document.querySelectorAll('#adherentsList tr');
+    let allSelected = true;
+    let unselectedCount = 0;
+    
+    adherentRows.forEach(row => {
+        const matriculeCell = row.querySelector('td:first-child');
+        if (matriculeCell && matriculeCell.textContent.trim() !== '') {
+            const matricule = matriculeCell.textContent.trim();
+            const presenceInput = document.querySelector(`input[name="presence_${matricule}"]:checked`);
+            if (!presenceInput) {
+                allSelected = false;
+                unselectedCount++;
+            }
+        }
+    });
+    
+    if (!allSelected) {
+        console.log(`${unselectedCount} adhérent(s) n'ont pas de présence sélectionnée`);
+        return false;
+    }
+    
+    return true;
+}
+
+// ============================================
+// GESTION DES RÉSERVATIONS DE TERRAIN
+// ============================================
+
+// Fonction globale pour basculer l'affichage de la section réservation
+function toggleReservationSection(event) {
+    if (event) event.preventDefault();
+    
+    const section = document.getElementById('reservationSection');
+    if (!section) {
+        console.error('Section reservationSection introuvable');
+        alert('Erreur: Section de réservation introuvable');
+        return;
+    }
+    
+    if (section.style.display === 'none' || section.style.display === '') {
+        console.log('Affichage de la section réservation');
+        section.style.display = 'block';
+        chargerReservations();
+    } else {
+        console.log('Masquage de la section réservation');
+        section.style.display = 'none';
+    }
+}
+
+// Fonction pour soumettre une réservation
+function soumettreReservation() {
+    const submitBtn = document.getElementById('submitBtn');
+    if (!submitBtn) {
+        console.error('Bouton submit non trouvé');
+        return;
+    }
+    
+    const normalState = submitBtn.querySelector('.normal-state');
+    const loadingState = submitBtn.querySelector('.loading-state');
+    
+    // Validation des champs
+    const date = document.getElementById('dateReservation')?.value;
+    const heureDebut = document.getElementById('heureDebut')?.value;
+    const heureFin = document.getElementById('heureFin')?.value;
+    const numeroTerrain = document.getElementById('numeroTerrain')?.value;
+    const commentaire = document.getElementById('commentaire')?.value || '';
+    
+    if (!date || !heureDebut || !heureFin || !numeroTerrain) {
+        alert('Veuillez remplir tous les champs obligatoires');
+        return;
+    }
+    
+    // Vérifier que l'heure de fin est après l'heure de début
+    if (heureFin <= heureDebut) {
+        alert('L\'heure de fin doit être après l\'heure de début');
+        return;
+    }
+    
+    // Afficher l'état de chargement
+    if (normalState && loadingState) {
+        normalState.style.display = 'none';
+        loadingState.style.display = 'inline';
+    }
+    submitBtn.disabled = true;
+    
+    const data = {
+        date: date,
+        heure_debut: heureDebut,
+        heure_fin: heureFin,
+        numero_terrain: numeroTerrain,
+        commentaire: commentaire
+    };
+    
+    fetch('/api/reserver_terrain', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erreur réseau: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert('Réservation créée avec succès');
+            const form = document.getElementById('reservationForm');
+            if (form) {
+                form.reset();
+            }
+            chargerReservations();
+        } else {
+            alert('Erreur: ' + (data.error || 'Erreur inconnue'));
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la création de la réservation: ' + error.message);
+    })
+    .finally(() => {
+        // Restaurer l'état normal du bouton
+        if (normalState && loadingState) {
+            normalState.style.display = 'inline';
+            loadingState.style.display = 'none';
+        }
+        submitBtn.disabled = false;
+    });
+}
+
+// Fonction pour charger les réservations
+function chargerReservations() {
+    const tableBody = document.getElementById('reservationsList');
+    if (!tableBody) {
+        console.error('Element reservationsList non trouvé');
+        return;
+    }
+    
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Chargement...</td></tr>';
+    
+    fetch('/api/mes_reservations')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            tableBody.innerHTML = '';
+            
+            if (data.success && data.reservations && data.reservations.length > 0) {
+                data.reservations.forEach(reservation => {
+                    let statusClass, statusText;
+                    
+                    switch(reservation.status) {
+                        case 'acceptée':
+                        case 'acceptee':
+                            statusClass = 'success';
+                            statusText = 'Acceptée';
+                            break;
+                        case 'refusée':
+                        case 'refusee':
+                            statusClass = 'danger';
+                            statusText = 'Refusée';
+                            break;
+                        case 'en_attente':
+                        default:
+                            statusClass = 'warning';
+                            statusText = 'En attente';
+                            break;
+                    }
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${reservation.date}</td>
+                        <td>${reservation.heure_debut} - ${reservation.heure_fin}</td>
+                        <td>Terrain ${reservation.numero_terrain}</td>
+                        <td><span class="badge bg-${statusClass}">${statusText}</span></td>
+                        <td>${reservation.commentaire || '-'}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Aucune réservation trouvée</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Erreur lors du chargement: ${error.message}</td></tr>`;
+        });
+}
+
+// ============================================
+// GESTION DU CHANGEMENT DE MOT DE PASSE
+// ============================================
+
+function fermerModal() {
+    const modal = document.getElementById('modalChangerMotDePasse');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function ouvrirModalMotDePasse() {
+    const modal = document.getElementById('modalChangerMotDePasse');
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
+
+// ============================================
+// FONCTIONS D'EXPORTATION
+// ============================================
+
+function prepareExport(format) {
+    const exportScope = document.getElementById('exportScope');
+    if (exportScope) {
+        exportScope.style.display = 'block';
+    }
+    // Stocker le format sélectionné
+    window.selectedExportFormat = format;
+}
+
+function triggerExport(scope) {
+    const format = window.selectedExportFormat || 'pdf';
+    console.log('Export:', scope, 'format:', format);
+    
+    // Construire l'URL d'exportation
+    const weekOffset = new URLSearchParams(window.location.search).get('week_offset') || 0;
+    const dayOffset = new URLSearchParams(window.location.search).get('day_offset') || 0;
+    
+    let exportUrl = `/api/export_emploi_temps?format=${format}&scope=${scope}`;
+    exportUrl += `&week_offset=${weekOffset}&day_offset=${dayOffset}`;
+    
+    // Ouvrir dans une nouvelle fenêtre ou télécharger
+    window.open(exportUrl, '_blank');
+    
+    // Masquer le sélecteur de portée
+    const exportScope = document.getElementById('exportScope');
+    if (exportScope) {
+        exportScope.style.display = 'none';
+    }
+}
+
+// ============================================
+// INITIALISATION AU CHARGEMENT DE LA PAGE
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initialisation de la page entraîneur');
+    
+    // Note: La section réservation est maintenant gérée par toggleReservationSection()
+    // qui est appelée directement depuis le HTML avec onclick
+    
+    // ========== DÉFINIR LA DATE MINIMUM À AUJOURD'HUI ==========
+    const dateInput = document.getElementById('dateReservation');
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.min = today;
+        dateInput.value = today;
+        console.log('✓ Date minimum définie');
+    }
+    
+    // ========== DÉFINIR DES HEURES PAR DÉFAUT ==========
+    const heureDebutInput = document.getElementById('heureDebut');
+    const heureFinInput = document.getElementById('heureFin');
+    if (heureDebutInput && heureFinInput) {
+        heureDebutInput.value = '08:00';
+        heureFinInput.value = '09:00';
+        console.log('✓ Heures par défaut définies');
+    }
+    
+    // ========== GESTION DU CHANGEMENT DE MOT DE PASSE ==========
+    const changePasswordLink = document.getElementById('changePasswordLink');
+    const modalChangerMotDePasse = document.getElementById('modalChangerMotDePasse');
+    
+    if (changePasswordLink && modalChangerMotDePasse) {
+        changePasswordLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            ouvrirModalMotDePasse();
+        });
+        console.log('✓ Événement de changement de mot de passe attaché');
+    }
+    
+    const submitMotDePasse = document.getElementById('submitMotDePasse');
+    if (submitMotDePasse) {
+        submitMotDePasse.addEventListener('click', function() {
+            const nouveauMdp = document.getElementById('nouveauMotDePasse')?.value;
+            const confirmMdp = document.getElementById('confirmationMotDePasse')?.value;
+            
+            if (!nouveauMdp || !confirmMdp) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+            
+            if (nouveauMdp !== confirmMdp) {
+                alert('Les mots de passe ne correspondent pas');
+                return;
+            }
+            
+            if (nouveauMdp.length < 6) {
+                alert('Le mot de passe doit contenir au moins 6 caractères');
+                return;
+            }
+            
+            // Appel API pour changer le mot de passe
+            fetch('/api/changer_mot_de_passe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nouveau_mot_de_passe: nouveauMdp
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Mot de passe changé avec succès');
+                    fermerModal();
+                    // Réinitialiser les champs
+                    document.getElementById('nouveauMotDePasse').value = '';
+                    document.getElementById('confirmationMotDePasse').value = '';
+                } else {
+                    alert('Erreur: ' + (data.error || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur lors du changement de mot de passe: ' + error.message);
+            });
+        });
+        console.log('✓ Événement de soumission de mot de passe attaché');
+    }
+    
+    console.log('✓ Initialisation terminée');
+});
+
+// ============================================
+// GESTION DES ERREURS GLOBALES
+// ============================================
+
+window.addEventListener('error', function(e) {
+    console.error('Erreur JavaScript détectée:', e.error);
+});
+
+window.addEventListener('unhandledrejection', function(e) {
+    console.error('Promise rejetée non gérée:', e.reason);
+});
+
+console.log('✓ Script entraineur.js chargé avec succès');
+</script>
+</body>
+
+</html>

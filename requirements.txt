@@ -1,0 +1,31 @@
+# Framework Web
+Flask
+Flask-SQLAlchemy
+
+# Base de données
+PyMySQL
+cryptography
+
+# Sécurité
+Werkzeug
+
+# Date et heure
+pytz
+
+# Exports PDF/Excel
+reportlab
+openpyxl
+pandas
+XlsxWriter
+
+# Images (pour PDF)
+Pillow
+
+# Utilitaires
+python-dateutil
+
+# Production (optionnel)
+gunicorn
+
+# Variables d'environnement (optionnel)
+python-dotenv

@@ -1,0 +1,629 @@
+<!-- Sidebar Start -->
+<div class="sidebar pe-4 pb-3">
+    <nav class="navbar bg-light navbar-light">
+        <a href="{{ url_for('admin') }}" class="navbar-brand mx-4 mb-3">
+    <h3 class="text-primary">
+        TCHS 🎾
+        {% if session.get('saison_code') %}
+            <span class="badge bg-light text-primary" style="font-size: 0.5em;">
+                {{ session['saison_code'] }}
+            </span>
+        {% endif %}
+    </h3>
+</a>
+        
+        <div class="navbar-nav w-100">
+            <a href="{{ url_for('admin') }}" class="nav-item nav-link active">
+                <i class="fa fa-tachometer-alt me-2"></i>Dashboard
+            </a>
+        
+            <!-- Utilisateurs Dropdown -->
+<div class="nav-item dropdown">
+<a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+<i class="fa fa-user me-2"></i>Utilisateurs
+</a>
+<div class="dropdown-menu bg-transparent border-0">
+<a href="{{ url_for('ajouter_utilisateur') }}" class="dropdown-item">
+    <i class="fa fa-user-plus me-2"></i>Ajouter un Utilisateur
+</a>
+<a href="{{ url_for('gerer_utilisateur') }}" class="dropdown-item">
+    <i class="fa fa-users-cog me-2"></i>Gérer Les Utilisateurs
+</a>
+</div>
+</div>
+
+<!-- Adhérents Dropdown -->
+<div class="nav-item dropdown">
+<a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+<i class="fa fa-users me-2"></i>Adhérents
+</a>
+<div class="dropdown-menu bg-transparent border-0">
+<a href="{{ url_for('ajouter_adherent') }}" class="dropdown-item">
+    <i class="fa fa-user-plus me-2"></i>Ajouter un Adhérent
+</a>
+<a href="{{ url_for('gerer_adherent') }}" class="dropdown-item">
+    <i class="fa fa-users-cog me-2"></i>Gérer Les Adhérents
+</a>
+
+</div>
+</div>
+
+<!-- Entraîneurs Dropdown -->
+<div class="nav-item dropdown">
+<a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+<i class="fa fa-chalkboard-teacher me-2"></i>Entraîneurs
+</a>
+<div class="dropdown-menu bg-transparent border-0">
+<a href="{{ url_for('ajouter_entraineur') }}" class="dropdown-item">
+    <i class="fa fa-chalkboard-teacher me-2"></i>Ajouter un Entraîneur
+</a>
+<a href="{{ url_for('gerer_entraineur') }}" class="dropdown-item">
+    <i class="fa fa-users-cog me-2"></i>Gérer Les Entraîneurs
+</a>
+</div>
+</div>
+
+<div class="nav-item dropdown">
+    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="fa fa-credit-card me-2"></i>Encaissements        
+    </a>
+    <div class="dropdown-menu bg-transparent border-0">
+        <a href="{{ url_for('paiement', type='annuel') }}" class="dropdown-item">
+            <i class="fa fa-calendar me-2"></i>Abonnement Annuel
+        </a>
+        <a href="{{ url_for('paiement', type='ete') }}" class="dropdown-item">
+            <i class="fa fa-sun me-2"></i>École d'été
+        </a>
+        <a href="{{ url_for('autres_paiements') }}" class="dropdown-item">
+            <i class="fa fa-credit-card me-2"></i>Autres Encaissements
+        </a>
+        <a href="{{ url_for('paiements_annules') }}" class="dropdown-item">
+            <i class="fa fa-credit-card me-2"></i>Encaissements Annulés
+        </a>
+    </div>
+</div>
+
+<div class="nav-item dropdown">
+    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="fa fa-boxes me-2"></i>Gestions
+    </a>
+    <div class="dropdown-menu bg-transparent border-0">
+        <a href="{{ url_for('directeur_technique', section='groupes') }}" class="dropdown-item">
+            <i class="fa fa-users me-2"></i>Affectations Groupes
+        </a>
+        <a href="{{ url_for('planning', section='planning_hebdo') }}" class="dropdown-item">
+            <i class="fa fa-calendar-week me-2"></i>Planning Hebdomadaire
+        </a>
+        <a href="{{ url_for('planning_prep_physique') }}" class="dropdown-item">
+            <i class="fa fa-dumbbell me-2"></i>Planning Prep Phy
+        </a>
+    </div>
+</div>
+
+<div class="nav-item dropdown">
+    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+        <i class="fa fa-search"></i>Situations    
+    </a>
+    <div class="dropdown-menu bg-transparent border-0">
+        <a href="{{ url_for('show_situation_adherent') }}" class="dropdown-item">
+    <i class="fa fa-search"></i>Situation Adhérent
+</a>
+        <a href="{{ url_for('situation_totale_page') }}" class="dropdown-item">
+            <i class="fa fa-search"></i>Situation Globale
+        </a>
+        <a href="{{ url_for('show_situation_paiement') }}" class="dropdown-item">
+            <i class="fa fa-search"></i>Situation Paiements
+        </a>
+        <a href="{{ url_for('presence') }}" class="dropdown-item">
+            <i class="fa fa-search"></i>Situation Presence
+        </a>
+        <a href="{{ url_for('situation_financiere') }}" class="dropdown-item">
+            <i class="fa fa-search"></i>Situation Financiere
+        </a>
+    </div>
+</div>
+        
+            <div class="nav-item">
+                <a href="{{ url_for('gestion_cotisations') }}" class="nav-link">
+                    <i class="fa fa-file-invoice-dollar"></i>Cotisations
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a href="{{ url_for('locations_terrains') }}" class="nav-link">
+                    <i class="fa fa-home me-2"></i>Locations 
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a href="{{ url_for('depenses') }}" class="nav-link">
+                    <i class="fa fa-file-invoice-dollar"></i>Dépenses
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a href="{{ url_for('rh') }}" class="nav-link">
+                    <i class="fa fa-calculator"></i>Gestion Salaires
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a href="{{ url_for('reservations') }}" class="nav-link">
+                  <i class="fa fa-clipboard me-2"></i>Reservations
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a href="{{ url_for('discussions') }}" class="nav-link">
+                  <i class="fab fa-facebook-messenger"></i>Discussions
+                </a>
+            </div>
+
+            <!-- Changement de Mot de Passe -->
+            <div class="nav-item">
+                <a href="javascript:void(0);" class="nav-link" id="changePasswordLinkAdmin">
+                    <i class="fa fa-key me-2"></i>Mot de Passe
+                </a>
+            </div>
+
+            <!-- Déconnexion -->
+            <div class="nav-item">
+                <a href="{{ url_for('logout') }}" class="nav-link">
+                    <i class="fa fa-sign-out-alt me-2"></i>Déconnecter
+                </a>
+            </div>
+        </div>
+    </nav>
+</div>
+<!-- Sidebar End -->
+
+<!-- Modal Changement de Mot de Passe Admin -->
+<div id="modalChangerMotDePasseAdmin" class="password-modal" style="display:none;">
+    <div class="password-modal-overlay" onclick="fermerModalAdmin()"></div>
+    <div class="password-modal-content">
+        <div class="password-modal-header">
+            <h4>
+                <i class="fas fa-key me-2"></i>
+                Changer le mot de passe
+            </h4>
+            <button type="button" class="btn-close-custom" onclick="fermerModalAdmin()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="password-modal-body">
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Votre mot de passe doit contenir au moins 6 caractères
+            </div>
+            
+            <form id="changePasswordFormAdmin">
+                <div class="form-group mb-3">
+                    <label for="ancienMotDePasseAdmin" class="form-label">
+                        <i class="fas fa-lock me-2"></i>
+                        Ancien mot de passe
+                    </label>
+                    <div class="input-group">
+                        <input type="password" 
+                               id="ancienMotDePasseAdmin" 
+                               class="form-control" 
+                               placeholder="Entrez votre ancien mot de passe"
+                               required>
+                        <button class="btn btn-outline-secondary toggle-password" 
+                                type="button" 
+                                onclick="togglePasswordAdmin('ancienMotDePasseAdmin')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label for="nouveauMotDePasseAdmin" class="form-label">
+                        <i class="fas fa-key me-2"></i>
+                        Nouveau mot de passe
+                    </label>
+                    <div class="input-group">
+                        <input type="password" 
+                               id="nouveauMotDePasseAdmin" 
+                               class="form-control" 
+                               placeholder="Entrez votre nouveau mot de passe"
+                               minlength="6"
+                               required>
+                        <button class="btn btn-outline-secondary toggle-password" 
+                                type="button" 
+                                onclick="togglePasswordAdmin('nouveauMotDePasseAdmin')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="password-strength mt-2" id="passwordStrengthAdmin"></div>
+                </div>
+                
+                <div class="form-group mb-4">
+                    <label for="confirmationMotDePasseAdmin" class="form-label">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Confirmer le mot de passe
+                    </label>
+                    <div class="input-group">
+                        <input type="password" 
+                               id="confirmationMotDePasseAdmin" 
+                               class="form-control" 
+                               placeholder="Confirmez votre nouveau mot de passe"
+                               minlength="6"
+                               required>
+                        <button class="btn btn-outline-secondary toggle-password" 
+                                type="button" 
+                                onclick="togglePasswordAdmin('confirmationMotDePasseAdmin')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="password-match mt-2" id="passwordMatchAdmin"></div>
+                </div>
+                
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" class="btn btn-secondary" onclick="fermerModalAdmin()">
+                        <i class="fas fa-times me-2"></i>
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Styles du Modal de Mot de Passe */
+.password-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1050;
+    animation: fadeIn 0.3s ease;
+}
+
+.password-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+}
+
+.password-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    animation: slideDown 0.3s ease;
+    z-index: 2;
+}
+
+.password-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 25px;
+    border-radius: 15px 15px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.password-modal-header h4 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.btn-close-custom {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-close-custom:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.password-modal-body {
+    padding: 25px;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.input-group {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.input-group .form-control {
+    border: 1px solid #dee2e6;
+    padding: 10px 15px;
+    border-right: none;
+}
+
+.input-group .form-control:focus {
+    border-color: #667eea;
+    box-shadow: none;
+}
+
+.toggle-password {
+    border: 1px solid #dee2e6;
+    border-left: none;
+    background: white;
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.toggle-password:hover {
+    background: #f8f9fa;
+    color: #667eea;
+}
+
+.password-strength {
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+}
+
+.password-strength-bar {
+    height: 100%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.strength-weak {
+    width: 33%;
+    background: #dc3545;
+}
+
+.strength-medium {
+    width: 66%;
+    background: #ffc107;
+}
+
+.strength-strong {
+    width: 100%;
+    background: #28a745;
+}
+
+.password-match {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.match-success {
+    color: #28a745;
+}
+
+.match-error {
+    color: #dc3545;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border: none;
+    border-left: 4px solid #2196f3;
+    color: #1565c0;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+@media (max-width: 576px) {
+    .password-modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .password-modal-body {
+        padding: 20px;
+    }
+}
+</style>
+
+<script>
+// Fonction pour ouvrir le modal
+document.addEventListener('DOMContentLoaded', function() {
+    const changePasswordLink = document.getElementById('changePasswordLinkAdmin');
+    if (changePasswordLink) {
+        changePasswordLink.addEventListener('click', function() {
+            document.getElementById('modalChangerMotDePasseAdmin').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        });
+    }
+});
+
+// Fonction pour fermer le modal
+function fermerModalAdmin() {
+    const modal = document.getElementById('modalChangerMotDePasseAdmin');
+    
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+    
+    // Réinitialiser le formulaire
+    const form = document.getElementById('changePasswordFormAdmin');
+    if (form) form.reset();
+    
+    const strengthDiv = document.getElementById('passwordStrengthAdmin');
+    if (strengthDiv) strengthDiv.innerHTML = '';
+    
+    const matchDiv = document.getElementById('passwordMatchAdmin');
+    if (matchDiv) matchDiv.innerHTML = '';
+}
+
+// Fonction pour afficher/masquer le mot de passe
+function togglePasswordAdmin(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.parentElement.querySelector('.toggle-password i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.classList.remove('fa-eye');
+        button.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        button.classList.remove('fa-eye-slash');
+        button.classList.add('fa-eye');
+    }
+}
+
+// Vérifier la force du mot de passe
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordInput = document.getElementById('nouveauMotDePasseAdmin');
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            const strengthDiv = document.getElementById('passwordStrengthAdmin');
+            
+            if (password.length === 0) {
+                strengthDiv.innerHTML = '';
+                return;
+            }
+            
+            let strength = 0;
+            if (password.length >= 6) strength++;
+            if (password.length >= 10) strength++;
+            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+            if (/\d/.test(password)) strength++;
+            if (/[^a-zA-Z0-9]/.test(password)) strength++;
+            
+            let strengthClass = '';
+            
+            if (strength <= 2) {
+                strengthClass = 'strength-weak';
+            } else if (strength <= 3) {
+                strengthClass = 'strength-medium';
+            } else {
+                strengthClass = 'strength-strong';
+            }
+            
+            strengthDiv.innerHTML = `<div class="password-strength-bar ${strengthClass}"></div>`;
+        });
+    }
+});
+
+// Vérifier la correspondance des mots de passe
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmInput = document.getElementById('confirmationMotDePasseAdmin');
+    if (confirmInput) {
+        confirmInput.addEventListener('input', function() {
+            const password = document.getElementById('nouveauMotDePasseAdmin').value;
+            const confirm = this.value;
+            const matchDiv = document.getElementById('passwordMatchAdmin');
+            
+            if (confirm.length === 0) {
+                matchDiv.innerHTML = '';
+                return;
+            }
+            
+            if (password === confirm) {
+                matchDiv.innerHTML = '<i class="fas fa-check-circle me-1"></i>Les mots de passe correspondent';
+                matchDiv.className = 'password-match match-success';
+            } else {
+                matchDiv.innerHTML = '<i class="fas fa-times-circle me-1"></i>Les mots de passe ne correspondent pas';
+                matchDiv.className = 'password-match match-error';
+            }
+        });
+    }
+});
+
+// Gérer la soumission du formulaire
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('changePasswordFormAdmin');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const ancienPassword = document.getElementById('ancienMotDePasseAdmin').value;
+            const nouveauPassword = document.getElementById('nouveauMotDePasseAdmin').value;
+            const confirmPassword = document.getElementById('confirmationMotDePasseAdmin').value;
+            
+            if (nouveauPassword !== confirmPassword) {
+                alert('Les mots de passe ne correspondent pas !');
+                return;
+            }
+            
+            if (nouveauPassword.length < 6) {
+                alert('Le mot de passe doit contenir au moins 6 caractères !');
+                return;
+            }
+            
+            fetch('/reset_password_admin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ancien_password: ancienPassword,
+                    nouveau_password: nouveauPassword
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Mot de passe modifié avec succès !');
+                    fermerModalAdmin();
+                } else {
+                    alert('Erreur : ' + (data.message || 'Ancien mot de passe incorrect'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Une erreur est survenue lors du changement de mot de passe');
+            });
+        });
+    }
+});
+
+// Fermer avec la touche Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('modalChangerMotDePasseAdmin').style.display === 'block') {
+        fermerModalAdmin();
+    }
+});
+</script>

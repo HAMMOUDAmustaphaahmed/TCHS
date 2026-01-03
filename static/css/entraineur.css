@@ -1,0 +1,262 @@
+/* CSS pour la page entraineur.html */
+
+/* Modal pour changer le mot de passe */
+#modalChangerMotDePasse {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+#modalChangerMotDePasse h4 {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+#modalChangerMotDePasse div {
+    margin-bottom: 10px;
+}
+
+#modalChangerMotDePasse label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#modalChangerMotDePasse input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+#modalChangerMotDePasse button {
+    margin-top: 10px;
+    margin-right: 10px;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#modalChangerMotDePasse #submitMotDePasse {
+    background-color: #007bff;
+    color: white;
+}
+
+#modalChangerMotDePasse #submitMotDePasse:hover {
+    background-color: #0056b3;
+}
+
+/* Section de réservation */
+#reservationSection {
+    margin-top: 20px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+#reservationSection.show {
+    display: block !important;
+}
+
+/* Styles pour les boutons de réservation */
+.loading-state {
+    display: none;
+}
+
+.btn:disabled .normal-state {
+    display: none;
+}
+
+.btn:disabled .loading-state {
+    display: inline;
+}
+
+/* Tableau des réservations */
+.table-responsive {
+    margin-top: 20px;
+}
+
+.badge {
+    padding: 8px 12px;
+    font-size: 0.9em;
+}
+
+#reservationsList tr {
+    transition: background-color 0.2s;
+}
+
+#reservationsList tr:hover {
+    background-color: rgba(0,0,0,0.05);
+}
+
+/* Styles pour le modal de présence */
+.session-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.session-info p {
+    margin-bottom: 8px;
+}
+
+.session-info strong {
+    color: #333;
+}
+
+/* Styles pour les boutons radio de présence */
+.btn-check:checked + .btn-outline-success {
+    background-color: #198754;
+    color: white;
+}
+
+.btn-check:checked + .btn-outline-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Alignement des cellules du tableau */
+.table td {
+    vertical-align: middle;
+}
+
+/* Largeur minimale pour les boutons de présence */
+.btn-group label {
+    min-width: 100px;
+}
+
+/* Styles pour les cartes de session dans l'emploi du temps */
+.session-card {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 8px;
+    margin: 2px;
+}
+
+.session-card small {
+    font-weight: bold;
+    color: #495057;
+}
+
+.session-card .text-muted {
+    font-size: 0.8em;
+    margin-bottom: 5px;
+}
+
+/* Bouton de présence */
+.presence-btn {
+    font-size: 0.75em;
+    padding: 4px 8px;
+}
+
+/* Créneaux horaires */
+.time-slot {
+    min-height: 80px;
+    vertical-align: top;
+    padding: 4px;
+}
+
+/* Exportation */
+#exportScope {
+    margin-top: 5px;
+}
+
+#exportScope .btn-group {
+    margin-top: 5px;
+}
+
+/* Style pour les messages d'alerte */
+.alert {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.alert-info {
+    background-color: #e3f2fd;
+    color: #0277bd;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    #modalChangerMotDePasse {
+        width: 90%;
+        left: 5%;
+        transform: translateY(-50%);
+    }
+    
+    .btn-group label {
+        min-width: 80px;
+        font-size: 0.8em;
+    }
+    
+    .session-card {
+        padding: 4px;
+    }
+    
+    .presence-btn {
+        font-size: 0.6em;
+        padding: 2px 4px;
+    }
+}
+
+/* Animation pour le modal */
+#modalChangerMotDePasse {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+/* Hover effects pour les boutons */
+.btn:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease;
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* Style pour le spinner de chargement */
+.fa-spinner.fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Style pour les badges de statut */
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}

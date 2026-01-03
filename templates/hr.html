@@ -1,0 +1,411 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <!-- Favicon -->
+<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Libraries Stylesheet -->
+<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+<!-- Customized Bootstrap Stylesheet -->
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+<!-- Template Stylesheet -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <style>
+        .salary-input {
+            width: 120px;
+        }
+        .salary-type-select {
+            width: 100px;
+        }
+        .table-responsive {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .search-section {
+            background: linear-gradient(135deg, #66aaea 0%, #009CFF 100%);
+            border-radius: 15px;
+            color: white;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+        .btn-calculate {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+            color: white;
+            font-weight: bold;
+        }
+        .btn-calculate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(62, 114, 145, 0.2);
+        }
+        .badge-present {
+            background-color: #28a745;
+        }
+        .badge-absent {
+            background-color: #dc3545;
+        }
+        .salary-result {
+            font-weight: bold;
+            color: #198754;
+        }
+    </style>
+
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+     <div class="content">
+    <!-- Navbar Start -->
+            <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+                <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                    <h2 class="text-primary mb-0"></h2>
+                </a>
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
+
+                
+
+                
+
+                
+            </nav>
+            <!-- Navbar End -->
+        
+
+
+        <!-- Sign In Start -->
+ 
+<div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <h2 class="mb-4">
+                        Gestion des Salaires - Entraîneurs
+                    </h2>
+                    
+                    <!-- Section de recherche et filtres -->
+                    <div class="search-section">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4">
+                                <label for="searchInput" class="form-label">
+                                    <i class="fas fa-search"></i> Rechercher un entraîneur
+                                </label>
+                                <input type="text" id="searchInput" class="form-control" 
+                                       placeholder="Nom ou prénom...">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="dateDebut" class="form-label">
+                                    <i class="fas fa-calendar-alt"></i> Date début
+                                </label>
+                                <input type="date" id="dateDebut" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="dateFin" class="form-label">
+                                    <i class="fas fa-calendar-alt"></i> Date fin
+                                </label>
+                                <input type="date" id="dateFin" class="form-control">
+                            </div>
+                            <div class="col-md-2">
+                                <button id="btnSearch" class="btn btn-light w-100">
+                                    <i class="fas fa-search"></i> Rechercher
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading spinner -->
+                    <div id="loadingSpinner" class="text-center d-none">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                    </div>
+<div id="summarySection" class="mt-4 d-none">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card text-center bg-primary text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Entraîneurs</h5>
+                                        <h3 id="totalEntraineurs">0</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center bg-success text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Heures Présent</h5>
+                                        <h3 id="totalHeuresPresent">0</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center bg-danger text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Heures Absent</h5>
+                                        <h3 id="totalHeuresAbsent">0</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center bg-warning text-dark">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Coût Salaires Total</h5>
+                                        <h3 id="totalSalaires">0 DT</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Tableau des résultats -->
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Prénom</th>
+                                    <th>Type Abonnement</th>
+                                    <th class="text-center">
+                                        <i class="fas fa-clock text-success"></i> Heures Présent
+                                    </th>
+                                    <th class="text-center">
+                                        <i class="fas fa-clock text-danger"></i> Heures Absent
+                                    </th>
+                                    <th class="text-center">Type Salaire</th>
+                                    <th class="text-center">Taux/Montant</th>
+                                    <th class="text-center">Salaire Calculé</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="entraineurTableBody">
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted">
+                                        <i class="fas fa-info-circle"></i>
+                                        Cliquez sur "Rechercher" pour charger les données
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Résumé général -->
+                    
+                </div>
+            </div>
+        </div>
+    <script>
+        let entraineurData = [];
+
+        $(document).ready(function() {
+            // Recherche automatique lors du changement des filtres
+            $('#searchInput, #dateDebut, #dateFin').on('input change', function() {
+                if ($('#searchInput').val().length >= 2 || $('#dateDebut').val() || $('#dateFin').val()) {
+                    loadEntraineurs();
+                }
+            });
+
+            $('#btnSearch').on('click', function() {
+                loadEntraineurs();
+            });
+
+            // Calculer salaire en temps réel
+            $(document).on('change', '.salary-input, .salary-type', function() {
+                calculateSalary($(this).closest('tr'));
+                updateSummary();
+            });
+        });
+
+        function loadEntraineurs() {
+            $('#loadingSpinner').removeClass('d-none');
+            
+            const params = {
+                search_term: $('#searchInput').val(),
+                date_debut: $('#dateDebut').val(),
+                date_fin: $('#dateFin').val()
+            };
+
+            $.ajax({
+                url: '/hr_entraineur_salaire',
+                method: 'POST',
+                data: params,
+                success: function(data) {
+                    entraineurData = data;
+                    displayEntraineurs(data);
+                    updateSummary();
+                    $('#summarySection').removeClass('d-none');
+                },
+                error: function(xhr, status, error) {
+                    alert('Erreur lors du chargement des données: ' + error);
+                },
+                complete: function() {
+                    $('#loadingSpinner').addClass('d-none');
+                }
+            });
+        }
+
+        function displayEntraineurs(data) {
+            const tbody = $('#entraineurTableBody');
+            tbody.empty();
+
+            if (data.length === 0) {
+                tbody.append(`
+                    <tr>
+                        <td colspan="9" class="text-center text-muted">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Aucun entraîneur trouvé
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            data.forEach(function(entraineur) {
+                const row = `
+                    <tr data-id="${entraineur.id}">
+                        <td><strong>${entraineur.nom}</strong></td>
+                        <td>${entraineur.prenom}</td>
+                        <td>
+                            <span class="badge bg-secondary">${entraineur.type_abonnement}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge badge-present fs-6">${entraineur.heures_presentes}h</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge badge-absent fs-6">${entraineur.heures_absentes}h</span>
+                            <br><small class="text-muted">(${entraineur.pourcentage_absence}% absence)</small>
+                        </td>
+                        <td class="text-center">
+                            <select class="form-select form-select-sm salary-type salary-type-select">
+                                <option value="horaire">Horaire</option>
+                                <option value="mensuel">Mensuel</option>
+                            </select>
+                        </td>
+                        <td class="text-center">
+                            <div class="input-group input-group-sm">
+                                <input type="number" class="form-control salary-input" 
+                                       placeholder="0" step="0.01" min="0">
+                                <span class="input-group-text">DT</span>
+                            </div>
+                        </td>
+                        <td class="text-center salary-result">
+                            <strong>0.00 DT</strong>
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-calculate" onclick="calculateSalary($(this).closest('tr'))">
+                                <i class="fas fa-calculator"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function calculateSalary(row) {
+            const entraineurId = row.data('id');
+            const entraineur = entraineurData.find(e => e.id == entraineurId);
+            
+            if (!entraineur) return;
+
+            const salaryType = row.find('.salary-type').val();
+            const salaryAmount = parseFloat(row.find('.salary-input').val()) || 0;
+            
+            let calculatedSalary = 0;
+
+            if (salaryType === 'horaire') {
+                calculatedSalary = entraineur.heures_presentes * salaryAmount;
+            } else if (salaryType === 'mensuel') {
+                const reductionPercent = entraineur.pourcentage_absence / 100;
+                calculatedSalary = salaryAmount * (1 - reductionPercent);
+            }
+
+            row.find('.salary-result strong').text(calculatedSalary.toFixed(2) + ' DT');
+        }
+
+        function updateSummary() {
+            let totalEntraineurs = entraineurData.length;
+            let totalHeuresPresent = entraineurData.reduce((sum, e) => sum + e.heures_presentes, 0);
+            let totalHeuresAbsent = entraineurData.reduce((sum, e) => sum + e.heures_absentes, 0);
+            
+            let totalSalaires = 0;
+            $('#entraineurTableBody tr').each(function() {
+                const salaryText = $(this).find('.salary-result strong').text();
+                const salary = parseFloat(salaryText.replace(' DT', '')) || 0;
+                totalSalaires += salary;
+            });
+
+            $('#totalEntraineurs').text(totalEntraineurs);
+            $('#totalHeuresPresent').text(totalHeuresPresent.toFixed(1) + 'h');
+            $('#totalHeuresAbsent').text(totalHeuresAbsent.toFixed(1) + 'h');
+            $('#totalSalaires').text(totalSalaires.toFixed(2) + ' DT');
+        }
+    </script>
+        <div class="container-fluid pt-4 px-4">
+                <div class="bg-light rounded-top p-4">
+                    <div class="row">
+                        <div class="col-12 col-sm-6 text-center text-sm-start">
+                            &copy; <a href="#">TCHS</a>, All Right Reserved. 
+                        </div>
+                        <div class="col-12 col-sm-6 text-center text-sm-end">
+                            <!--/*** This template is free as long as you keep the footer author’s credit link/attribution link/backlink. If you'd like to use the template without the footer author’s credit link/attribution link/backlink, you can purchase the Credit Removal License from "https://htmlcodex.com/credit-removal". Thank you for your support. ***/-->
+                            Designed by <a>AMH</a>
+                        </br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer End -->
+        </div>
+        <!-- Content End -->
+
+
+        <!-- Back to Top -->
+        <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+    
+        <!-- Sign In End -->
+    
+
+
+
+    <!-- JavaScript Libraries -->
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}" rel="stylesheet"></script>
+
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}" rel="stylesheet"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}" rel="stylesheet"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}" rel="stylesheet"></script>
+
+</body>
+
+</html>

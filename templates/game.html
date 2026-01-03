@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Tennis 3D — VS Ordinateur</title>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- THREE / GSAP / HOWLER -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/howler@2.2.4/dist/howler.min.js"></script>
+  <style>
+    :root{
+      --ui-bg:#0b1220;
+      --ui-surface:#121a2b;
+      --ui-acc:#2dd4bf;
+      --ui-danger:#ef4444;
+      --ui-warn:#f59e0b;
+      --ui-ok:#22c55e;
+      --court-line:#ffffff;
+      --ball:#ffee00; /* jaune fluo */
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#0b1220,#0a0f1a);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    #app{display:grid;grid-template-rows:auto 1fr auto;min-height:100dvh}
+    header{
+      display:flex;gap:12px;align-items:center;justify-content:space-between;
+      padding:12px 16px;background:rgba(10,16,26,.6);backdrop-filter:blur(10px);
+      border-bottom:1px solid rgba(255,255,255,.08)
+    }
+    .title{display:flex;align-items:center;gap:10px;color:#e5e7eb}
+    .title h1{margin:0;font-size:18px;font-weight:700;letter-spacing:.3px}
+    .badge{font-size:12px;padding:2px 6px;border-radius:999px;background:rgba(45,212,191,.15);color:#99f6e4;border:1px solid rgba(45,212,191,.25)}
+    .panel{
+      display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:#cbd5e1
+    }
+    .panel select,.panel button{
+      background:var(--ui-surface);border:1px solid rgba(255,255,255,.12);color:#e5e7eb;
+      padding:8px 10px;border-radius:10px;font-weight:600
+    }
+    .panel button{cursor:pointer;transition:.2s transform}
+    .panel button:hover{transform:translateY(-1px)}
+    .panel .danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.35);color:#fecaca}
+    .panel .ok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35);color:#bbf7d0}
+    #hud{
+      position:fixed;right:12px;top:64px;z-index:10;display:grid;gap:8px;min-width:200px
+    }
+    .card{
+      background:rgba(18,26,43,.8);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;padding:12px;color:#e5e7eb
+    }
+    .score{display:flex;justify-content:space-between;gap:10px}
+    .score .you{color:#bfdbfe}
+    .score .ai{color:#fca5a5}
+    .meter{height:10px;background:#0f172a;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+    .meter > div{height:100%;background:linear-gradient(90deg,#fde047,#f59e0b);width:20%}
+    .note{font-size:12px;color:#94a3b8}
+    canvas{display:block;width:100%;height:100%;outline:none}
+    footer{
+      display:flex;gap:16px;align-items:center;justify-content:center;
+      padding:8px;color:#64748b;font-size:12px;border-top:1px solid rgba(255,255,255,.08);
+      background:rgba(10,16,26,.6);backdrop-filter:blur(10px)
+    }
+    .pill{padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.1)}
+    .legend{display:flex;gap:10px;align-items:center}
+    .dot{width:10px;height:10px;border-radius:50%}
+    .dot.ball{background:var(--ball)}
+    .dot.you{background:#60a5fa}
+    .dot.ai{background:#f87171}
+    /* petit overlay d'aide */
+    #helper{
+      position:fixed;left:12px;top:64px;z-index:10;max-width:320px
+    }
+    #helper .card p{margin:.4rem 0;font-size:13px;color:#c7d2fe}
+    #helper kbd{
+      background:rgba(148,163,184,.2);border:1px solid rgba(148,163,184,.35);
+      border-radius:6px;padding:0 6px;font-size:12px
+    }
+    .direction-indicator {
+      position: fixed;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 16px;
+      border-radius: 20px;
+      color: white;
+      font-size: 14px;
+    }
+    .direction-indicator span {
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: #333;
+    }
+    .direction-indicator span.active {
+      background: #2dd4bf;
+    }
+    .defense-tutorial {
+      position: fixed;
+      bottom: 180px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 400px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="title">
+      <span class="badge">3D</span>
+      <h1>Tennis — Joueur vs IA</h1>
+    </div>
+    <div class="panel">
+      <label>Surface
+        <select id="surface">
+          <option value="clay">Terre battue</option>
+          <option value="grass">Gazon</option>
+          <option value="hard" selected>Dur (bleu)</option>
+        </select>
+      </label>
+      <label>Difficulté
+        <select id="difficulty">
+          <option value="easy">Facile</option>
+          <option value="medium" selected>Moyen</option>
+          <option value="hard">Difficile</option>
+        </select>
+      </label>
+      <button id="serveBtn" class="ok">Service</button>
+      <button id="resetBtn" class="danger">Réinitialiser</button>
+    </div>
+  </header>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="card">
+      <div class="score">
+        <div><strong class="you">Vous</strong> — <span id="scoreYou">0</span></div>
+        <div><strong class="ai">Ordinateur</strong> — <span id="scoreAI">0</span></div>
+      </div>
+      <div class="note" id="scoreNote">Jeu en cours - Votre service</div>
+      <div style="margin-top:8px">Puissance (position verticale du curseur)</div>
+      <div class="meter"><div id="powerBar"></div></div>
+      <div style="margin-top:8px">Direction: <span id="directionIndicator">Centre</span></div>
+    </div>
+  </div>
+
+  <!-- Direction Indicator -->
+  <div class="direction-indicator">
+    <span>Gauche: Q</span>
+    <span>Centre: W</span>
+    <span>Droite: E</span>
+  </div>
+
+  <!-- Defense Tutorial -->
+  <div class="defense-tutorial" id="defenseTutorial">
+    💡 Pour défendre : Déplacez votre souris horizontalement pour positionner votre raquette<br>
+    La balle sera renvoyée automatiquement quand elle touchera votre raquette
+  </div>
+
+  <!-- Helper -->
+  <div id="helper">
+    <div class="card">
+      <p>💡 Contrôles :</p>
+      <p>• <strong>Déplacement</strong> : déplace la souris <em>horizontalement</em> pour bouger la raquette.</p>
+      <p>• <strong>Puissance</strong> : plus ton curseur est <kbd>haut</kbd> sur l'écran, plus la frappe est puissante.</p>
+      <p>• <strong>Direction</strong> : touches <kbd>Q</kbd> (gauche), <kbd>W</kbd> (centre), <kbd>E</kbd> (droite)</p>
+      <p>• <strong>Service</strong> : bouton « Service » ou touche <kbd>Espace</kbd>.</p>
+    </div>
+  </div>
+
+  <!-- Rendu 3D -->
+  <div id="stage"></div>
+
+  <footer>
+    <div class="legend">
+      <span class="dot ball"></span> Balle
+      <span class="dot you"></span> Raquette Joueur
+      <span class="dot ai"></span> Raquette IA
+    </div>
+    <span class="pill">Règles : 0 → 15 → 30 → 40 → Jeu (avantage si 40-40)</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  // ------------ Dimensions logiques du court (mètres approx) ------------
+  const COURT_LENGTH = 23.77;  // longueur totale
+  const COURT_WIDTH  = 8.23;   // simple (on reste en simple)
+  const NET_HEIGHT   = 0.91;
+  const BALL_RADIUS  = 0.105;  // ~6.7 cm rayon
+  const PLAYER_Z     =  (COURT_LENGTH/2 - 1.5);
+  const AI_Z         = -(COURT_LENGTH/2 - 1.5);
+  const RACKET_W     = 0.36, RACKET_H = 0.02, RACKET_D = 0.28; // gabarit simple (cadre)
+
+  // ------------ État jeu ------------
+  const state = {
+    running: true,
+    served: false,
+    nextServer: "you", // qui doit servir
+    lastHitter: null, // "you" | "ai"
+    difficulty: "medium",
+    surface: "hard",
+    rallying: false,
+    score: { you: 0, ai: 0 },       // jeux
+    points: { you: 0, ai: 0 },      // 0,1,2,3,4 (avec 4 = jeu si diff≥2)
+    pointLabels: ["0","15","30","40","Ad"],
+    power: 0.2,
+    powerY: 0.8, // 0 top, 1 bottom (on inverse pour l'UI)
+    hitDirection: 0, // -1: gauche, 0: centre, 1: droite
+    advantage: null, // null | "you" | "ai" pour l'avantage
+  };
+
+  // ------------ Audio ------------
+  // Remplacement des URLs de sons par des alternatives valides
+  const sfx = {
+    hit: new Howl({ src: ["https://assets.mixkit.co/sfx/preview/mixkit-tennis-hit-1121.mp3"], volume: .15 }),
+    net: new Howl({ src: ["https://assets.mixkit.co/sfx/preview/mixkit-falling-hit-757.mp3"], volume: .12 }),
+    bounce: new Howl({ src: ["https://assets.mixkit.co/sfx/preview/mixkit-basketball-ball-bouncing-2084.mp3"], volume: .12 }),
+    point: new Howl({ src: ["https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"], volume: .20 })
+  };
+
+  // ------------ Three.js base ------------
+  const stage = document.getElementById("stage");
+  const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+  stage.appendChild(renderer.domElement);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 16/9, 0.1, 200);
+  camera.position.set(0, 10, 17);
+  camera.lookAt(0,0,0);
+
+  // Utilisation de la version compatible d'OrbitControls
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enablePan = false; controls.enableZoom = false; controls.minPolarAngle = Math.PI/4; controls.maxPolarAngle = Math.PI/2.2;
+
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x223355, 0.9); scene.add(hemi);
+  const dir  = new THREE.DirectionalLight(0xffffff, .9); dir.position.set(5,10,5); dir.castShadow=true; scene.add(dir);
+
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  // Resize
+  function onResize(){
+    const w = stage.clientWidth || window.innerWidth;
+    const h = (window.innerHeight - 120);
+    renderer.setSize(w,h,false);
+    camera.aspect = w/h; camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', onResize, {passive:true});
+  onResize();
+
+  // ------------ Court / Surfaces ------------
+  const courtGroup = new THREE.Group(); scene.add(courtGroup);
+
+  const surfaceMats = {
+    clay:  new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness:.9, metalness:.05 }),
+    grass: new THREE.MeshStandardMaterial({ color: 0x0f7a2e, roughness:.85, metalness:.05 }),
+    hard:  new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness:.7,  metalness:.08 }),
+  };
+  const lineMat   = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+  const court = new THREE.Mesh(
+    new THREE.PlaneGeometry(COURT_WIDTH+2, COURT_LENGTH+2),
+    surfaceMats[state.surface]
+  );
+  court.rotation.x = -Math.PI/2; court.receiveShadow = true;
+  courtGroup.add(court);
+
+  // Lignes (rectangles fins)
+  function addLine(w, l, x, z){
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, l), lineMat);
+    m.rotation.x = -Math.PI/2; m.position.set(x, 0.002, z); m.receiveShadow=true;
+    courtGroup.add(m);
+  }
+  // lignes principales
+  addLine(COURT_WIDTH, 0.08, 0,  COURT_LENGTH/2);   // fond joueur
+  addLine(COURT_WIDTH, 0.08, 0, -COURT_LENGTH/2);   // fond IA
+  addLine(0.08, COURT_LENGTH,  COURT_WIDTH/2, 0);   // côté droit
+  addLine(0.08, COURT_LENGTH, -COURT_WIDTH/2, 0);   // côté gauche
+  // ligne de service (au milieu)
+  addLine(COURT_WIDTH, 0.06, 0, 0);
+
+  // Filet
+  const net = new THREE.Mesh(new THREE.BoxGeometry(COURT_WIDTH, NET_HEIGHT, 0.06),
+    new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness:.1, roughness:.8 }));
+  net.position.y = NET_HEIGHT/2; net.position.z = 0; net.castShadow=true; courtGroup.add(net);
+
+  // ------------ Raquettes ------------
+  function makeTennisRacket(color) {
+    const group = new THREE.Group();
+    
+    // Cadre de la raquette (ovale)
+    const frameGeometry = new THREE.RingGeometry(0.1, 0.17, 32);
+    const frameMaterial = new THREE.MeshStandardMaterial({ 
+      color: color, 
+      side: THREE.DoubleSide,
+      metalness: 0.3,
+      roughness: 0.7
+    });
+    const frame = new THREE.Mesh(frameGeometry, frameMaterial);
+    frame.rotation.x = Math.PI / 2;
+    frame.scale.set(1, 1.5, 1);
+    
+    // Cordage (maillage)
+    const stringMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0xffffff, 
+      transparent: true,
+      opacity: 0.8
+    });
+    
+    // Cordage horizontal
+    for (let i = -6; i <= 6; i++) {
+      const stringGeometry = new THREE.BoxGeometry(0.32, 0.005, 0.001);
+      const string = new THREE.Mesh(stringGeometry, stringMaterial);
+      string.position.y = i * 0.02;
+      group.add(string);
+    }
+    
+    // Cordage vertical
+    for (let i = -8; i <= 8; i++) {
+      const stringGeometry = new THREE.BoxGeometry(0.005, 0.24, 0.001);
+      const string = new THREE.Mesh(stringGeometry, stringMaterial);
+      string.position.x = i * 0.02;
+      group.add(string);
+    }
+    
+    // Manche
+    const handleGeometry = new THREE.CylinderGeometry(0.03, 0.04, 0.4, 16);
+    const handleMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x8B4513, // marron
+      metalness: 0.2,
+      roughness: 0.8
+    });
+    const handle = new THREE.Mesh(handleGeometry, handleMaterial);
+    handle.position.y = -0.25;
+    handle.rotation.z = Math.PI / 2;
+    
+    group.add(frame);
+    group.add(handle);
+    
+    return group;
+  }
+
+  const racketYou = makeTennisRacket(0x60a5fa);
+  racketYou.position.set(0, 0.10, PLAYER_Z);
+  racketYou.rotation.y = Math.PI;
+  scene.add(racketYou);
+
+  const racketAI  = makeTennisRacket(0xf87171);
+  racketAI.position.set(0, 0.10, AI_Z);
+  scene.add(racketAI);
+
+  // ------------ Balle + traînée ------------
+  const ballGeo = new THREE.SphereGeometry(BALL_RADIUS, 24, 24);
+  const ballMat = new THREE.MeshStandardMaterial({ color: 0xffee00, emissive: 0x444400, emissiveIntensity: .25, roughness:.4, metalness:.2 });
+  const ball = new THREE.Mesh(ballGeo, ballMat);
+  ball.castShadow=true; scene.add(ball);
+
+  // trail simple (points)
+  const trailLen = 24;
+  const trailGeo = new THREE.BufferGeometry();
+  const trailPos = new Float32Array(trailLen * 3);
+  trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+  const trailMat = new THREE.PointsMaterial({ color: 0xfff066, size: 0.06, transparent:true, opacity:.55 });
+  const trail = new THREE.Points(trailGeo, trailMat);
+  scene.add(trail);
+
+  function pushTrail(x,y,z){
+    for(let i=trailLen-1;i>0;i--){
+      trailPos[i*3+0]=trailPos[(i-1)*3+0];
+      trailPos[i*3+1]=trailPos[(i-1)*3+1];
+      trailPos[i*3+2]=trailPos[(i-1)*3+2];
+    }
+    trailPos[0]=x; trailPos[1]=y; trailPos[2]=z;
+    trail.geometry.attributes.position.needsUpdate = true;
+  }
+
+  // ------------ Physique simplifiée ------------
+  const ballVel = new THREE.Vector3(0,0,0);
+  const GRAVITY = -9.8 * 0.25; // adouci (dépend surface)
+  const BOUNCE  = 0.55;        // restitution au sol
+  const FRICTION_COEFF = { clay: 0.012, grass: 0.006, hard: 0.008 };
+
+  function surfaceFriction(){
+    return FRICTION_COEFF[state.surface] || 0.008;
+  }
+
+  // ------------ IA ------------
+  function aiParams(){
+    switch(state.difficulty){
+      case "easy":   return { speed: 2.3, anticipation: 0.35, error: 0.18 };
+      case "hard":   return { speed: 4.0, anticipation: 0.75, error: 0.05 };
+      default:       return { speed: 3.1, anticipation: 0.55, error: 0.10 };
+    }
+  }
+
+  // ------------ Score / points ------------
+  const scoreYouEl = document.getElementById('scoreYou');
+  const scoreAIEl  = document.getElementById('scoreAI');
+  const scoreNote  = document.getElementById('scoreNote');
+  const directionIndicator = document.getElementById('directionIndicator');
+  const defenseTutorial = document.getElementById('defenseTutorial');
+
+  function pointLabel(v){
+    if(v<=2) return ["0","15","30"][v]||"0";
+    if(v===3) return "40";
+    return "Ad";
+  }
+
+  function updateScoreDisplay(){
+    scoreYouEl.textContent = state.score.you;
+    scoreAIEl.textContent  = state.score.ai;
+    
+    const pYou = state.points.you;
+    const pAI  = state.points.ai;
+    
+    if (state.advantage) {
+      scoreNote.textContent = `Avantage ${state.advantage === "you" ? "Vous" : "IA"}`;
+    } else if(pYou>=3 || pAI>=3){
+      if(pYou === pAI){
+        scoreNote.textContent = "Égalité 40-40";
+      } else {
+        scoreNote.textContent = `Score : Vous ${pointLabel(pYou)} — IA ${pointLabel(pAI)}`;
+      }
+    } else {
+      scoreNote.textContent = `Score : Vous ${pointLabel(pYou)} — IA ${pointLabel(pAI)}`;
+    }
+    
+    // Mettre à jour l'indicateur de direction
+    if (state.hitDirection === -1) {
+      directionIndicator.textContent = "Gauche";
+    } else if (state.hitDirection === 1) {
+      directionIndicator.textContent = "Droite";
+    } else {
+      directionIndicator.textContent = "Centre";
+    }
+    
+    // Afficher qui doit servir
+    if(!state.served && !state.rallying){
+      scoreNote.textContent += ` - ${state.nextServer === "you" ? "Votre" : "Service IA"}`;
+    }
+  }
+
+  function resetRally(){
+    state.served = false;
+    state.rallying = false;
+    ball.position.set(0, 0.25, state.nextServer === "you" ? PLAYER_Z-0.6 : AI_Z+0.6);
+    ballVel.set(0,0,0);
+    updateScoreDisplay();
+    
+    // Masquer le tutoriel de défense après 5 secondes
+    setTimeout(() => {
+      defenseTutorial.style.display = 'none';
+    }, 5000);
+  }
+
+  function awardPoint(winner){
+    sfx.point.play();
+    
+    // Gestion de l'avantage
+    if (state.advantage) {
+      if (state.advantage === winner) {
+        // Le joueur avec l'avantage gagne le jeu
+        state.score[winner]++;
+        state.points.you = 0;
+        state.points.ai = 0;
+        state.advantage = null;
+        state.nextServer = winner === "you" ? "ai" : "you";
+      } else {
+        // Retour à égalité
+        state.advantage = null;
+      }
+    } else {
+      // Points normaux
+      if (state.points.you === 3 && state.points.ai === 3) {
+        // Égalité à 40-40 -> avantage
+        state.advantage = winner;
+      } else {
+        state.points[winner]++;
+        
+        // Vérifier si un joueur a gagné le jeu
+        if (state.points[winner] >= 4 && Math.abs(state.points.you - state.points.ai) >= 2) {
+          state.score[winner]++;
+          state.points.you = 0;
+          state.points.ai = 0;
+          state.advantage = null;
+          state.nextServer = winner === "you" ? "ai" : "you";
+        }
+      }
+    }
+
+    // Replacer pour service suivant
+    resetRally();
+  }
+
+  // ------------ Service ------------
+  function serve(){
+    if(state.served) return;
+    state.served = true; 
+    state.rallying = true; 
+    state.lastHitter = state.nextServer;
+
+    const by = state.nextServer;
+    const baseSpeed = (by==="you" ? 8 : 7.5);
+    const powerMul  = (by==="you" ? (1 + state.power*1.6) : 1.2);
+    
+    // Ajouter une direction au service
+    let directionX = 0;
+    if (state.hitDirection !== 0) {
+      directionX = state.hitDirection * 1.5;
+    }
+    
+    ballVel.set(
+      directionX + (Math.random()-.5) * 0.8,  // moins d'aléatoire latéral
+      2.2 + Math.random()*0.8,               // lancer vers l'avant
+      (by==="you" ? -1 : 1) * baseSpeed*powerMul
+    );
+    sfx.hit.play();
+    gsap.fromTo(ball.scale, {x:.9,y:.9,z:.9},{x:1,y:1,z:1,duration:.25,ease:"expo.out"});
+    updateScoreDisplay();
+  }
+
+  // Auto-service IA après délai
+  let aiServeTimeout = null;
+  function scheduleAIServe(){
+    if(aiServeTimeout) clearTimeout(aiServeTimeout);
+    if(state.nextServer === "ai" && !state.served){
+      aiServeTimeout = setTimeout(() => {
+        if(state.nextServer === "ai" && !state.served){
+          serve();
+        }
+      }, 1500);
+    }
+  }
+
+  // ------------ Entrées utilisateur (souris) ------------
+  const powerBar = document.getElementById('powerBar');
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
+  function updatePowerUI(){
+    const pct = THREE.MathUtils.clamp(1 - state.powerY, 0, 1); // haut => plus de puissance
+    powerBar.style.width = `${Math.round(20 + pct*80)}%`;
+    state.power = pct;
+  }
+
+  function onMouseMove(e){
+    const rect = renderer.domElement.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top)  / rect.height;
+    state.powerY = y;
+    updatePowerUI();
+
+    // Projeter sur le plan du court pour trouver x (largeur)
+    mouse.x = x*2 - 1; mouse.y = -(y*2 - 1);
+    raycaster.setFromCamera(mouse, camera);
+    // plan horizontal au niveau du sol (y=0)
+    const plane = new THREE.Plane(new THREE.Vector3(0,1,0), 0);
+    const pos = new THREE.Vector3();
+    raycaster.ray.intersectPlane(plane, pos);
+
+    // contraindre x dans le court
+    const halfW = COURT_WIDTH/2 - 0.3;
+    racketYou.position.x = THREE.MathUtils.clamp(pos.x, -halfW, halfW);
+
+    // léger tilt esthétique
+    racketYou.rotation.z = THREE.MathUtils.degToRad( (racketYou.position.x/halfW)*-10 );
+    
+    // Afficher le tutoriel de défense quand la balle vient vers le joueur
+    if (state.rallying && ballVel.z > 0 && ball.position.z > 0) {
+      defenseTutorial.style.display = 'block';
+    }
+  }
+  renderer.domElement.addEventListener('mousemove', onMouseMove, {passive:true});
+
+  // Gestion des touches pour la direction
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'q' || e.key === 'Q') {
+      state.hitDirection = -1; // Gauche
+      updateScoreDisplay();
+    } else if (e.key === 'w' || e.key === 'W') {
+      state.hitDirection = 0; // Centre
+      updateScoreDisplay();
+    } else if (e.key === 'e' || e.key === 'E') {
+      state.hitDirection = 1; // Droite
+      updateScoreDisplay();
+    }
+  });
+
+  // Frapper automatiquement si la balle entre en contact avec la raquette joueur
+  function tryHitByPlayer(){
+    const dz = Math.abs(ball.position.z - racketYou.position.z);
+    const dx = Math.abs(ball.position.x - racketYou.position.x);
+    
+    if(dz < 0.25 && dx < (RACKET_W/2 + BALL_RADIUS*1.5) && ball.position.y <= 0.5){
+      // Calcul puissance selon Y curseur (haut = +)
+      const power = THREE.MathUtils.clamp(1 - state.powerY, 0.1, 1.0);
+      state.power = power;
+      
+      // Appliquer la direction choisie
+      let lateralForce = 0;
+      if (state.hitDirection !== 0) {
+        lateralForce = state.hitDirection * (3.5 + power * 2.5);
+      } else {
+        // Direction par défaut basée sur la position de la raquette
+        lateralForce = THREE.MathUtils.clamp((ball.position.x - racketYou.position.x)*-3.5, -4, 4);
+      }
+      
+      // renvoyer balle vers l'IA
+      ballVel.z = -Math.abs(ballVel.z) - (5 + 6*power);
+      // appliquer la force latérale
+      ballVel.x += lateralForce * (0.6 + power*0.6);
+      // lift/hauteur
+      ballVel.y = 2.0 + power*2.2;
+      
+      sfx.hit.play();
+      gsap.to(racketYou.position, {y:0.15,duration:.06,yoyo:true,repeat:1,ease:"power2.out"});
+      state.lastHitter = "you";
+      
+      // Réinitialiser la direction après la frappe
+      state.hitDirection = 0;
+      updateScoreDisplay();
+    }
+  }
+
+  // IA: suit la prédiction X avec vitesse/erreur
+  function aiMove(dt){
+    const { speed, anticipation, error } = aiParams();
+    // prédire position future de la balle à z = AI_Z
+    const timeToAI = Math.abs((AI_Z - ball.position.z) / (ballVel.z || 0.001));
+    const predX = ball.position.x + ballVel.x * timeToAI * anticipation;
+    const targetX = THREE.MathUtils.clamp(
+      predX + (Math.random()-.5)*error*2.5,
+      -COURT_WIDTH/2 + 0.3, COURT_WIDTH/2 - 0.3
+    );
+    const dx = targetX - racketAI.position.x;
+    const step = Math.sign(dx) * Math.min(Math.abs(dx), speed*dt*5);
+    racketAI.position.x += step;
+    racketAI.rotation.z = THREE.MathUtils.degToRad( (racketAI.position.x/(COURT_WIDTH/2))*-8 );
+
+    // frapper si contact
+    const dz = Math.abs(ball.position.z - racketAI.position.z);
+    const dxAI = Math.abs(ball.position.x - racketAI.position.x);
+    
+    if(dz < 0.25 && dxAI < (RACKET_W/2 + BALL_RADIUS*1.5) && ball.position.y <= 0.5 && ballVel.z < 0){
+      // L'IA peut aussi choisir une direction aléatoire
+      const aiDirection = Math.random() > 0.5 ? 1 : -1;
+      const aiLateral = aiDirection * (2.5 + Math.random() * 2);
+      
+      ballVel.z = Math.abs(ballVel.z) + (4.8 + (speed*0.6));
+      ballVel.x += aiLateral;
+      ballVel.y = 1.8 + speed*0.25;
+      sfx.hit.play();
+      gsap.to(racketAI.position, {y:0.15,duration:.06,yoyo:true,repeat:1,ease:"power2.out"});
+      state.lastHitter = "ai";
+    }
+  }
+
+  // ------------ Boucle ------------
+  let lastT = performance.now();
+  function tick(now){
+    const dt = Math.min((now - lastT)/1000, 0.033); lastT = now;
+    requestAnimationFrame(tick);
+
+    // physique balle
+    ballVel.y += GRAVITY*dt;
+    // friction horizontale
+    const fr = surfaceFriction();
+    ballVel.x *= (1 - fr*dt);
+
+    ball.position.addScaledVector(ballVel, dt);
+
+    // trail
+    pushTrail(ball.position.x, ball.position.y, ball.position.z);
+
+    // collisions sol
+    if(ball.position.y < BALL_RADIUS){
+      ball.position.y = BALL_RADIUS;
+      ballVel.y = -ballVel.y * BOUNCE;
+      ballVel.x *= (1 - fr*1.8);
+      sfx.bounce.play();
+      // vérifier zones : balle "out" latéral
+      if(Math.abs(ball.position.x) > (COURT_WIDTH/2)){
+        // faute côté dernier frappeur
+        awardPoint(state.lastHitter === "you" ? "ai":"you");
+        return;
+      }
+    }
+
+    // collisions fond (perd la balle)
+    if(ball.position.z >  COURT_LENGTH/2 + 0.6){
+      awardPoint("ai"); // IA gagne l'échange (balle sort fond joueur)
+      return;
+    }
+    if(ball.position.z < -COURT_LENGTH/2 - 0.6){
+      awardPoint("you");
+      return;
+    }
+
+    // filet
+    if(Math.abs(ball.position.z - net.position.z) < 0.04 && ball.position.y <= NET_HEIGHT){
+      ballVel.z *= -0.6;
+      ballVel.y  = Math.abs(ballVel.y)*0.4 + 0.4;
+      sfx.net.play();
+    }
+
+    // heuristiques de coups
+    if(state.rallying){
+      tryHitByPlayer();
+      aiMove(dt);
+    }
+
+    // Programmer service IA si c'est son tour
+    scheduleAIServe();
+
+    // animation subtile cam
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, ball.position.x*0.12, 0.06);
+    camera.lookAt(0,0,0);
+
+    renderer.render(scene, camera);
+  }
+  requestAnimationFrame(tick);
+
+  // ------------ UI / Events ------------
+  const surfaceSel   = document.getElementById('surface');
+  const diffSel      = document.getElementById('difficulty');
+  const serveBtn     = document.getElementById('serveBtn');
+  const resetBtn     = document.getElementById('resetBtn');
+
+  surfaceSel.addEventListener('change', () => {
+    state.surface = surfaceSel.value;
+    court.material = surfaceMats[state.surface];
+    // petit feedback GSAP
+    gsap.fromTo(court.rotation, {y:0.0},{y:Math.PI*2,duration:.6,ease:"back.inOut(1.5)"});
+  });
+
+  diffSel.addEventListener('change', () => {
+    state.difficulty = diffSel.value;
+    gsap.fromTo(racketAI.scale, {x:1.05,y:1.05,z:1.05},{x:1,y:1,z:1,duration:.25});
+  });
+
+  serveBtn.addEventListener('click', () => {
+    if(!state.served && state.nextServer === "you"){
+      serve();
+    }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if(e.code === 'Space'){
+      e.preventDefault();
+      if(!state.served && state.nextServer === "you"){
+        serve();
+      }
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    state.points.you=0; state.points.ai=0;
+    state.score.you=0; state.score.ai=0;
+    state.nextServer = "you";
+    state.hitDirection = 0;
+    state.advantage = null;
+    if(aiServeTimeout) clearTimeout(aiServeTimeout);
+    resetRally();
+  });
+
+  // première mise en place
+  resetRally();
+  updatePowerUI();
+})();
+</script>
+</body>
+</html>

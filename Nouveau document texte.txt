@@ -1,0 +1,3 @@
+C:\Assyst Setup\TCHS>python -m venv tchs_env
+
+C:\Assyst Setup\TCHS>tchs_env\Scripts\activate

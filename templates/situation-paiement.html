@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Situation Paiements</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+    
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+    
+    <!-- Bootstrap & Template Styles -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/situation-paiement.css') }}">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        .dashboard-title {
+            font-family: 'Orbitron', sans-serif;
+            color: #1976d2;
+            margin: 0 0 20px 0;
+            font-size: 28px;
+        }
+
+        .filters-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #5a5c69;
+            font-size: 0.9rem;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d3e2;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #4e73df;
+            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-filter {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-apply-filter {
+            background: #4e73df;
+            color: white;
+        }
+
+        .btn-apply-filter:hover {
+            background: #2e59d9;
+        }
+
+        .btn-reset-filter {
+            background: #858796;
+            color: white;
+        }
+
+        .btn-reset-filter:hover {
+            background: #60616f;
+        }
+
+        .active-filters {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-badge {
+            background: #4e73df;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-badge i {
+            cursor: pointer;
+        }
+
+        .filter-badge i:hover {
+            color: #ffdddd;
+        }
+
+        .export-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-export, .btn-print {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .btn-export {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-print {
+            background: #34495e;
+            color: white;
+        }
+
+        .btn-export:hover, .btn-print:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .first-payment {
+            background-color: rgba(46, 204, 113, 0.1);
+        }
+
+        .first-payment td {
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .filters-row {
+                flex-direction: column;
+            }
+
+            .filter-group {
+                width: 100%;
+            }
+
+            .filter-actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .btn-filter {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media print {
+            .header-section,
+            .filters-section,
+            .export-actions,
+            .search-box,
+            .per-page-selector,
+            .pagination-container {
+                display: none !important;
+            }
+
+            .transactions-table {
+                width: 100% !important;
+            }
+
+            .transactions-table th,
+            .transactions-table td {
+                padding: 8px !important;
+                font-size: 12px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'sidebar.html' %}
+    <div class="content">
+        <!-- Navbar Start -->
+        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+            <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                <h2 class="text-primary mb-0"></h2>
+            </a>
+            <a href="#" class="sidebar-toggler flex-shrink-0">
+                <i class="fa fa-bars"></i>
+            </a>
+        </nav>
+        <!-- Navbar End -->
+
+        <!-- Contenu principal -->
+        <div class="container-fluid mt-4">
+            <h1 class="dashboard-title">Situation des Paiements</h1>
+
+            <!-- Section des filtres -->
+            <div class="filters-section">
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label for="date-start"><i class="far fa-calendar-alt"></i> Date début</label>
+                        <input type="text" id="date-start" placeholder="Sélectionner date début">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="date-end"><i class="far fa-calendar-alt"></i> Date fin</label>
+                        <input type="text" id="date-end" placeholder="Sélectionner date fin">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filter-carnet"><i class="fas fa-book"></i> N° Carnet</label>
+                        <input type="number" id="filter-carnet" placeholder="Numéro de carnet">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filter-bon"><i class="fas fa-receipt"></i> N° Bon</label>
+                        <input type="number" id="filter-bon" placeholder="Numéro de bon">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="filter-type"><i class="fas fa-money-bill-wave"></i> Type de règlement</label>
+                        <select id="filter-type">
+                            <option value="">Tous les types</option>
+                            <option value="espèce">Espèce</option>
+                            <option value="chèque">Chèque</option>
+                            <option value="virement">Virement</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button id="apply-filters" class="btn-filter btn-apply-filter">
+                            <i class="fas fa-filter"></i> Appliquer
+                        </button>
+                        <button id="reset-filters" class="btn-filter btn-reset-filter">
+                            <i class="fas fa-times"></i> Réinitialiser
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filtres actifs -->
+                <div class="active-filters" id="active-filters"></div>
+            </div>
+
+            <div class="dashboard-section">
+                <div class="summary-cards">
+                    <div class="summary-card paid-amount">
+                        <i class="fas fa-check-circle"></i>
+                        <div class="card-content">
+                            <h3>Total payé</h3>
+                            <p id="total-paye">0 TND</p>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card remaining-amount">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <div class="card-content">
+                            <h3>Reste à payer</h3>
+                            <p id="reste-a-payer">0 TND</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="transactions-section">
+                    <div class="transactions-header">
+                        <h3>Liste des transactions</h3>
+                        <div class="transactions-actions">
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="search-transactions" placeholder="Rechercher par nom, prénom...">
+                            </div>
+                            <div class="export-actions">
+                                <button class="btn-export" onclick="situationPaiement.exportToExcel()">
+                                    <i class="fas fa-file-excel"></i> Exporter Excel
+                                </button>
+                                <button class="btn-print" onclick="situationPaiement.printTable()">
+                                    <i class="fas fa-print"></i> Imprimer
+                                </button>
+                            </div>
+                            <div class="per-page-selector">
+                                <select id="per-page">
+                                    <option value="10">10 par page</option>
+                                    <option value="25">25 par page</option>
+                                    <option value="50">50 par page</option>
+                                    <option value="100">100 par page</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="transactions-table-container">
+                        <table class="transactions-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Matricule</th>
+                                    <th>Nom</th>
+                                    <th>Prénom</th>
+                                    <th>Cotisation</th>
+                                    <th>Payé</th>
+                                    <th>Reste</th>
+                                    <th>Type</th>
+                                    <th>Banque</th>
+                                    <th>N° Chèque</th>
+                                    <th>N° Bon</th>
+                                    <th>N° Carnet</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-body">
+                                <!-- Transactions will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination-container">
+                        <div class="pagination" id="pagination">
+                            <!-- Pagination will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <script>
+        // Classe SituationPaiement améliorée avec filtres
+        class SituationPaiement {
+            constructor() {
+                this.currentPage = 1;
+                this.itemsPerPage = 10;
+                this.activeFilters = {
+                    dateStart: null,
+                    dateEnd: null,
+                    carnet: null,
+                    bon: null,
+                    type: null
+                };
+                
+                this.initializeDatePickers();
+                this.setupEventListeners();
+                this.loadData();
+            }
+
+            initializeDatePickers() {
+                const today = new Date();
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+
+                flatpickr("#date-start", {
+                    locale: "fr",
+                    dateFormat: "Y-m-d",
+                    defaultDate: firstDay,
+                    maxDate: today
+                });
+
+                flatpickr("#date-end", {
+                    locale: "fr",
+                    dateFormat: "Y-m-d",
+                    defaultDate: today,
+                    maxDate: today
+                });
+            }
+
+            setupEventListeners() {
+                // Boutons de filtrage
+                document.getElementById('apply-filters')?.addEventListener('click', () => this.applyFilters());
+                document.getElementById('reset-filters')?.addEventListener('click', () => this.resetFilters());
+                
+                // Filtrage automatique sur changement de type
+                document.getElementById('filter-type')?.addEventListener('change', () => this.applyFilters());
+                
+                // Recherche
+                document.getElementById('search-transactions')?.addEventListener('input', this.debounce(() => this.loadTransactions(), 300));
+                
+                // Pagination
+                document.getElementById('per-page')?.addEventListener('change', (e) => {
+                    this.itemsPerPage = parseInt(e.target.value);
+                    this.currentPage = 1;
+                    this.loadTransactions();
+                });
+
+                // Appliquer filtres avec Entrée
+                ['filter-carnet', 'filter-bon'].forEach(id => {
+                    document.getElementById(id)?.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') this.applyFilters();
+                    });
+                });
+            }
+
+            applyFilters() {
+                this.activeFilters.dateStart = document.getElementById('date-start')?.value || null;
+                this.activeFilters.dateEnd = document.getElementById('date-end')?.value || null;
+                this.activeFilters.carnet = document.getElementById('filter-carnet')?.value || null;
+                this.activeFilters.bon = document.getElementById('filter-bon')?.value || null;
+                this.activeFilters.type = document.getElementById('filter-type')?.value || null;
+
+                this.currentPage = 1;
+                this.updateActiveFiltersDisplay();
+                this.loadData();
+            }
+
+            resetFilters() {
+                document.getElementById('date-start').value = '';
+                document.getElementById('date-end').value = '';
+                document.getElementById('filter-carnet').value = '';
+                document.getElementById('filter-bon').value = '';
+                document.getElementById('filter-type').value = '';
+
+                this.activeFilters = {
+                    dateStart: null,
+                    dateEnd: null,
+                    carnet: null,
+                    bon: null,
+                    type: null
+                };
+
+                // Réinitialiser les dates par défaut
+                this.initializeDatePickers();
+                
+                this.updateActiveFiltersDisplay();
+                this.loadData();
+            }
+
+            removeFilter(filterKey) {
+                this.activeFilters[filterKey] = null;
+                
+                const fieldMap = {
+                    dateStart: 'date-start',
+                    dateEnd: 'date-end',
+                    carnet: 'filter-carnet',
+                    bon: 'filter-bon',
+                    type: 'filter-type'
+                };
+                
+                const field = document.getElementById(fieldMap[filterKey]);
+                if (field) field.value = '';
+
+                this.updateActiveFiltersDisplay();
+                this.loadData();
+            }
+
+            updateActiveFiltersDisplay() {
+                const container = document.getElementById('active-filters');
+                container.innerHTML = '';
+
+                const filters = [];
+                
+                if (this.activeFilters.dateStart) {
+                    filters.push({ label: `Date début: ${this.activeFilters.dateStart}`, key: 'dateStart' });
+                }
+                
+                if (this.activeFilters.dateEnd) {
+                    filters.push({ label: `Date fin: ${this.activeFilters.dateEnd}`, key: 'dateEnd' });
+                }
+                
+                if (this.activeFilters.carnet) {
+                    filters.push({ label: `Carnet: ${this.activeFilters.carnet}`, key: 'carnet' });
+                }
+                
+                if (this.activeFilters.bon) {
+                    filters.push({ label: `Bon: ${this.activeFilters.bon}`, key: 'bon' });
+                }
+                
+                if (this.activeFilters.type) {
+                    filters.push({ label: `Type: ${this.activeFilters.type}`, key: 'type' });
+                }
+
+                filters.forEach(filter => {
+                    const badge = document.createElement('div');
+                    badge.className = 'filter-badge';
+                    badge.innerHTML = `
+                        ${filter.label}
+                        <i class="fas fa-times" onclick="situationPaiement.removeFilter('${filter.key}')"></i>
+                    `;
+                    container.appendChild(badge);
+                });
+            }
+
+            async loadData() {
+                try {
+                    await Promise.all([
+                        this.loadSummary(),
+                        this.loadTransactions()
+                    ]);
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                }
+            }
+
+            async loadSummary() {
+                try {
+                    const params = new URLSearchParams({
+                        start_date: this.activeFilters.dateStart || document.getElementById('date-start')?.value || '',
+                        end_date: this.activeFilters.dateEnd || document.getElementById('date-end')?.value || ''
+                    });
+
+                    // Ajouter les filtres supplémentaires
+                    if (this.activeFilters.carnet) params.append('carnet', this.activeFilters.carnet);
+                    if (this.activeFilters.bon) params.append('bon', this.activeFilters.bon);
+                    if (this.activeFilters.type) params.append('type', this.activeFilters.type);
+
+                    const response = await fetch(`/api/situation-paiement/summary?${params}`);
+                    const data = await response.json();
+
+                    if (!response.ok) throw new Error(data.error || 'Erreur lors du chargement');
+
+                    this.updateSummaryCards(data.summary);
+                    
+                } catch (error) {
+                    console.error('Error loading summary:', error);
+                    alert('Erreur lors du chargement du résumé');
+                }
+            }
+
+            updateSummaryCards(summary) {
+                if (!summary) return;
+                
+                document.getElementById('total-paye').textContent = `${summary.total_paye.toLocaleString()} TND`;
+                document.getElementById('reste-a-payer').textContent = `${summary.reste_a_payer.toLocaleString()} TND`;
+            }
+
+            async loadTransactions() {
+                try {
+                    const params = new URLSearchParams({
+                        page: this.currentPage,
+                        per_page: this.itemsPerPage,
+                        start_date: this.activeFilters.dateStart || document.getElementById('date-start')?.value || '',
+                        end_date: this.activeFilters.dateEnd || document.getElementById('date-end')?.value || '',
+                        search: document.getElementById('search-transactions')?.value || ''
+                    });
+
+                    // Ajouter les filtres supplémentaires
+                    if (this.activeFilters.carnet) params.append('carnet', this.activeFilters.carnet);
+                    if (this.activeFilters.bon) params.append('bon', this.activeFilters.bon);
+                    if (this.activeFilters.type) params.append('type', this.activeFilters.type);
+
+                    const response = await fetch(`/api/situation-paiement/transactions?${params}`);
+                    const data = await response.json();
+
+                    if (!response.ok) throw new Error(data.error || 'Erreur lors du chargement');
+
+                    this.updateTransactionsTable(data.transactions);
+                    this.updatePagination(data.current_page, data.pages);
+                } catch (error) {
+                    console.error('Error loading transactions:', error);
+                    alert('Erreur lors du chargement des transactions');
+                }
+            }
+
+            updateTransactionsTable(transactions) {
+                const tbody = document.getElementById('transactions-body');
+                if (!tbody || !transactions) return;
+
+                if (transactions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="12" class="text-center">Aucune transaction trouvée</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = transactions.map(t => `
+                    <tr class="${t.is_first_payment ? 'first-payment' : ''}">
+                        <td>${new Date(t.date).toLocaleDateString('fr-FR')}</td>
+                        <td>${t.matricule}</td>
+                        <td>${t.nom}</td>
+                        <td>${t.prenom}</td>
+                        <td>${t.montant.toLocaleString()} TND</td>
+                        <td>${t.montant_paye.toLocaleString()} TND</td>
+                        <td>${t.montant_reste.toLocaleString()} TND</td>
+                        <td>${t.type_reglement || '-'}</td>
+                        <td>${t.banque || '-'}</td>
+                        <td>${t.numero_cheque || '-'}</td>
+                        <td>${t.numero_bon}</td>
+                        <td>${t.numero_carnet}</td>
+                    </tr>
+                `).join('');
+            }
+
+            updatePagination(currentPage, totalPages) {
+                const pagination = document.getElementById('pagination');
+                if (!pagination) return;
+
+                let buttons = '';
+
+                buttons += `
+                    <button ${currentPage === 1 ? 'disabled' : ''} 
+                            onclick="situationPaiement.changePage(${currentPage - 1})">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                `;
+
+                for (let i = 1; i <= totalPages; i++) {
+                    if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                        buttons += `
+                            <button class="${i === currentPage ? 'active' : ''}"
+                                    onclick="situationPaiement.changePage(${i})">
+                                ${i}
+                            </button>
+                        `;
+                    } else if (i === currentPage - 3 || i === currentPage + 3) {
+                        buttons += '<button disabled>...</button>';
+                    }
+                }
+
+                buttons += `
+                    <button ${currentPage === totalPages ? 'disabled' : ''} 
+                            onclick="situationPaiement.changePage(${currentPage + 1})">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                `;
+
+                pagination.innerHTML = buttons;
+            }
+
+            changePage(page) {
+                this.currentPage = page;
+                this.loadTransactions();
+            }
+
+            exportToExcel() {
+                try {
+                    const startDate = document.getElementById('date-start')?.value || '';
+                    const endDate = document.getElementById('date-end')?.value || '';
+                    
+                    const fileName = `situation_paiement_${startDate}_${endDate}.xlsx`;
+                    
+                    const rows = [
+                        [
+                            'Date', 'Matricule', 'Nom', 'Prénom', 'Cotisation', 'Payé', 'Reste',
+                            'Type règlement', 'Banque', 'N° Chèque', 'N° Bon', 'N° Carnet'
+                        ]
+                    ];
+
+                    const transactions = document.querySelectorAll('#transactions-body tr');
+                    if (transactions.length === 0) {
+                        alert('Aucune donnée à exporter');
+                        return;
+                    }
+
+                    transactions.forEach(row => {
+                        const rowData = Array.from(row.cells).map(cell => cell.textContent.trim());
+                        rows.push(rowData);
+                    });
+
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+                    XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+                    XLSX.writeFile(wb, fileName);
+                } catch (error) {
+                    console.error('Error exporting to Excel:', error);
+                    alert('Erreur lors de l\'exportation vers Excel');
+                }
+            }
+
+            printTable() {
+                window.print();
+            }
+
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            window.situationPaiement = new SituationPaiement();
+        });
+    </script>
+</body>
+</html>

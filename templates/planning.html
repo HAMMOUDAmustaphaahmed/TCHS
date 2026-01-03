@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS Dashboard</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+
+    <style>
+        .planning-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .planning-table th, .planning-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .time-header {
+            background-color: #000000;
+            color: rgb(55, 38, 148);
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+        
+        .terrain-header {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            width: 100px;
+        }
+        
+        .time-slot {
+            height: 100px;
+            width: 120px;
+            position: relative;
+            background-color: #f8f9fa;
+        }
+        
+        .session-card {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 4px;
+            padding: 5px;
+            font-size: 0.75em;
+            height: 90px;
+            overflow: hidden;
+            position: absolute;
+            left: 2px;
+            right: 2px;
+            top: 2px;
+        }
+        
+        .session-card.prep-physique {
+            background: #e8f5e8;
+            border-color: #a5d6a7;
+        }
+        
+        .session-card .session-info {
+            margin-bottom: 3px;
+        }
+        
+        .session-card .session-actions {
+            position: absolute;
+            bottom: 3px;
+            left: 3px;
+            right: 3px;
+        }
+        
+        .session-card .btn {
+            padding: 0.1rem 0.3rem;
+            font-size: 0.6em;
+            margin: 1px;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        
+        .day-header {
+            background-color: #000000;
+            color: rgb(29, 27, 156);
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        
+        /* Style pour le modal */
+        #editSessionModal .form-label {
+            font-weight: 500;
+            margin-bottom: 0.3rem;
+        }
+        
+        #editSessionModal .form-select {
+            border-radius: 4px;
+            padding: 0.375rem 0.75rem;
+        }
+        
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        
+        #editSessionModal, #deleteSessionModal {
+            z-index: 1000;
+        }
+        
+        /* Style pour terrain 5 */
+        .terrain-5 {
+            background-color: #dd7041 !important;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    {% if session.role == 'admin' %}
+    {% include 'sidebar.html' %}
+    {% else %}
+    <div class="sidebar pe-4 pb-3">
+        <nav class="navbar bg-light navbar-light">
+            <a href="{{ url_for('entraineur') }}" class="navbar-brand mx-4 mb-3">
+                <h3 class="text-primary">TCHS</h3>
+            </a>
+            <div class="d-flex align-items-center ms-4 mb-4">
+                <div class="position-relative">
+                    <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
+                </div>
+            </div>
+            <div class="navbar-nav w-100">
+                <a href="{{ url_for('entraineur') }}" class="nav-item nav-link active">
+                    <i class="fa fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+                <div class="nav-item">
+                    <a href="javascript:void(0);" class="nav-link" id="changePasswordLink">
+                        <i class="fa fa-key"></i> Mot de Passe
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('equipement') }}" class="nav-link">
+                        <i class="fa fa-trophy me-2"></i>Tournois
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('equipement') }}" class="nav-link">
+                        <i class="fa fa-boxes me-2"></i>Équipement
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('discussions') }}" class="nav-link">
+                        <i class="fab fa-facebook-messenger"></i>Discussions
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('logout') }}" class="nav-link">
+                        <i class="fa fa-sign-out-alt me-2"></i>Déconnecter
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </div>
+    {% endif %}
+
+    <div class="content">
+        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+            <a href="" class="navbar-brand d-flex d-lg-none me-4">
+                <h2 class="text-primary mb-0"></h2>
+            </a>
+            <a href="#" class="sidebar-toggler flex-shrink-0">
+                <i class="fa fa-bars"></i>
+            </a>
+        </nav>
+
+        <div class="container-fluid pt-4 px-4">
+            <div class="bg-light text-center rounded p-4">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                    <a href="{{ url_for('directeur_technique') }}" class="navbar-brand mx-4 mb-3">
+                        <h3 class="text-primary">TCHS</h3>
+                    </a>
+                    <h6>Bienvenue</h6>
+                </div>
+
+                <!-- Emploi du Temps Général -->
+                <div class="mt-5">
+                    <h4 class="text-start mb-4">Emploi du Temps Général</h4>
+                    
+                    <!-- Navigation double -->
+                    <div class="mb-3 d-flex justify-content-between">
+                        <div>
+                            <a href="{{ url_for('planning', week_offset=week_offset-1, day_offset=0) }}" class="btn btn-secondary">
+                                ← Semaine précédente
+                            </a>
+                            <a href="{{ url_for('planning', week_offset=week_offset+1, day_offset=0) }}" class="btn btn-secondary">
+                                Semaine suivante →
+                            </a>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('planning', week_offset=week_offset, day_offset=day_offset-1) }}" class="btn btn-info {% if current_day.weekday() == 0 %}disabled{% endif %}">
+                                ← Jour précédent
+                            </a>
+                            <a href="{{ url_for('planning', week_offset=week_offset, day_offset=day_offset+1) }}" class="btn btn-info {% if current_day.weekday() == 6 %}disabled{% endif %}">
+                                Jour suivant →
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Boutons d'export -->
+                    <div class="mb-3 text-center">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fa fa-file-export"></i> Exporter
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="prepareExport('pdf')">
+                                        <i class="fas fa-file-pdf mr-2"></i> PDF
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="prepareExport('excel')">
+                                        <i class="fas fa-file-excel mr-2"></i> Excel
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div id="exportScope" style="display:none; margin-top:5px">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-secondary" onclick="triggerExport('day')">Jour actuel</button>
+                                <button type="button" class="btn btn-secondary" onclick="triggerExport('week')">Semaine actuelle</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tableau du planning avec la nouvelle structure -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered planning-table">
+                            <thead>
+                                <tr>
+                                    <th class="day-header" rowspan="2">
+                                        {% set day_fr = {
+                                            'Monday': 'Lundi', 'Tuesday': 'Mardi', 'Wednesday': 'Mercredi',
+                                            'Thursday': 'Jeudi', 'Friday': 'Vendredi', 'Saturday': 'Samedi',
+                                            'Sunday': 'Dimanche'
+                                        } %}
+                                        {% set months_fr = {
+                                            '01': 'janvier', '02': 'février', '03': 'mars', '04': 'avril',
+                                            '05': 'mai', '06': 'juin', '07': 'juillet', '08': 'août',
+                                            '09': 'septembre', '10': 'octobre', '11': 'novembre', '12': 'décembre'
+                                        } %}
+                                        {{ day_fr[current_day.strftime('%A')] }}<br>
+                                        {{ current_day.strftime('%d') }} {{ months_fr[current_day.strftime('%m')] }} {{ current_day.strftime('%Y') }}
+                                    </th>
+                                    {% for creneau in creneaux %}
+                                    <th class="time-header">
+                                        {{ creneau.start.strftime('%H:%M') }}<br>-<br>{{ creneau.end.strftime('%H:%M') }}
+                                    </th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for terrain in range(1, 10) %}
+                                <tr>
+                                    <td class="terrain-header {% if terrain == 5 %}terrain-5{% endif %}">
+                                        {% if terrain == 9 %}Terrain 9<br>(mini terrain)
+                                        {% else %}Terrain {{ terrain }}{% endif %}
+                                    </td>
+                                    
+                                    {% for creneau in creneaux %}
+                                    <td class="time-slot" 
+                                        data-time="{{ creneau.start.strftime('%H:%M') }}" 
+                                        data-terrain="{{ terrain }}"
+                                        data-col="{{ loop.index }}"
+                                        id="cell-{{ terrain }}-{{ loop.index }}">
+                                        {% for seance in seances %}
+                                        {% if seance.date == current_day.date() and seance.terrain == terrain 
+                                            and seance.heure_debut <= creneau.start and seance.heure_fin > creneau.start %}
+                                            
+                                            {% if seance.heure_debut == creneau.start %}
+                                            <div class="session-card {% if seance.type_seance == 'prep_physique' %}prep-physique{% endif %}"
+                                                 data-duration="{{ seance.duree }}"
+                                                 data-start="{{ seance.heure_debut.strftime('%H:%M') }}"
+                                                 data-end="{{ seance.heure_fin.strftime('%H:%M') }}"
+                                                 title="{{ seance.groupe }} - {{ seance.entraineur }} - {{ seance.duree }}min">
+                                                <div class="session-info">
+                                                    <small><strong>{{ seance.groupe }}</strong></small><br>
+                                                    <div class="text-muted" style="font-size:0.7em">
+                                                        {{ seance.entraineur }}
+                                                    </div>
+                                                    <div style="font-size:0.6em">
+                                                        {{ seance.heure_debut.strftime('%H:%M') }}-{{ seance.heure_fin.strftime('%H:%M') }}
+                                                    </div>
+                                                </div>
+                                                <div class="session-actions">
+                                                    <button class="btn btn-xs btn-danger" 
+                                                        onclick="deleteSession({{ seance.seance_id }})">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    <button class="btn btn-warning btn-xs" 
+                                                        onclick="openEditSessionModal({{ seance.seance_id }})">
+                                                        Éditer
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                            
+                                        {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Backdrop -->
+        <div class="modal-backdrop" id="modalBackdrop" onclick="closeAllModals()"></div>
+
+        <!-- Modal Éditer une Séance -->
+        <div id="editSessionModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); width: 400px;">
+            <h4 class="mb-3">Éditer la séance</h4>
+            <input type="hidden" id="editSessionId">
+            
+            <div class="mb-3">
+                <label for="editSessionDate" class="form-label">Date :</label>
+                <input type="text" id="editSessionDate" class="form-control" required>
+            </div>
+
+            <div class="row">
+                <div class="col-6">
+                    <label for="editSessionTimeStart" class="form-label">Heure début :</label>
+                    <input type="time" id="editSessionTimeStart" class="form-control" required>
+                </div>
+                <div class="col-6">
+                    <label for="editSessionTimeEnd" class="form-label">Heure fin :</label>
+                    <input type="time" id="editSessionTimeEnd" class="form-control" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="editSessionTerrain" class="form-label">Terrain :</label>
+                <select id="editSessionTerrain" class="form-select">
+                    {% for terrain in terrains %}
+                    <option value="{{ terrain }}">Terrain {{ terrain }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="editSessionEntraineur" class="form-label">Entraîneur :</label>
+                <select id="editSessionEntraineur" class="form-select">
+                    {% for entraineur in entraineurs %}
+                    <option value="{{ entraineur.id_entraineur }}">{{ entraineur.nom }} {{ entraineur.prenom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="editSessionType" class="form-label">Type de séance :</label>
+                <select id="editSessionType" class="form-select">
+                    <option value="entrainement">Entraînement</option>
+                    <option value="prep_physique">Préparation physique</option>
+                </select>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-end">
+                <button class="btn btn-secondary" onclick="closeEditSessionModal()">Annuler</button>
+                <button class="btn btn-primary" onclick="submitEditSession()">Enregistrer</button>
+            </div>
+        </div>
+
+        <!-- Modal Supprimer Séance -->
+        <div id="deleteSessionModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); width: 300px;">
+            <h5>Supprimer la séance</h5>
+            <p>Voulez-vous supprimer cette séance uniquement pour cette semaine ou pour toutes les semaines ?</p>
+            <div class="d-flex justify-content-between">
+                <button class="btn btn-secondary" onclick="closeDeleteSessionModal()">Annuler</button>
+                <button class="btn btn-warning" id="deleteWeekBtn">Cette semaine</button>
+                <button class="btn btn-danger" id="deleteAllBtn">Toutes les semaines</button>
+            </div>
+        </div>
+
+        <!-- Back to Top -->
+        <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <script>
+        // Initialisation du datepicker pour l'édition
+        const editDatepicker = flatpickr("#editSessionDate", {
+            locale: "fr",
+            dateFormat: "d/m/Y",
+            altInput: true,
+            altFormat: "j F Y",
+            disableMobile: true,
+            allowInput: true
+        });
+
+        // Variables globales
+        let currentExportType = null;
+        let sessionToDelete = null;
+
+        // Fonction pour étendre les séances sur plusieurs colonnes
+        function extendSessions() {
+            const sessionCards = document.querySelectorAll('.session-card');
+            
+            sessionCards.forEach(card => {
+                const duration = parseInt(card.getAttribute('data-duration'));
+                const startTime = card.getAttribute('data-start');
+                const terrain = card.closest('td').getAttribute('data-terrain');
+                
+                // Calculer le nombre de colonnes à occuper (30 min par colonne)
+                const colspan = Math.ceil(duration / 30);
+                
+                if (colspan > 1) {
+                    // Trouver la cellule de départ
+                    const startCell = card.closest('td');
+                    const startCol = parseInt(startCell.getAttribute('data-col'));
+                    
+                    // Trouver toutes les cellules à occuper
+                    for (let i = 1; i < colspan; i++) {
+                        const nextCell = document.getElementById(`cell-${terrain}-${startCol + i}`);
+                        if (nextCell) {
+                            // Cacher le contenu des cellules suivantes
+                            nextCell.style.position = 'relative';
+                            const overlay = document.createElement('div');
+                            overlay.style.position = 'absolute';
+                            overlay.style.top = '0';
+                            overlay.style.left = '0';
+                            overlay.style.right = '0';
+                            overlay.style.bottom = '0';
+                            overlay.style.backgroundColor = card.classList.contains('prep-physique') ? '#e8f5e8' : '#e3f2fd';
+                            overlay.style.border = card.classList.contains('prep-physique') ? '1px solid #a5d6a7' : '1px solid #90caf9';
+                            overlay.style.borderRadius = '4px';
+                            overlay.style.zIndex = '1';
+                            nextCell.appendChild(overlay);
+                            
+                            // Étendre la carte de séance visuellement
+                            card.style.width = `calc(${colspan * 100}% + ${(colspan - 1) * 4}px)`;
+                            card.style.zIndex = '2';
+                        }
+                    }
+                }
+            });
+        }
+
+        // Fonctions pour l'export
+        function prepareExport(type) {
+            currentExportType = type;
+            document.getElementById('exportScope').style.display = 'block';
+        }
+
+        function triggerExport(scope) {
+            const url = new URL(window.location.href);
+            const params = {
+                week_offset: {{ week_offset }},
+                day_offset: {{ day_offset }},
+                export_type: currentExportType,
+                scope: scope
+            };
+
+            window.location.href = `/export-schedule?${new URLSearchParams(params)}`;
+            document.getElementById('exportScope').style.display = 'none';
+        }
+
+        // Fonctions pour le modal d'édition
+        function openEditSessionModal(sessionId) {
+            fetch(`/get_session_data/${sessionId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erreur réseau');
+                    }
+                    return response.json();
+                })
+                .then(seance => {
+                    // Formater la date
+                    const [year, month, day] = seance.date.split('-');
+                    const formattedDate = `${day}/${month}/${year}`;
+                    
+                    // Remplir les champs
+                    editDatepicker.setDate(formattedDate);
+                    document.getElementById('editSessionId').value = sessionId;
+                    document.getElementById('editSessionTimeStart').value = seance.heure_debut;
+                    document.getElementById('editSessionTimeEnd').value = seance.heure_fin;
+                    document.getElementById('editSessionTerrain').value = seance.terrain;
+                    document.getElementById('editSessionEntraineur').value = seance.entraineur_id;
+                    document.getElementById('editSessionType').value = seance.type_seance;
+                    
+                    // Afficher le modal
+                    document.getElementById('editSessionModal').style.display = 'block';
+                    document.getElementById('modalBackdrop').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Erreur lors du chargement des données de la séance');
+                });
+        }
+
+        function closeEditSessionModal() {
+            document.getElementById('editSessionModal').style.display = 'none';
+            document.getElementById('modalBackdrop').style.display = 'none';
+        }
+
+        function submitEditSession() {
+            const sessionId = document.getElementById('editSessionId').value;
+            const date = document.getElementById('editSessionDate').value;
+            const heure_debut = document.getElementById('editSessionTimeStart').value;
+            const heure_fin = document.getElementById('editSessionTimeEnd').value;
+            const terrain = document.getElementById('editSessionTerrain').value;
+            const entraineur = document.getElementById('editSessionEntraineur').value;
+            const type_seance = document.getElementById('editSessionType').value;
+
+            fetch('/edit_session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    date: date,
+                    heure_debut: heure_debut,
+                    heure_fin: heure_fin,
+                    terrain: terrain,
+                    entraineur: entraineur,
+                    type_seance: type_seance
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.error);
+                }
+                closeEditSessionModal();
+            })
+            .catch(error => {
+                console.error('Erreur :', error);
+                alert('Une erreur est survenue lors de la modification.');
+                closeEditSessionModal();
+            });
+        }
+
+        // Fonctions pour le modal de suppression
+        function deleteSession(sessionId) {
+            sessionToDelete = sessionId;
+            document.getElementById('deleteSessionModal').style.display = 'block';
+            document.getElementById('modalBackdrop').style.display = 'block';
+        }
+
+        function closeDeleteSessionModal() {
+            sessionToDelete = null;
+            document.getElementById('deleteSessionModal').style.display = 'none';
+            document.getElementById('modalBackdrop').style.display = 'none';
+        }
+
+        // Supprimer selon le scope choisi
+        document.getElementById('deleteWeekBtn').addEventListener('click', () => {
+            confirmDelete('week');
+        });
+
+        document.getElementById('deleteAllBtn').addEventListener('click', () => {
+            confirmDelete('all');
+        });
+
+        function confirmDelete(scope) {
+            fetch('/delete_session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: sessionToDelete, scope: scope })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.error);
+                }
+                closeDeleteSessionModal();
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Erreur lors de la suppression');
+                closeDeleteSessionModal();
+            });
+        }
+
+        // Fonction pour fermer tous les modals
+        function closeAllModals() {
+            closeEditSessionModal();
+            closeDeleteSessionModal();
+        }
+
+        // Étendre les séances au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(extendSessions, 100);
+            
+            // Script de débogage
+            console.log("=== Structure du tableau ===");
+            console.log("Colonne 1: Jour et date");
+            console.log("Colonnes 2 à " + ({{ creneaux|length }} + 1) + ": Créneaux horaires de 30 minutes");
+            console.log("Lignes 2 à 10: 9 terrains");
+        });
+    </script>
+
+</body>
+</html>

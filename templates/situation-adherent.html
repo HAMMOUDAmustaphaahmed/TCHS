@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Situation Adhérent - TCHS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- jQuery UI CSS -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Bootstrap & Template Styles -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+    <style>
+        .dashboard-title {
+            font-family: 'Orbitron', sans-serif;
+            color: #1976d2;
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .search-container {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            margin-bottom: 2rem;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            padding-left: 2.5rem;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #858796;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            border-left: 4px solid #4e73df;
+        }
+
+        .info-card.personal-info {
+            border-left-color: #36b9cc;
+        }
+
+        .info-card.subscription-info {
+            border-left-color: #1cc88a;
+        }
+
+        .info-card.payment-info {
+            border-left-color: #f6c23e;
+        }
+
+        .card-header-custom {
+            border-bottom: 1px solid #e3e6f0;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-header-custom h5 {
+            margin: 0;
+            color: #5a5c69;
+            font-weight: 700;
+        }
+
+        .info-row {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f8f9fc;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-row .label {
+            font-weight: 600;
+            color: #858796;
+        }
+
+        .info-row .value {
+            font-weight: 700;
+            color: #5a5c69;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            margin-bottom: 1rem;
+        }
+
+        .stat-card .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+        }
+
+        .stat-card.success .stat-icon {
+            background: rgba(28, 200, 138, 0.1);
+            color: #1cc88a;
+        }
+
+        .stat-card.danger .stat-icon {
+            background: rgba(231, 74, 59, 0.1);
+            color: #e74a3b;
+        }
+
+        .stat-card.info .stat-icon {
+            background: rgba(54, 185, 204, 0.1);
+            color: #36b9cc;
+        }
+
+        .stat-card.warning .stat-icon {
+            background: rgba(246, 194, 62, 0.1);
+            color: #f6c23e;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #5a5c69;
+        }
+
+        .stat-label {
+            color: #858796;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 3rem;
+        }
+
+        #situation-content {
+            display: none;
+        }
+
+        .export-btn {
+            background: #1cc88a;
+            color: white;
+            border: none;
+            transition: all 0.3s;
+        }
+
+        .export-btn:hover {
+            background: #17a673;
+            color: white;
+        }
+
+        .dropdown-toggle::after {
+            margin-left: 0.5em;
+        }
+
+        /* Autocomplete styling */
+        .ui-autocomplete {
+            max-height: 300px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1050;
+        }
+
+        .ui-menu-item {
+            padding: 0.5rem 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+    <div class="content">
+
+        <!-- Navbar Start -->
+        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+            <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                <h2 class="text-primary mb-0"></h2>
+            </a>
+            <a href="#" class="sidebar-toggler flex-shrink-0">
+                <i class="fa fa-bars"></i>
+            </a>
+        </nav>
+        <!-- Navbar End -->
+
+        <div class="container-fluid mt-4">
+            <h1 class="dashboard-title mb-4">Situation Adhérent</h1>
+
+            <!-- Search Container -->
+            <div class="search-container">
+                <h5 class="mb-3">Rechercher un adhérent</h5>
+                <div class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input 
+                        type="text" 
+                        id="search-adherent" 
+                        class="form-control" 
+                        placeholder="Rechercher par matricule, nom ou prénom..."
+                        autocomplete="off">
+                </div>
+                <p class="text-muted mt-2 mb-0">
+                    <small><i class="fas fa-info-circle me-1"></i>Tapez au moins 2 caractères pour commencer la recherche</small>
+                </p>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div class="loading-spinner" id="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p class="mt-3 text-muted">Chargement des données...</p>
+            </div>
+
+            <!-- Situation Content -->
+            <div id="situation-content">
+                <!-- Stats Row -->
+                <div class="row mb-4">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="stat-card success">
+                            <div class="stat-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="stat-value" id="stat-presences">0</div>
+                            <div class="stat-label">Présences</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="stat-card danger">
+                            <div class="stat-icon">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                            <div class="stat-value" id="stat-absences">0</div>
+                            <div class="stat-label">Absences</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="stat-card info">
+                            <div class="stat-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="stat-value" id="stat-total">0</div>
+                            <div class="stat-label">Total Séances</div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="stat-card warning">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-value" id="stat-heures">0h</div>
+                            <div class="stat-label">Heures Présentes</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Cards -->
+                <div class="row">
+                    <!-- Personal Info -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="info-card personal-info">
+                            <div class="card-header-custom">
+                                <h5><i class="fas fa-user me-2"></i>Informations Personnelles</h5>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Matricule:</span>
+                                <span class="value" id="info-matricule">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Nom complet:</span>
+                                <span class="value" id="info-nom">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Date de naissance:</span>
+                                <span class="value" id="info-naissance">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Téléphone:</span>
+                                <span class="value" id="info-telephone">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Email:</span>
+                                <span class="value" id="info-email">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Date d'inscription:</span>
+                                <span class="value" id="info-inscription">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subscription Info -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="info-card subscription-info">
+                            <div class="card-header-custom">
+                                <h5><i class="fas fa-id-card me-2"></i>Abonnement</h5>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Type:</span>
+                                <span class="value" id="info-type">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Groupe:</span>
+                                <span class="value" id="info-groupe">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Entraineur:</span>
+                                <span class="value" id="info-entraineur">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Statut:</span>
+                                <span class="value" id="info-status">-</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Saison:</span>
+                                <span class="value" id="info-saison">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Info -->
+                <div class="row">
+                    <div class="col-12 mb-4">
+                        <div class="info-card payment-info">
+                            <div class="card-header-custom d-flex justify-content-between align-items-center">
+                                <h5><i class="fas fa-money-bill-wave me-2"></i>Situation Financière</h5>
+                                <div class="btn-group">
+                                    <button type="button" class="btn export-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-download me-2"></i>Exporter Situation
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="#" id="export-excel-btn">
+                                                <i class="fas fa-file-excel me-2 text-success"></i>Exporter en Excel
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" id="export-pdf-btn">
+                                                <i class="fas fa-file-pdf me-2 text-danger"></i>Exporter en PDF
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <!-- Financial Summary -->
+                            <div class="row mb-3">
+                                <div class="col-md-3 col-6">
+                                    <div class="info-row">
+                                        <span class="label">Cotisation Brute:</span>
+                                        <span class="value text-primary" id="fin-cotisation-brute">0 TND</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6">
+                                    <div class="info-row">
+                                        <span class="label">Remise:</span>
+                                        <span class="value text-info" id="fin-remise">0%</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6">
+                                    <div class="info-row">
+                                        <span class="label">Total à payer:</span>
+                                        <span class="value text-warning" id="fin-total">0 TND</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6">
+                                    <div class="info-row">
+                                        <span class="label">Total payé:</span>
+                                        <span class="value text-success" id="fin-paye">0 TND</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="info-row">
+                                        <span class="label">Reste à payer:</span>
+                                        <span class="value text-danger fs-5" id="fin-reste">0 TND</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment History -->
+                            <h6 class="mt-4 mb-3">
+                                <i class="fas fa-history me-2"></i>Historique des Paiements
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-bordered">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Saison</th>
+                                            <th>N° Carnet</th>
+                                            <th>N° Bon</th>
+                                            <th>Montant</th>
+                                            <th>Type</th>
+                                            <th>N° Chèque</th>
+                                            <th>Banque</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="payment-history-tbody">
+                                        <tr>
+                                            <td colspan="8" class="text-center text-muted">
+                                                Aucun paiement enregistré
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Next Session -->
+                <div class="row" id="next-session-row" style="display: none;">
+                    <div class="col-12 mb-4">
+                        <div class="info-card">
+                            <div class="card-header-custom">
+                                <h5><i class="fas fa-calendar-day me-2"></i>Prochaine Séance</h5>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3 col-6">
+                                    <div class="info-row">
+                                        <span class="label">Date:</span>
+                                        <span class="value" id="next-date">-</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6">
+                                    <div class="info-row">
+                                        <span class="label">Heure:</span>
+                                        <span class="value" id="next-heure">-</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6">
+                                    <div class="info-row">
+                                        <span class="label">Groupe:</span>
+                                        <span class="value" id="next-groupe">-</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6">
+                                    <div class="info-row">
+                                        <span class="label">Entraineur:</span>
+                                        <span class="value" id="next-entraineur">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Schedule -->
+                <div class="row">
+                    <div class="col-12 mb-4">
+                        <div class="info-card">
+                            <div class="card-header-custom">
+                                <h5><i class="fas fa-calendar-week me-2"></i>Emploi du Temps de la Semaine</h5>
+                            </div>
+                            <div class="table-responsive" id="schedule-container">
+                                <div class="text-center text-muted py-4">
+                                    <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                                    <p>Aucune séance programmée cette semaine</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+    <script>
+        $(document).ready(function() {
+            let currentMatricule = null;
+
+            // Autocomplete setup
+            $("#search-adherent").autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: "/api/search-global-adherent",
+                        data: { term: request.term },
+                        success: function(data) {
+                            response(data);
+                        },
+                        error: function() {
+                            response([]);
+                        }
+                    });
+                },
+                minLength: 2,
+                select: function(event, ui) {
+                    event.preventDefault();
+                    $("#search-adherent").val(ui.item.label);
+                    loadAdherentData(ui.item.matricule);
+                    return false;
+                }
+            });
+
+            // Load adherent data
+            function loadAdherentData(matricule) {
+                currentMatricule = matricule;
+                
+                $('#loading-spinner').show();
+                $('#situation-content').hide();
+
+                $.ajax({
+                    url: `/api/situation-global-adherent/${matricule}`,
+                    method: 'GET',
+                    success: function(data) {
+                        populateAdherentInfo(data);
+                        populatePaymentInfo(data);
+                        populatePresenceInfo(data);
+                        populateNextSession(data);
+                        populateSchedule(data);
+                        
+                        $('#loading-spinner').hide();
+                        $('#situation-content').fadeIn();
+                    },
+                    error: function(xhr) {
+                        $('#loading-spinner').hide();
+                        alert(xhr.responseJSON?.error || 'Erreur lors du chargement des données');
+                    }
+                });
+            }
+
+            // Populate adherent info
+            function populateAdherentInfo(data) {
+                const adherent = data.adherent;
+                $('#info-matricule').text(adherent.matricule);
+                $('#info-nom').text(`${adherent.nom} ${adherent.prenom}`);
+                $('#info-naissance').text(adherent.date_naissance);
+                $('#info-telephone').text(adherent.telephone);
+                $('#info-email').text(adherent.email);
+                $('#info-inscription').text(adherent.date_inscription);
+                $('#info-type').text(adherent.type_abonnement);
+                $('#info-groupe').text(adherent.groupe);
+                $('#info-entraineur').text(adherent.entraineur);
+                
+                const statusClass = adherent.status === 'Actif' ? 'badge bg-success' : 'badge bg-secondary';
+                $('#info-status').html(`<span class="${statusClass}">${adherent.status}</span>`);
+                $('#info-saison').text(adherent.code_saison);
+            }
+
+            // Populate payment info
+            function populatePaymentInfo(data) {
+                const paiements = data.paiements;
+                
+                $('#fin-cotisation-brute').text(`${paiements.cotisation.toFixed(2)} TND`);
+                $('#fin-remise').text(`${paiements.remise_pourcentage}% (-${paiements.remise_montant.toFixed(2)} TND)`);
+                $('#fin-total').text(`${paiements.total_a_payer.toFixed(2)} TND`);
+                $('#fin-paye').text(`${paiements.total_paye.toFixed(2)} TND`);
+                $('#fin-reste').text(`${paiements.reste_a_payer.toFixed(2)} TND`);
+
+                // Payment history
+                const tbody = $('#payment-history-tbody');
+                tbody.empty();
+
+                if (paiements.historique && paiements.historique.length > 0) {
+                    paiements.historique.forEach(p => {
+                        tbody.append(`
+                            <tr>
+                                <td>${p.date}</td>
+                                <td><span class="badge bg-primary">${p.code_saison}</span></td>
+                                <td>${p.numero_carnet}</td>
+                                <td>${p.numero_bon}</td>
+                                <td class="fw-bold">${p.montant_paye.toFixed(2)} TND</td>
+                                <td><span class="badge bg-info">${p.type_reglement}</span></td>
+                                <td>${p.numero_cheque}</td>
+                                <td>${p.banque}</td>
+                            </tr>
+                        `);
+                    });
+                } else {
+                    tbody.append(`
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">
+                                Aucun paiement enregistré
+                            </td>
+                        </tr>
+                    `);
+                }
+            }
+
+            // Populate presence info
+            function populatePresenceInfo(data) {
+                const presences = data.presences;
+                $('#stat-presences').text(presences.present);
+                $('#stat-absences').text(presences.absent);
+                $('#stat-total').text(presences.total);
+                $('#stat-heures').text(`${presences.heures_presentes.toFixed(1)}h`);
+            }
+
+            // Populate next session
+            function populateNextSession(data) {
+                if (data.prochaine_seance) {
+                    const next = data.prochaine_seance;
+                    $('#next-date').text(next.date);
+                    $('#next-heure').text(next.heure);
+                    $('#next-groupe').text(next.groupe);
+                    $('#next-entraineur').text(next.entraineur);
+                    $('#next-session-row').show();
+                } else {
+                    $('#next-session-row').hide();
+                }
+            }
+
+            // Populate schedule
+            function populateSchedule(data) {
+                const container = $('#schedule-container');
+                
+                if (!data.emploi_du_temps || data.emploi_du_temps.length === 0) {
+                    container.html(`
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                            <p>Aucune séance programmée cette semaine</p>
+                        </div>
+                    `);
+                    return;
+                }
+
+                // Create schedule table
+                let html = `
+                    <table class="table table-striped table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Jour</th>
+                                <th>Horaire</th>
+                                <th>Groupe</th>
+                                <th>Entraineur</th>
+                                <th>Terrain</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.emploi_du_temps.forEach(seance => {
+                    const typeClass = seance.type === 'entrainement' ? 'bg-primary' : 'bg-warning';
+                    html += `
+                        <tr>
+                            <td><strong>${seance.jour}</strong></td>
+                            <td>${seance.heure_debut} - ${seance.heure_fin}</td>
+                            <td>${seance.groupe}</td>
+                            <td>${seance.entraineur}</td>
+                            <td><span class="badge bg-secondary">${seance.terrain}</span></td>
+                            <td><span class="badge ${typeClass}">${seance.type}</span></td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                        </tbody>
+                    </table>
+                `;
+
+                container.html(html);
+            }
+
+            // Export to Excel
+            $('#export-excel-btn').click(function(e) {
+                e.preventDefault();
+                if (!currentMatricule) {
+                    alert('Veuillez d\'abord sélectionner un adhérent');
+                    return;
+                }
+
+                window.location.href = `/api/export-situation-excel/${currentMatricule}`;
+            });
+
+            // Export to PDF
+            $('#export-pdf-btn').click(function(e) {
+                e.preventDefault();
+                if (!currentMatricule) {
+                    alert('Veuillez d\'abord sélectionner un adhérent');
+                    return;
+                }
+
+                window.location.href = `/api/export-situation-pdf/${currentMatricule}`;
+            });
+        });
+    </script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

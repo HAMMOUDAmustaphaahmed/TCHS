@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <link href="{{ url_for('static', filename='img/favicon.ico') }}" rel="icon">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+    <div class="content">
+         <!-- Navbar Start -->
+        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+            <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                <h2 class="text-primary mb-0"></h2>
+            </a>
+            <a href="#" class="sidebar-toggler flex-shrink-0">
+                <i class="fa fa-bars"></i>
+            </a>
+            
+        </nav>
+        <!-- Navbar End -->
+        <div class="row align-items-center justify-content-center" style="min-height: 100vh;">
+            <div class="col-12 col-sm-8">
+                <div class="p-4 bg-white shadow rounded">
+                    <h3 class="text-primary mb-4">
+                        <i class="fas fa-user-edit me-2"></i>Modifier Entraineur
+                    </h3>
+                    
+                    <form method="post" action="{{ url_for('modifier_entraineur', id=entraineur.id_entraineur) }}">
+    <!-- Nom -->
+    <div class="form-floating mb-3">
+        <input type="text" class="form-control" id="nom" name="nom" 
+               placeholder="Nom" required>
+        <label for="nom">Nom*</label>
+    </div>
+
+    <!-- Prénom -->
+    <div class="form-floating mb-3">
+        <input type="text" class="form-control" id="prenom" name="prenom" 
+               placeholder="Prénom" required>
+        <label for="prenom">Prénom*</label>
+    </div>
+
+    <!-- Sexe -->
+    <div class="form-floating mb-3">
+        <select class="form-control" id="sexe" name="sexe" required>
+            <option value="" disabled selected>Sélectionner...</option>
+            <option value="M">Homme</option>
+            <option value="F">Femme</option>
+        </select>
+        <label for="sexe">Sexe*</label>
+    </div>
+
+    <!-- Adresse -->
+    <div class="form-floating mb-3">
+        <input type="text" class="form-control" id="adresse" name="adresse" 
+               placeholder="Adresse" required>
+        <label for="adresse">Adresse*</label>
+    </div>
+
+    <!-- Téléphone -->
+    <div class="form-floating mb-3">
+        <input type="tel" class="form-control" id="telephone" name="telephone" 
+               placeholder="Téléphone" required>
+        <label for="telephone">Téléphone*</label>
+    </div>
+
+    <!-- Compte Bancaire -->
+    <div class="form-floating mb-3">
+        <input type="text" class="form-control" id="compte_bancaire" name="compte_bancaire" 
+               placeholder="Compte Bancaire" required>
+        <label for="compte_bancaire">Compte Bancaire*</label>
+    </div>
+
+    <!-- Rôle Technique -->
+    <div class="form-floating mb-3">
+        <select id="role_technique" name="role_technique" class="form-control" 
+                onchange="toggleCategorieModif()" required>
+            <option value="" disabled selected>Sélectionner...</option>
+            <option value="Entraineur">Entraineur</option>
+            <option value="Prep Physique">Prep Physique</option>
+            <option value="Directeur Technique">Directeur Technique</option>
+            <option value="Adjoint">Adjoint</option>
+        </select>
+        <label for="role_technique">Rôle Technique*</label>
+    </div>
+    
+    <!-- Catégorie (seulement si Entraineur) -->
+    <div class="form-floating mb-3" id="categorie-container-modif">
+        <select id="type_abonnement" name="type_abonnement" class="form-control">
+            <option value="">Aucune catégorie</option>
+            <option value="Loisir">Loisir</option>
+            <option value="Ecole">Ecole</option>
+            <option value="Compétitif">Compétitif</option>
+            <option value="Pré-Compétitif">Pré-Compétitif</option>
+            <option value="Ecole d'été">Ecole d'été</option>
+            <option value="Adulte">Adulte</option>
+        </select>
+        <label for="type_abonnement">Catégorie à Entraîner</label>
+    </div>
+
+    <!-- Status -->
+    <div class="form-floating mb-3">
+        <select class="form-control" id="status" name="status" required>
+            <option value="Actif">Actif</option>
+            <option value="Non-Actif">Non-Actif</option>
+        </select>
+        <label for="status">Status*</label>
+    </div>
+
+    <!-- Type de Saison -->
+    <div class="form-floating mb-3">
+        <select class="form-control" id="saison_type" name="saison_type" required>
+            <option value="S">Saison Normale (S)</option>
+            <option value="E">École d'été (E)</option>
+        </select>
+        <label for="saison_type">Type de Saison*</label>
+    </div>
+
+    <!-- Année de Saison -->
+    <div class="form-floating mb-3">
+        <input type="number" class="form-control" id="annee_saison" name="annee_saison" 
+               min="2020" max="2030" required>
+        <label for="annee_saison">Année de Saison*</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary py-3 w-100">
+        <i class="fas fa-save me-2"></i>Mettre à jour
+    </button>
+</form>
+
+<script>
+    // Données de l'entraîneur passées depuis le backend
+    const entraineurData = {
+        nom: "{{ entraineur.nom }}",
+        prenom: "{{ entraineur.prenom }}",
+        sexe: "{{ entraineur.sexe }}",
+        adresse: "{{ entraineur.addresse }}",  // ⚠️ ATTENTION: addresse avec 2 'd'
+        telephone: "{{ entraineur.tel }}",      // ⚠️ ATTENTION: tel pas telephone
+        compte_bancaire: "{{ entraineur.compte_bancaire }}",
+        role_technique: "{{ entraineur.role_technique }}",
+        type_abonnement: "{{ entraineur.type_abonnement }}",
+        status: "{{ entraineur.status }}",
+        saison_type: "{{ saison_type }}",
+        annee_saison: "{{ annee_saison }}"
+    };
+
+    function remplirFormulaire() {
+        // Remplir les champs texte
+        if (entraineurData.nom && entraineurData.nom !== 'None') {
+            document.getElementById('nom').value = entraineurData.nom;
+        }
+        
+        if (entraineurData.prenom && entraineurData.prenom !== 'None') {
+            document.getElementById('prenom').value = entraineurData.prenom;
+        }
+        
+        if (entraineurData.adresse && entraineurData.adresse !== 'None') {
+            document.getElementById('adresse').value = entraineurData.adresse;
+        } else {
+            document.getElementById('adresse').value = '';
+        }
+        
+        if (entraineurData.telephone && entraineurData.telephone !== 'None') {
+            document.getElementById('telephone').value = entraineurData.telephone;
+        } else {
+            document.getElementById('telephone').value = '';
+        }
+        
+        if (entraineurData.compte_bancaire && entraineurData.compte_bancaire !== 'None') {
+            document.getElementById('compte_bancaire').value = entraineurData.compte_bancaire;
+        } else {
+            document.getElementById('compte_bancaire').value = '';
+        }
+        
+        // Remplir les select
+        if (entraineurData.sexe && entraineurData.sexe !== 'None') {
+            document.getElementById('sexe').value = entraineurData.sexe;
+        }
+        
+        if (entraineurData.role_technique && entraineurData.role_technique !== 'None') {
+            document.getElementById('role_technique').value = entraineurData.role_technique;
+        }
+        
+        if (entraineurData.type_abonnement && entraineurData.type_abonnement !== 'None' && entraineurData.type_abonnement !== '') {
+            document.getElementById('type_abonnement').value = entraineurData.type_abonnement;
+        }
+        
+        if (entraineurData.status && entraineurData.status !== 'None') {
+            document.getElementById('status').value = entraineurData.status;
+        }
+        
+        if (entraineurData.saison_type && entraineurData.saison_type !== 'None') {
+            document.getElementById('saison_type').value = entraineurData.saison_type;
+        }
+        
+        if (entraineurData.annee_saison && entraineurData.annee_saison !== 'None') {
+            document.getElementById('annee_saison').value = entraineurData.annee_saison;
+        }
+        
+        // Appeler toggleCategorieModif après avoir rempli le rôle technique
+        toggleCategorieModif();
+    }
+
+    function toggleCategorieModif() {
+        const roleTechnique = document.getElementById('role_technique').value;
+        const categorieContainer = document.getElementById('categorie-container-modif');
+        const categorieSelect = document.getElementById('type_abonnement');
+        
+        if (roleTechnique === 'Entraineur') {
+            categorieContainer.style.display = 'block';
+            categorieSelect.required = true;
+        } else {
+            categorieContainer.style.display = 'none';
+            categorieSelect.required = false;
+            categorieSelect.value = '';
+        }
+    }
+
+    // Initialiser au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        remplirFormulaire();
+    });
+</script>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleCategorieModif() {
+            const roleTechnique = document.getElementById('role_technique').value;
+            const categorieContainer = document.getElementById('categorie-container-modif');
+            const categorieSelect = document.getElementById('type_abonnement');
+            
+            if (roleTechnique === 'Entraineur') {
+                categorieContainer.style.display = 'block';
+                categorieSelect.required = true;
+            } else {
+                categorieContainer.style.display = 'none';
+                categorieSelect.required = false;
+                categorieSelect.value = '';
+            }
+        }
+
+        // Initialiser au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleCategorieModif();
+        });
+    </script>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>

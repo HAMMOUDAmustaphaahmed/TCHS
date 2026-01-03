@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS Dashboard</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <!-- Ajouter dans le head -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+    <style>
+        /* Style pour la modal d'ajout d'adhérents */
+        .search-result-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+        
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .selected-adherent {
+            display: inline-flex;
+            align-items: center;
+            background-color: #e9ecef;
+            border-radius: 20px;
+            padding: 4px 12px;
+            margin: 4px;
+        }
+        
+        .selected-adherent span {
+            margin-right: 8px;
+        }
+        
+        .remove-adherent {
+            cursor: pointer;
+            color: #dc3545;
+            margin-left: 8px;
+        }
+        
+        #adherentSearchResults {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+        
+        #selectedAdherents {
+            min-height: 50px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 8px;
+        }
+        /* Style pour le groupe de recherche */
+        .input-group {
+            margin-bottom: 10px;
+        }
+
+        #searchButton {
+            border-radius: 0 4px 4px 0;
+        }
+
+        .search-result-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        #groupNamePreview {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #groupName:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+    </style>
+        
+</head>
+
+<body>
+    {% if session.role == 'admin' %}
+    {% include 'sidebar.html' %}
+{% else %}
+    <div class="sidebar pe-4 pb-3">
+      <nav class="navbar bg-light navbar-light">
+        <a href="{{ url_for('entraineur') }}" class="navbar-brand mx-4 mb-3">
+          <h3 class="text-primary">TCHS</h3>
+        </a>
+        <div class="d-flex align-items-center ms-4 mb-4">
+          <div class="position-relative">
+            <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
+          </div>
+
+        </div>
+        <div class="navbar-nav w-100">
+          <a href="{{ url_for('entraineur') }}" class="nav-item nav-link active">
+            <i class="fa fa-tachometer-alt me-2"></i>Dashboard
+          </a>
+          <div class="nav-item">
+            <a href="javascript:void(0);" class="nav-link" id="changePasswordLink">
+              <i class="fa fa-key"></i> Mot de Passe
+            </a>
+          </div>
+          
+<!-- Modal Changement de Mot de Passe Amélioré -->
+<div id="modalChangerMotDePasse" class="password-modal" style="display:none;">
+    <div class="password-modal-overlay" onclick="fermerModal()"></div>
+    <div class="password-modal-content">
+        <div class="password-modal-header">
+            <h4>
+                <i class="fas fa-key me-2"></i>
+                Changer le mot de passe
+            </h4>
+            <button type="button" class="btn-close-custom" onclick="fermerModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="password-modal-body">
+           
+            
+            <form id="changePasswordForm">
+                <div class="form-group mb-3">
+                    <label for="ancienMotDePasse" class="form-label">
+                        <i class="fas fa-lock me-2"></i>
+                        Ancien mot de passe
+                    </label>
+                    <div class="input-group">
+                        <input type="password" 
+                               id="ancienMotDePasse" 
+                               class="form-control" 
+                               placeholder="Entrez votre ancien mot de passe"
+                               required>
+                        <button class="btn btn-outline-secondary toggle-password" 
+                                type="button" 
+                                onclick="togglePassword('ancienMotDePasse')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label for="nouveauMotDePasse" class="form-label">
+                        <i class="fas fa-key me-2"></i>
+                        Nouveau mot de passe
+                    </label>
+                    <div class="input-group">
+                        <input type="password" 
+                               id="nouveauMotDePasse" 
+                               class="form-control" 
+                               placeholder="Entrez votre nouveau mot de passe"
+                               minlength="6"
+                               required>
+                        <button class="btn btn-outline-secondary toggle-password" 
+                                type="button" 
+                                onclick="togglePassword('nouveauMotDePasse')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="password-strength mt-2" id="passwordStrength"></div>
+                </div>
+                
+                <div class="form-group mb-4">
+                    <label for="confirmationMotDePasse" class="form-label">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Confirmer le mot de passe
+                    </label>
+                    <div class="input-group">
+                        <input type="password" 
+                               id="confirmationMotDePasse" 
+                               class="form-control" 
+                               placeholder="Confirmez votre nouveau mot de passe"
+                               minlength="6"
+                               required>
+                        <button class="btn btn-outline-secondary toggle-password" 
+                                type="button" 
+                                onclick="togglePassword('confirmationMotDePasse')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="password-match mt-2" id="passwordMatch"></div>
+                </div>
+                
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" class="btn btn-secondary" onclick="fermerModal()">
+                        <i class="fas fa-times me-2"></i>
+                        Annuler
+                    </button>
+                    <button type="submit" id="submitMotDePasse" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Styles du Modal de Mot de Passe */
+.password-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1050;
+    animation: fadeIn 0.3s ease;
+}
+
+.password-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+}
+
+.password-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    animation: slideDown 0.3s ease;
+    z-index: 2;
+}
+
+.password-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px 25px;
+    border-radius: 15px 15px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.password-modal-header h4 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.btn-close-custom {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-close-custom:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.password-modal-body {
+    padding: 25px;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.input-group {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.input-group .form-control {
+    border: 1px solid #dee2e6;
+    padding: 10px 15px;
+    border-right: none;
+}
+
+.input-group .form-control:focus {
+    border-color: #667eea;
+    box-shadow: none;
+}
+
+.toggle-password {
+    border: 1px solid #dee2e6;
+    border-left: none;
+    background: white;
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.toggle-password:hover {
+    background: #f8f9fa;
+    color: #667eea;
+}
+
+.password-strength {
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+}
+
+.password-strength-bar {
+    height: 100%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.strength-weak {
+    width: 33%;
+    background: #dc3545;
+}
+
+.strength-medium {
+    width: 66%;
+    background: #ffc107;
+}
+
+.strength-strong {
+    width: 100%;
+    background: #28a745;
+}
+
+.password-match {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.match-success {
+    color: #28a745;
+}
+
+.match-error {
+    color: #dc3545;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border: none;
+    border-left: 4px solid #2196f3;
+    color: #1565c0;
+}
+
+.password-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+}
+
+.password-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+    .password-modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .password-modal-body {
+        padding: 20px;
+    }
+}
+</style>
+
+<script>
+// Fonction pour ouvrir le modal
+document.getElementById('changePasswordLink').addEventListener('click', function() {
+    document.getElementById('modalChangerMotDePasse').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+});
+
+// Fonction pour fermer le modal
+function fermerModal() {
+    const modal = document.getElementById('modalChangerMotDePasse');
+    
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+    
+    // Réinitialiser le formulaire
+    const form = document.getElementById('changePasswordForm');
+    if (form) form.reset();
+    
+    const strengthDiv = document.getElementById('passwordStrength');
+    if (strengthDiv) strengthDiv.innerHTML = '';
+    
+    const matchDiv = document.getElementById('passwordMatch');
+    if (matchDiv) matchDiv.innerHTML = '';
+}
+
+// Fonction pour afficher/masquer le mot de passe
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.nextElementSibling.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.classList.remove('fa-eye');
+        button.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        button.classList.remove('fa-eye-slash');
+        button.classList.add('fa-eye');
+    }
+}
+
+// Vérifier la force du mot de passe
+document.getElementById('nouveauMotDePasse').addEventListener('input', function() {
+    const password = this.value;
+    const strengthDiv = document.getElementById('passwordStrength');
+    
+    if (password.length === 0) {
+        strengthDiv.innerHTML = '';
+        return;
+    }
+    
+    let strength = 0;
+    if (password.length >= 6) strength++;
+    if (password.length >= 10) strength++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[^a-zA-Z0-9]/.test(password)) strength++;
+    
+    let strengthClass = '';
+    let strengthText = '';
+    
+    if (strength <= 2) {
+        strengthClass = 'strength-weak';
+        strengthText = 'Faible';
+    } else if (strength <= 3) {
+        strengthClass = 'strength-medium';
+        strengthText = 'Moyen';
+    } else {
+        strengthClass = 'strength-strong';
+        strengthText = 'Fort';
+    }
+    
+    strengthDiv.innerHTML = `<div class="password-strength-bar ${strengthClass}"></div>`;
+});
+
+// Vérifier la correspondance des mots de passe
+document.getElementById('confirmationMotDePasse').addEventListener('input', function() {
+    const password = document.getElementById('nouveauMotDePasse').value;
+    const confirm = this.value;
+    const matchDiv = document.getElementById('passwordMatch');
+    
+    if (confirm.length === 0) {
+        matchDiv.innerHTML = '';
+        return;
+    }
+    
+    if (password === confirm) {
+        matchDiv.innerHTML = '<i class="fas fa-check-circle me-1"></i>Les mots de passe correspondent';
+        matchDiv.className = 'password-match match-success';
+    } else {
+        matchDiv.innerHTML = '<i class="fas fa-times-circle me-1"></i>Les mots de passe ne correspondent pas';
+        matchDiv.className = 'password-match match-error';
+    }
+});
+
+// Gérer la soumission du formulaire
+document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const ancienPassword = document.getElementById('ancienMotDePasse').value;
+    const nouveauPassword = document.getElementById('nouveauMotDePasse').value;
+    const confirmPassword = document.getElementById('confirmationMotDePasse').value;
+    
+    // Vérifier que les nouveaux mots de passe correspondent
+    if (nouveauPassword !== confirmPassword) {
+        alert('Les mots de passe ne correspondent pas !');
+        return;
+    }
+    
+    // Vérifier la longueur minimale
+    if (nouveauPassword.length < 6) {
+        alert('Le mot de passe doit contenir au moins 6 caractères !');
+        return;
+    }
+    
+    // Envoyer la requête au serveur
+    fetch('/reset_password_manager', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            ancien_password: ancienPassword,
+            nouveau_password: nouveauPassword
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Mot de passe modifié avec succès !');
+            fermerModal();
+        } else {
+            alert('Erreur : ' + (data.message || 'Ancien mot de passe incorrect'));
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Une erreur est survenue lors du changement de mot de passe');
+    });
+});
+
+// Fermer avec la touche Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.getElementById('modalChangerMotDePasse').style.display === 'flex') {
+        fermerModal();
+    }
+});
+</script>
+         
+        <div class="nav-item">
+          <a href="{{ url_for('discussions') }}" class="nav-link">
+            <i class="fab fa-facebook-messenger"></i>Discussions
+          </a>
+      </div>
+
+        
+        <!-- Déconnexion -->
+        <div class="nav-item">
+            <a href="{{ url_for('logout') }}" class="nav-link">
+                <i class="fa fa-sign-out-alt me-2"></i>Déconnecter
+            </a>
+        </div>
+        </div>
+      </nav>
+    </div>
+    {% endif %}
+    <div class="content">
+      <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+        <a href="" class="navbar-brand d-flex d-lg-none me-4">
+          <h2 class="text-primary mb-0"></h2>
+        </a>
+        <a href="#" class="sidebar-toggler flex-shrink-0">
+          <i class="fa fa-bars"></i>
+        </a>
+        
+
+      </nav>
+
+      
+
+      <div class="container-fluid pt-4 px-4">
+        <div class="bg-light text-center rounded p-4">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <a href="{{ url_for('directeur_technique') }}" class="navbar-brand mx-4 mb-3">
+                    <h3 class="text-primary">TCHS</h3>
+                </a>
+                <h6>Bienvenue</h6>
+            </div>
+    
+            <!-- Section Gestion des Groupes -->
+            <div class="text-start mb-4">
+                <button class="btn btn-primary me-2" onclick="showGroupForm()">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Ajouter un groupe
+                </button>
+                <button class="btn btn-warning" onclick="openNonAffectesModal()">
+                    <i class="fas fa-user-slash me-2"></i>
+                    Liste des adhérents non affectés
+                    <span class="badge bg-danger ms-2">{{ adherents_non_affectes|length }}</span>
+                </button>
+            </div>
+
+            <!-- Modal Adhérents Non Affectés -->
+            <div id="nonAffectesModal" class="modal" style="display:none;">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header bg-warning text-dark">
+                            <h5 class="modal-title">
+                                <i class="fas fa-user-slash me-2"></i>
+                                Adhérents Non Affectés à un Groupe
+                                <span class="badge bg-danger ms-2">{{ adherents_non_affectes|length }}</span>
+                            </h5>
+                            <button type="button" class="btn-close" onclick="closeNonAffectesModal()"></button>
+                        </div>
+                        <div class="modal-body">
+                            {% if adherents_non_affectes|length == 0 %}
+                                <div class="alert alert-success text-center">
+                                    <i class="fas fa-check-circle fa-3x mb-3"></i>
+                                    <h5>Excellent !</h5>
+                                    <p class="mb-0">Tous les adhérents de la saison <strong>{{ saison_code }}</strong> sont affectés à un groupe.</p>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>{{ adherents_non_affectes|length }}</strong> adhérent(s) de la saison 
+                                    <strong>{{ saison_code }}</strong> n'ont pas encore de groupe assigné.
+                                </div>
+                                
+                                <!-- Barre de recherche -->
+                                <div class="mb-3">
+                                    <input type="text" id="searchNonAffectes" class="form-control" 
+                                           placeholder="🔍 Rechercher par nom, prénom ou matricule...">
+                                </div>
+                                
+                                <!-- Tableau -->
+                                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                                    <table class="table table-hover table-striped" id="tableNonAffectes">
+                                        <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+                                            <tr>
+                                                <th>Matricule</th>
+                                                <th>Nom</th>
+                                                <th>Prénom</th>
+                                                <th>Type d'Abonnement</th>
+                                                <th>Date de Naissance</th>
+                                                <th>Date d'Inscription</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for adherent in adherents_non_affectes %}
+                                            <tr data-matricule="{{ adherent.matricule }}" 
+                                                data-nom="{{ adherent.nom|lower }}" 
+                                                data-prenom="{{ adherent.prenom|lower }}">
+                                                <td><strong>{{ adherent.matricule }}</strong></td>
+                                                <td>{{ adherent.nom }}</td>
+                                                <td>{{ adherent.prenom }}</td>
+                                                <td>
+                                                    <span class="badge bg-info">{{ adherent.type_abonnement }}</span>
+                                                </td>
+                                                <td>{{ adherent.date_naissance }}</td>
+                                                <td>{{ adherent.date_inscription }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" onclick="closeNonAffectesModal()">
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="nonAffectesBackdrop" class="modal-backdrop" style="display:none;" onclick="closeNonAffectesModal()"></div>
+
+            <!-- Formulaire d'ajout de groupe avec nom libre -->
+            <div id="groupForm" class="mt-2 p-3 border rounded bg-white" style="display:none;">
+                <h5 class="mb-3">Créer un nouveau groupe</h5>
+                
+                <!-- Catégorie -->
+                <div class="mb-3">
+                    <label for="groupCategory" class="form-label">Catégorie *</label>
+                    <select id="groupCategory" class="form-control" required>
+                        <option value="">Sélectionner une catégorie</option>
+                        <option value="Lutin">Lutin</option>
+                        <option value="Poussin">Poussin</option>
+                        <option value="Benjamin">Benjamin</option>
+                        <option value="Minime">Minime</option>
+                        <option value="KD">KD</option>
+                        <option value="Ecole">École</option>
+                        <option value="Loisir">Loisir</option>
+                        <option value="Adulte">Adulte</option>
+                        <option value="Ecole_ete">Ecole d'été</option>
+                    </select>
+                </div>
+                
+                <!-- Nom personnalisé du groupe -->
+                <div class="mb-3">
+                    <label for="groupName" class="form-label">Nom du groupe *</label>
+                    <input type="text" 
+                           id="groupName" 
+                           class="form-control" 
+                           placeholder="Ex: Lions, Tigers, 1-A, etc." 
+                           maxlength="50"
+                           required>
+                    <small class="form-text text-muted">
+                        Le nom final sera : Catégorie-NomDuGroupe
+                    </small>
+                </div>
+                
+                <!-- Aperçu du nom complet -->
+                <div class="mb-3 p-2 bg-light border rounded" id="groupNamePreview" style="display:none;">
+                    <strong>Aperçu du nom final :</strong> <span id="previewText" class="text-primary fw-bold"></span>
+                </div>
+                
+                <!-- Entraîneur -->
+                <div class="mb-3">
+                    <label for="groupEntraineur" class="form-label">Entraîneur *</label>
+                    <select id="groupEntraineur" class="form-control" required>
+                        <option value="">Sélectionner un entraîneur</option>
+                        {% for entraineur in entraineurs %}
+                        <option value="{{ entraineur.id_entraineur }}">{{ entraineur.nom }} {{ entraineur.prenom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Préparateur Physique -->
+                <div class="mb-3">
+                    <label for="groupPrepPhysique" class="form-label">Préparateur Physique (optionnel)</label>
+                    <select id="groupPrepPhysique" class="form-control">
+                        <option value="">Aucun</option>
+                        {% for prep_physique in prep_physiques %}
+                        <option value="{{ prep_physique.id_entraineur }}">{{ prep_physique.nom }} {{ prep_physique.prenom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Cotisation -->
+                <div class="mb-3">
+                    <label for="groupCotisation" class="form-label">Cotisation (TND) - optionnel</label>
+                    <input type="number" 
+                           step="0.01" 
+                           id="groupCotisation" 
+                           class="form-control" 
+                           placeholder="Ex: 500.00">
+                </div>
+                
+                <!-- Boutons -->
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success" onclick="confirmGroupAdd()">
+                        <i class="fas fa-check me-2"></i>Confirmer
+                    </button>
+                    <button class="btn btn-secondary" onclick="cancelGroupForm()">
+                        <i class="fas fa-times me-2"></i>Annuler
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tableau des Groupes -->
+            <div class="table-responsive mt-4">
+                <h5 class="text-start mb-4">Les Groupes</h5>
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nom du Groupe</th>
+                            <th>Entraîneur</th>
+                            <th>Préparateur Physique</th>
+                            <th>Adhérents</th>
+                            <th>Ajouter Séance</th>
+                            <th>Ajouter Adhérent</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for groupe in groupes %}
+                        <tr>
+                            <td>{{ groupe.nom_groupe }}</td>
+                            <td>
+                                <select class="form-select entraineur-select" data-groupe-id="{{ groupe.id_groupe }}">
+                                    {% for entraineur in entraineurs %}
+                                    <option value="{{ entraineur.id_entraineur }}" 
+                                        {% if entraineur.nom + ' ' + entraineur.prenom == groupe.entraineur_nom %}selected{% endif %}>
+                                        {{ entraineur.nom }} {{ entraineur.prenom }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <select class="form-select prep-physique-select" data-groupe-id="{{ groupe.id_groupe }}">
+                                    <option value="">Aucun</option>
+                                    {% for prep_physique in prep_physiques %}
+                                    <option value="{{ prep_physique.id_entraineur }}" 
+                                        {% if prep_physique.nom + ' ' + prep_physique.prenom == groupe.preparateur_physique %}selected{% endif %}>
+                                        {{ prep_physique.nom }} {{ prep_physique.prenom }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-info"
+                                    data-groupe-nom="{{ groupe.nom_groupe }}"
+                                    onclick="openAdherentsListModal('{{ groupe.nom_groupe }}')">
+                                    <i class="fas fa-users"></i> Voir
+                                </button>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="openSessionModal({{ groupe.id_groupe }}, 'entrainement')">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="btn btn-sm btn-warning" onclick="openPrepPhysiqueModal({{ groupe.id_groupe }}, 'prep_physique')">
+                                    <i class="fas fa-dumbbell"></i>
+                                </button>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="openAddAdherentModal({{ groupe.id_groupe }})">
+                                    <i class="fas fa-user-plus"></i> Gestion des adhérents
+                                </button>
+                            </td>
+                            <td>
+                                
+                                <button class="btn btn-sm btn-danger" onclick="deleteGroup({{ groupe.id_groupe }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Modal Voir Adhérents -->
+            <div id="adherentsListModal" class="modal" style="display:none;">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-info text-white">
+                            <h5 class="modal-title"><i class="fas fa-users"></i> Liste des adhérents du groupe</h5>
+                            <button type="button" class="btn-close" onclick="closeAdherentsListModal()"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="adherentsListContainer">
+                                <!-- Liste sera chargée ici via fetch -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Ajout Multiple d'Adhérents -->
+            <div id="addAdherentModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 700px;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">Gestion des adhérents</h4>
+                    <button type="button" class="btn-close" aria-label="Close" onclick="closeAddAdherentModal()"></button>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 pe-3 border-end">
+                        <h6>Membres actuels :</h6>
+                        <div id="currentMembers" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Matricule</th>
+                                        <th>Nom</th>
+                                        <th>Prénom</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 ps-3">
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <input type="text" id="adherentSearchInput" class="form-control" placeholder="Rechercher par Nom ou Prénom...">
+                                <button class="btn btn-outline-primary" type="button" id="searchButton">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            <div id="adherentSearchResults" class="mt-2" style="max-height: 150px; overflow-y: auto;"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6>Nouveaux sélectionnés :</h6>
+                            <div id="selectedAdherents" style="max-height: 120px; overflow-y: auto;"></div>
+                            <button class="btn btn-primary" onclick="confirmAddAdherents()">Confirmer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Ajout Séance -->
+            <div id="sessionModal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 400px;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">Ajouter une séance</h4>
+                    <button type="button" class="btn-close" aria-label="Close" onclick="closeSessionModal()"></button>
+                </div>
+
+                <div class="mb-3">
+                    <label for="sessionGroupeNom" class="form-label">Groupe :</label>
+                    <input type="text" id="sessionGroupeNom" class="form-control" readonly 
+                           style="background-color: #f8f9fa; border: 1px solid #dee2e6; color: #495057; font-weight: 500; cursor: not-allowed;">
+                    <input type="hidden" id="sessionGroupe">
+                </div>
+
+                <div class="mb-3">
+                    <label for="sessionType" class="form-label">Type de séance :</label>
+                    <select id="sessionType" class="form-select" required>
+                        <option value="entrainement">Entraînement</option>
+                        <option value="prep_physique">Préparation physique</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="sessionDate" class="form-label">Date :</label>
+                    <input type="text" id="sessionDate" class="form-control" placeholder="JJ/MM/AAAA" required>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label for="sessionHeureDebut" class="form-label">Heure début :</label>
+                        <input type="time" id="sessionHeureDebut" class="form-control" required>
+                    </div>
+                    <div class="col-6">
+                        <label for="sessionHeureFin" class="form-label">Heure fin :</label>
+                        <input type="time" id="sessionHeureFin" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="sessionTerrain" class="form-label">Terrain :</label>
+                    <select id="sessionTerrain" class="form-select" required>
+                        <option value="">Sélectionner un terrain</option>
+                        {% for terrain in terrains %}
+                        <option value="{{ terrain }}">Terrain {{ terrain }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="repeatWeekly">
+                    <label class="form-check-label" for="repeatWeekly">
+                        Répéter chaque semaine jusqu'à la fin de la saison (01/10 → 31/08)
+                    </label>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end">
+                    <button class="btn btn-secondary" onclick="closeSessionModal()">Annuler</button>
+                    <button class="btn btn-primary" onclick="addSession()">Confirmer</button>
+                </div>
+            </div>
+
+            <!-- Modal Éditer Groupe -->
+            <div id="editGroupModal" class="modal" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 700px; max-height: 90vh; overflow-y: auto;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit text-primary me-2"></i>
+                        Éditer le Groupe
+                    </h4>
+                    <button type="button" class="btn-close" onclick="closeEditGroupModal()"></button>
+                </div>
+                
+                <form id="editGroupForm">
+                    <input type="hidden" id="edit_groupe_id">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Cotisation (TND)</label>
+                        <input type="number" step="0.01" id="edit_cotisation" class="form-control" placeholder="Ex: 500.00" readonly>
+                        <small class="text-muted">Cette cotisation sera appliquée aux adhérents ajoutés à ce groupe</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-users me-2"></i>
+                            Adhérents actuels
+                        </label>
+                        <div id="edit_adherents_list" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2 justify-content-end mt-3">
+                        <button type="button" class="btn btn-secondary" onclick="closeEditGroupModal()">
+                            Annuler
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="saveGroupEdit()">
+                            <i class="fas fa-save me-2"></i>
+                            Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="editGroupBackdrop" class="modal-backdrop" style="display:none;" onclick="closeEditGroupModal()"></div>
+
+            <style>
+            .modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 1050;
+                overflow: auto;
+            }
+
+            .modal-xl {
+                max-width: 1200px;
+                margin: 30px auto;
+            }
+
+            .modal-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 1040;
+            }
+
+            #tableNonAffectes tbody tr:hover {
+                background-color: #fff3cd !important;
+                cursor: pointer;
+            }
+
+            .time-slot {
+                min-width: 150px;
+                height: 100px;
+                position: relative;
+                vertical-align: top;
+            }
+            
+            .session-card {
+                background: #e3f2fd;
+                border: 1px solid #90caf9;
+                border-radius: 5px;
+                padding: 5px;
+                margin: 2px;
+                font-size: 0.9em;
+            }
+            
+            .session-header {
+                font-weight: bold;
+                border-bottom: 1px solid #90caf9;
+                margin-bottom: 3px;
+            }
+            
+            .entraineur-select {
+                max-width: 200px;
+            }
+
+            #currentMembers table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            #currentMembers th,
+            #currentMembers td {
+                padding: 8px;
+                border: 1px solid #dee2e6;
+                font-size: 0.9em;
+            }
+
+            #currentMembers th {
+                background-color: #f8f9fa;
+                position: sticky;
+                top: 0;
+                z-index: 1;
+            }
+
+            .remove-member-btn {
+                padding: 2px 6px;
+                font-size: 0.8em;
+            }
+
+            #editGroupModal {
+                z-index: 1000 !important;
+            }
+
+            .flatpickr-monthDropdown-months {
+                font-size: 14px;
+            }
+            .flatpickr-weekday {
+                color: #666;
+            }
+            .flatpickr-day {
+                border-radius: 3px;
+            }
+            </style>
+
+            <!-- Back to Top -->
+            <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+        </div>
+    </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/gestion_groupes.js') }}"></script>
+
+    <script>
+    // ========== SCRIPTS POUR LE FORMULAIRE DE GROUPE ==========
+    
+    // Fonction pour afficher l'aperçu du nom du groupe
+    function updateGroupNamePreview() {
+        const category = document.getElementById('groupCategory').value;
+        const name = document.getElementById('groupName').value.trim();
+        const previewDiv = document.getElementById('groupNamePreview');
+        const previewText = document.getElementById('previewText');
+        
+        if (category && name) {
+            previewText.textContent = `${category}-${name}`;
+            previewDiv.style.display = 'block';
+        } else {
+            previewDiv.style.display = 'none';
+        }
+    }
+
+    // Fonction pour afficher le formulaire
+    function showGroupForm() {
+        document.getElementById('groupForm').style.display = 'block';
+    }
+
+    // Fonction pour annuler et masquer le formulaire
+    function cancelGroupForm() {
+        document.getElementById('groupForm').style.display = 'none';
+        document.getElementById('groupCategory').value = '';
+        document.getElementById('groupName').value = '';
+        document.getElementById('groupEntraineur').value = '';
+        document.getElementById('groupPrepPhysique').value = '';
+        document.getElementById('groupCotisation').value = '';
+        document.getElementById('groupNamePreview').style.display = 'none';
+    }
+
+    // Fonction de confirmation
+    function confirmGroupAdd() {
+        const category = document.getElementById('groupCategory').value;
+        const name = document.getElementById('groupName').value.trim();
+        const entraineur = document.getElementById('groupEntraineur').value;
+        const prepPhysique = document.getElementById('groupPrepPhysique').value;
+        const cotisation = document.getElementById('groupCotisation').value;
+        
+        // Validation
+        if (!category) {
+            alert('Veuillez sélectionner une catégorie');
+            return;
+        }
+        
+        if (!name) {
+            alert('Veuillez entrer un nom pour le groupe');
+            return;
+        }
+        
+        if (!entraineur) {
+            alert('Veuillez sélectionner un entraîneur');
+            return;
+        }
+        
+        // Construction du nom complet
+        const fullGroupName = `${category}-${name}`;
+        
+        // Envoi au backend
+        fetch('/add_groupe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                nom_groupe: fullGroupName,
+                entraineur_id: entraineur,
+                prep_physique_id: prepPhysique || null,
+                cotisation: cotisation || null
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Groupe créé avec succès : ' + fullGroupName);
+                location.reload();
+            } else {
+                alert('Erreur : ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Une erreur est survenue lors de la création du groupe');
+        });
+    }
+
+    // ========== SCRIPTS POUR MODAL NON AFFECTÉS ==========
+    
+    function openNonAffectesModal() {
+        document.getElementById('nonAffectesModal').style.display = 'block';
+        document.getElementById('nonAffectesBackdrop').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeNonAffectesModal() {
+        document.getElementById('nonAffectesModal').style.display = 'none';
+        document.getElementById('nonAffectesBackdrop').style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    function affecterAdherentRapide(matricule) {
+        closeNonAffectesModal();
+        alert(`Fonctionnalité à implémenter : Affecter l'adhérent ${matricule} à un groupe`);
+    }
+
+    // ========== SCRIPTS POUR MODAL VOIR ADHÉRENTS ==========
+    
+    let currentViewGroupId = null;
+
+    function openAdherentsListModal(nomGroupe) {
+        document.getElementById('adherentsListContainer').innerHTML = "<p class='text-muted'>Chargement...</p>";
+        document.getElementById('adherentsListModal').style.display = 'block';
+
+        fetch(`/api/get_adherents_groupe/${encodeURIComponent(nomGroupe)}`)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('adherentsListContainer');
+                if (!data.adherents || data.adherents.length === 0) {
+                    container.innerHTML = '<div class="text-muted">Aucun adhérent dans ce groupe</div>';
+                    return;
+                }
+                let table = `<table class="table table-striped"><thead><tr>
+                             <th>Matricule</th><th>Nom</th><th>Prénom</th></tr></thead><tbody>`;
+                data.adherents.forEach(a => {
+                    table += `<tr><td>${a.matricule}</td><td>${a.nom}</td><td>${a.prenom}</td></tr>`;
+                });
+                table += '</tbody></table>';
+                container.innerHTML = table;
+            });
+    }
+
+    function closeAdherentsListModal() {
+        document.getElementById('adherentsListModal').style.display = 'none';
+    }
+
+    // ========== INITIALISATION AU CHARGEMENT ==========
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Écouter les changements pour l'aperçu du nom de groupe
+        const categorySelect = document.getElementById('groupCategory');
+        const nameInput = document.getElementById('groupName');
+        
+        if (categorySelect) {
+            categorySelect.addEventListener('change', updateGroupNamePreview);
+        }
+        
+        if (nameInput) {
+            nameInput.addEventListener('input', updateGroupNamePreview);
+        }
+
+        // Fonction de recherche dans le tableau des non affectés
+        const searchInput = document.getElementById('searchNonAffectes');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const filter = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#tableNonAffectes tbody tr');
+                
+                rows.forEach(row => {
+                    const matricule = row.dataset.matricule;
+                    const nom = row.dataset.nom;
+                    const prenom = row.dataset.prenom;
+                    
+                    if (matricule.includes(filter) || 
+                        nom.includes(filter) || 
+                        prenom.includes(filter)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Fermer les modals avec la touche Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeNonAffectesModal();
+                closeAdherentsListModal();
+            }
+        });
+    });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCHS - Plateforme de Gestion Intelligente pour Club de Tennis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #c5e1a5; /* Vert tennis léger */
+            --clay: #e67e22;   /* Couleur terre battue */
+            --white: #ffffff;
+            --bg: #f4f7f6;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e9ecef;
+            --dark-gray: #6c757d;
+            --text: #2c3e50;
+            --text-light: #6c757d;
+            --success: #28a745;
+            --info: #17a2b8;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* Navigation moderne */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: var(--white);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            display: flex;
+            justify-content: center;
+            border-bottom: 3px solid var(--accent);
+        }
+
+        .nav-container {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        nav a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        nav a:hover {
+            color: var(--clay);
+            background: rgba(230, 126, 34, 0.1);
+            transform: translateY(-2px);
+        }
+
+        nav a.active {
+            color: var(--clay);
+            background: rgba(230, 126, 34, 0.1);
+        }
+
+        nav a.active::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 5px;
+            height: 5px;
+            background: var(--clay);
+            border-radius: 50%;
+        }
+
+        /* Sections avec effet de diapositive */
+        section {
+            min-height: 100vh;
+            padding: 120px 2rem 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        section.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.05;
+        }
+
+        .content-wrapper {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Titres de sections */
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+            position: relative;
+        }
+
+        .section-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--clay) 0%, var(--accent) 100%);
+            color: var(--white);
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .section-title {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--clay) 0%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Section d'introduction héroïque */
+        #hero {
+            background: linear-gradient(135deg, var(--white) 0%, var(--bg) 100%);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(197, 225, 165, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(230, 126, 34, 0.1) 0%, transparent 50%);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-logo {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            background: linear-gradient(135deg, var(--clay) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-title {
+            font-size: 4.5rem;
+            margin-bottom: 1rem;
+            line-height: 1.1;
+            color: var(--primary);
+        }
+
+        .hero-highlight {
+            color: var(--clay);
+        }
+
+        .hero-tagline {
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            color: var(--primary);
+        }
+
+        .hero-description {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            max-width: 700px;
+            margin: 0 auto 3rem;
+            line-height: 1.8;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 1.2rem 2.5rem;
+            background: linear-gradient(135deg, var(--clay) 0%, var(--accent) 100%);
+            color: var(--white);
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(230, 126, 34, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(230, 126, 34, 0.4);
+        }
+
+        /* Statistiques */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid var(--medium-gray);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--clay);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--clay) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Cards modernes */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            border: 1px solid var(--medium-gray);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--clay) 0%, var(--accent) 100%);
+        }
+
+        .card:hover {
+            transform: translateY(-15px);
+            border-color: var(--clay);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--clay) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .card-content {
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        .card-list {
+            list-style: none;
+            margin-top: 1.5rem;
+        }
+
+        .card-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.8rem;
+            position: relative;
+            color: var(--text);
+        }
+
+        .card-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        /* Section avantages */
+        .benefits-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+            padding: 2rem;
+            background: var(--white);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            border: 1px solid var(--medium-gray);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .benefit-item:hover {
+            background: var(--light-gray);
+            transform: translateX(10px);
+            border-color: var(--clay);
+        }
+
+        .benefit-icon {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--clay) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            flex-shrink: 0;
+        }
+
+        .benefit-content h4 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .benefit-content p {
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        /* Section témoignage/CTA */
+        .testimonial {
+            background: linear-gradient(135deg, var(--white) 0%, var(--light-gray) 100%);
+            border-radius: 24px;
+            padding: 4rem;
+            text-align: center;
+            margin-top: 4rem;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--medium-gray);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        .testimonial::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--clay), var(--accent), var(--success), var(--info));
+        }
+
+        .testimonial-text {
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            color: var(--primary);
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--primary);
+            padding: 4rem 2rem 2rem;
+            margin-top: 4rem;
+            color: var(--white);
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+        }
+
+        .footer-section h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: var(--white);
+        }
+
+        .footer-section p {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent);
+        }
+
+        .copyright {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        /* Navigation par flèches */
+        .slide-nav {
+            position: fixed;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .slide-nav button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--white);
+            border: 1px solid var(--medium-gray);
+            color: var(--primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .slide-nav button:hover {
+            background: var(--clay);
+            color: var(--white);
+            transform: scale(1.1);
+        }
+
+        /* Indicateur de progression */
+        .progress-container {
+            position: fixed;
+            left: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+        }
+
+        .progress-bar {
+            height: 300px;
+            width: 4px;
+            background: var(--medium-gray);
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .progress-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: linear-gradient(to bottom, var(--clay), var(--accent));
+            border-radius: 2px;
+            transition: height 0.3s ease;
+        }
+
+        /* Animation d'entrée */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .section-title {
+                font-size: 2.8rem;
+            }
+            
+            .hero-title {
+                font-size: 3.5rem;
+            }
+            
+            .cards-grid {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            }
+            
+            .slide-nav, .progress-container {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                padding: 1rem;
+            }
+            
+            .nav-container {
+                gap: 0.5rem;
+            }
+            
+            nav a {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85rem;
+            }
+            
+            section {
+                padding: 100px 1rem 60px;
+            }
+            
+            .section-title {
+                font-size: 2.2rem;
+            }
+            
+            .hero-title {
+                font-size: 2.8rem;
+            }
+            
+            .hero-tagline {
+                font-size: 1.4rem;
+            }
+            
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .testimonial {
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="#hero" class="active"><i class="fas fa-home"></i> Accueil</a>
+            <a href="#vision"><i class="fas fa-eye"></i> Vision</a>
+            <a href="#features"><i class="fas fa-star"></i> Fonctionnalités</a>
+            <a href="#modules"><i class="fas fa-cubes"></i> Modules</a>
+            <a href="#benefits"><i class="fas fa-chart-line"></i> Avantages</a>
+            <a href="#technology"><i class="fas fa-code"></i> Technologie</a>
+            <a href="#conclusion"><i class="fas fa-flag-checkered"></i> Conclusion</a>
+        </div>
+    </nav>
+
+    <!-- Navigation par flèches -->
+    <div class="slide-nav">
+        <button id="prevSlide"><i class="fas fa-chevron-up"></i></button>
+        <button id="nextSlide"><i class="fas fa-chevron-down"></i></button>
+    </div>
+
+    <!-- Indicateur de progression -->
+    <div class="progress-container">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+    </div>
+
+    <!-- Section 1: Hero -->
+<!-- Section 1: Hero -->
+<section id="hero" class="active">
+    <div class="hero-bg"></div>
+    <div class="content-wrapper">
+        <div class="hero-content">
+            <div class="hero-logo floating">
+                <i class="fas fa-tennis-ball"></i>
+            </div>
+            <h1 class="hero-title">TCHS <span class="hero-highlight">PRO</span></h1>
+            <p class="hero-tagline">Plateforme de gestion intelligente pour club de tennis</p>
+            <p class="hero-description">
+                Dans les prochaines minutes, nous allons vous présenter une solution complète qui transforme la gestion des clubs de tennis. Nous vous montrerons comment notre plateforme résout efficacement les problèmes de gestion des adhérents, des paiements, du planning et des présences.
+            </p>
+            <a href="#features" class="cta-button">
+                <i class="fas fa-rocket"></i> Découvrir la plateforme
+            </a>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-number">12+</div>
+                    <div class="stat-label">Modules intégrés</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Web </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">Accessibilité</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">70%</div>
+                    <div class="stat-label">Gain de temps</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+    <!-- Section 2: Vision -->
+    <section id="vision">
+        <div class="content-wrapper">
+            <div class="section-header">
+                <span class="section-badge">Notre Vision</span>
+                <h2 class="section-title">Réinventer la gestion sportive</h2>
+                <p class="section-subtitle">
+                    Une approche moderne qui place la technologie au service de l'expérience sportive
+                </p>
+            </div>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3 class="card-title">Automatisation intelligente</h3>
+                    <p class="card-content">
+                        Libérez votre équipe des tâches répétitives grâce à l'automatisation complète des processus administratifs.
+                    </p>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-network"></i>
+                    </div>
+                    <h3 class="card-title">Centralisation des données</h3>
+                    <p class="card-content">
+                        Toutes les informations de votre club accessibles en un seul endroit, sécurisées et organisées.
+                    </p>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="card-title">Expérience utilisateur optimale</h3>
+                    <p class="card-content">
+                        Interfaces intuitives conçues pour chaque rôle : administrateur, entraîneur, adhérent.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: Fonctionnalités principales -->
+    <section id="features">
+        <div class="content-wrapper">
+            <div class="section-header">
+                <span class="section-badge">Fonctionnalités</span>
+                <h2 class="section-title">Une solution complète</h2>
+                <p class="section-subtitle">
+                    Tous les outils nécessaires pour une gestion optimale de votre club
+                </p>
+            </div>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <h3 class="card-title">Gestion des membres</h3>
+                    <ul class="card-list">
+                        <li>Inscription numérique simplifiée</li>
+                        <li>Profils complets avec historique</li>
+                        <li>Gestion multi-saisons</li>
+                        <li>Statuts et certifications</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <h3 class="card-title">Planning intelligent</h3>
+                    <ul class="card-list">
+                        <li>Calendrier interactif</li>
+                        <li>Gestion de 9 terrains</li>
+                        <li>Réservations en ligne</li>
+                        <li>Éviction des conflits automatique</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-cash-register"></i>
+                    </div>
+                    <h3 class="card-title">Finances automatisées</h3>
+                    <ul class="card-list">
+                        <li>Suivi des paiements en temps réel</li>
+                        <li>Génération automatique de reçus</li>
+                        <li>Gestion des cotisations</li>
+                        <li>Rapports financiers détaillés</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <h3 class="card-title">Espace entraîneur</h3>
+                    <ul class="card-list">
+                        <li>Planning personnel</li>
+                        <li>Suivi des présences</li>
+                        <li>Gestion des groupes</li>
+                        <li>Communication intégrée</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3 class="card-title">Analytics & Reporting</h3>
+                    <ul class="card-list">
+                        <li>Tableaux de bord personnalisés</li>
+                        <li>Statistiques en temps réel</li>
+                        <li>Export Excel/PDF automatique</li>
+                        <li>Indicateurs de performance</li>
+                    </ul>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3 class="card-title">Communication unifiée</h3>
+                    <ul class="card-list">
+                        <li>Messagerie interne</li>
+                        <li>Notifications automatiques</li>
+                        <li>Annonces et actualités</li>
+                        <li>Rappels par email/SMS</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: Modules -->
+    <section id="modules">
+        <div class="content-wrapper">
+            <div class="section-header">
+                <span class="section-badge">Architecture modulaire</span>
+                <h2 class="section-title">Des modules spécialisés</h2>
+                <p class="section-subtitle">
+                    Une architecture flexible qui s'adapte à tous les besoins
+                </p>
+            </div>
+            
+            <div class="benefits-container">
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div class="benefit-content">
+                        <h4>Administration complète</h4>
+                        <p>Contrôle total avec gestion des utilisateurs, permissions et paramètres système.</p>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div class="benefit-content">
+                        <h4>Direction technique</h4>
+                        <p>Organisation sportive, gestion des groupes, planning et compétitions.</p>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <i class="fas fa-dumbbell"></i>
+                    </div>
+                    <div class="benefit-content">
+                        <h4>Préparation physique</h4>
+                        <p>Planning dédié, suivi des performances et programmes d'entraînement.</p>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="benefit-content">
+                        <h4>Gestion des adhérents</h4>
+                        <p>Suivi complet des membres, inscriptions, groupes et historique.</p>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div class="benefit-content">
+                        <h4>Gestion des entraîneurs</h4>
+                        <p>Planning, paie, présences et performance des entraîneurs.</p>
+                    </div>
+                </div>
+                
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <div class="benefit-content">
+                        <h4>Module de paiement</h4>
+                        <p>Gestion des cotisations, encaissements, reçus et suivi financier.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <div class="benefit-content">
+                        <h4>Module de présence</h4>
+                        <p>Suivi des présences, pointage numérique et statistiques d'assiduité.</p>
+                    </div>
+                </div>
+
+                <div class="benefit-item">
+                    <div class="benefit-icon">
+                        <i class="fas fa-tennis-ball"></i>
+                    </div>
+                    <div class="benefit-content">
+                        <h4>Gestion des terrains</h4>
+                        <p>Optimisation de l'utilisation, locations et maintenance.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 5: Avantages -->
+    <section id="benefits">
+        <div class="content-wrapper">
+            <div class="section-header">
+                <span class="section-badge">Valeur ajoutée</span>
+                <h2 class="section-title">Les avantages TCHS</h2>
+                <p class="section-subtitle">
+                    Pourquoi les clubs modernes choisissent notre plateforme
+                </p>
+            </div>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-number"><i class="fas fa-clock"></i></div>
+                    <div class="stat-label">Gain de temps significatif</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><i class="fas fa-shield-alt"></i></div>
+                    <div class="stat-label">Données sécurisées</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><i class="fas fa-mobile-alt"></i></div>
+                    <div class="stat-label">Accessible partout</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><i class="fas fa-chart-pie"></i></div>
+                    <div class="stat-label">Décisions éclairées</div>
+                </div>
+            </div>
+            
+            <div class="testimonial">
+                <p class="testimonial-text">
+                    Avec TCHS, transformez la gestion de votre club en un processus simple, efficace et moderne. 
+                    Libérez votre équipe pour se concentrer sur l'essentiel : le sport et vos adhérents.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 6: Technologie -->
+    <section id="technology">
+        <div class="content-wrapper">
+            <div class="section-header">
+                <span class="section-badge">Technologie</span>
+                <h2 class="section-title">Une plateforme moderne</h2>
+                <p class="section-subtitle">
+                    Construite avec les dernières technologies pour performance et fiabilité
+                </p>
+            </div>
+            
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fab fa-python"></i>
+                    </div>
+                    <h3 class="card-title">Backend robuste</h3>
+                    <p class="card-content">
+                        Flask (Python) pour un backend performant, sécurisé et scalable.
+                    </p>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <h3 class="card-title">Base de données</h3>
+                    <p class="card-content">
+                        MySQL pour le stockage sécurisé et structuré de toutes les données.
+                    </p>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fab fa-js"></i>
+                    </div>
+                    <h3 class="card-title">Frontend dynamique</h3>
+                    <p class="card-content">
+                        JavaScript moderne avec interfaces réactives et expérience utilisateur fluide.
+                    </p>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <h3 class="card-title">Synchronisation temps réel</h3>
+                    <p class="card-content">
+                        Mises à jour instantanées et sauvegardes automatiques des données.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 7: Conclusion -->
+    <section id="conclusion">
+        <div class="content-wrapper">
+            <div class="section-header">
+                <span class="section-badge">L'avenir de la gestion sportive</span>
+                <h2 class="section-title">Prêt pour la transformation numérique ?</h2>
+                <p class="section-subtitle">
+                    Rejoignez les clubs avant-gardistes qui ont déjà adopté TCHS
+                </p>
+            </div>
+            
+            <div class="testimonial">
+                <p class="testimonial-text">
+                    Adoptez une solution complète qui couvre tous les aspects de la gestion d'un club de tennis, 
+                    de l'inscription des adhérents au suivi financier, en passant par la planification des terrains.
+                </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 4rem;">
+                <a href="http://127.0.0.1:5001" class="cta-button" style="margin-right: 1rem;">
+                    <i class="fas fa-play-circle"></i> Démo interactive
+                </a>
+                <a href="#contact" class="cta-button" style="background: transparent; border: 2px solid var(--clay); color: var(--clay);">
+                    <i class="fas fa-envelope"></i> Contactez-nous
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>TCHS PRO</h3>
+                <p>Plateforme de gestion intelligente pour clubs de tennis et sports raquettes.</p>
+                <p>Transformez la gestion de votre club avec notre solution complète et moderne.</p>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Fonctionnalités</h3>
+                <ul class="footer-links">
+                    <li><a href="#features"><i class="fas fa-check-circle"></i> Gestion des membres</a></li>
+                    <li><a href="#features"><i class="fas fa-check-circle"></i> Planning intelligent</a></li>
+                    <li><a href="#features"><i class="fas fa-check-circle"></i> Finances automatisées</a></li>
+                    <li><a href="#features"><i class="fas fa-check-circle"></i> Analytics & reporting</a></li>
+                </ul>
+            </div>
+            
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <ul class="footer-links">
+                    <li><a href="mailto:contact@tchs.com"><i class="fas fa-envelope"></i> contact@tchs.com</a></li>
+                    <li><a href="tel:+21612345678"><i class="fas fa-phone"></i> +216 12 345 678</a></li>
+                    <li><a href="#"><i class="fas fa-map-marker-alt"></i> Hammam Sousse, Tunisie</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="copyright">
+            <p>&copy; 2024 TCHS PRO - Tennis Club Hammam Sousse. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Gestion de la navigation par sections
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('nav a');
+        const progressFill = document.getElementById('progressFill');
+        const prevBtn = document.getElementById('prevSlide');
+        const nextBtn = document.getElementById('nextSlide');
+        
+        let currentSectionIndex = 0;
+        
+        // Fonction pour mettre à jour la section active
+        function updateActiveSection(index) {
+            // Retirer la classe active de toutes les sections et liens
+            sections.forEach(section => section.classList.remove('active'));
+            navLinks.forEach(link => link.classList.remove('active'));
+            
+            // Ajouter la classe active à la section et au lien correspondants
+            sections[index].classList.add('active');
+            navLinks[index].classList.add('active');
+            
+            // Mettre à jour l'indicateur de progression
+            const progress = (index / (sections.length - 1)) * 100;
+            progressFill.style.height = `${progress}%`;
+            
+            // Mettre à jour l'index courant
+            currentSectionIndex = index;
+            
+            // Scroll vers la section
+            sections[index].scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Navigation par clic sur les liens
+        navLinks.forEach((link, index) => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                updateActiveSection(index);
+            });
+        });
+        
+        // Navigation par flèches
+        prevBtn.addEventListener('click', () => {
+            if (currentSectionIndex > 0) {
+                updateActiveSection(currentSectionIndex - 1);
+            }
+        });
+        
+        nextBtn.addEventListener('click', () => {
+            if (currentSectionIndex < sections.length - 1) {
+                updateActiveSection(currentSectionIndex + 1);
+            }
+        });
+        
+        // Navigation par molette de souris
+        let isScrolling = false;
+        window.addEventListener('wheel', (e) => {
+            if (isScrolling) return;
+            
+            isScrolling = true;
+            
+            if (e.deltaY > 0 && currentSectionIndex < sections.length - 1) {
+                updateActiveSection(currentSectionIndex + 1);
+            } else if (e.deltaY < 0 && currentSectionIndex > 0) {
+                updateActiveSection(currentSectionIndex - 1);
+            }
+            
+            setTimeout(() => {
+                isScrolling = false;
+            }, 1000);
+        });
+        
+        // Navigation par touches du clavier
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' && currentSectionIndex < sections.length - 1) {
+                e.preventDefault();
+                updateActiveSection(currentSectionIndex + 1);
+            } else if (e.key === 'ArrowUp' && currentSectionIndex > 0) {
+                e.preventDefault();
+                updateActiveSection(currentSectionIndex - 1);
+            }
+        });
+        
+        // Initialisation
+        updateActiveSection(0);
+        
+        // Animation des éléments au défilement
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        // Observer les cartes et éléments
+        document.querySelectorAll('.card, .stat-card, .benefit-item').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>   
+ 

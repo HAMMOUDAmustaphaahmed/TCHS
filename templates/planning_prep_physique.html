@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS Dashboard</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+
+    <!-- Favicon -->
+    <!-- Favicon -->
+<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Libraries Stylesheet -->
+<link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+<!-- Customized Bootstrap Stylesheet -->
+<link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+<!-- Template Stylesheet -->
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+<!-- Ajouter dans le head -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/fr.js"></script>
+</head>
+
+<body>
+    {% if session.role == 'admin' %}
+    {% include 'sidebar.html' %}
+{% else %}
+    <div class="sidebar pe-4 pb-3">
+      <nav class="navbar bg-light navbar-light">
+        <a href="{{ url_for('entraineur') }}" class="navbar-brand mx-4 mb-3">
+          <h3 class="text-primary">TCHS</h3>
+        </a>
+        <div class="d-flex align-items-center ms-4 mb-4">
+          <div class="position-relative">
+            <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
+          </div>
+
+        </div>
+        <div class="navbar-nav w-100">
+          <a href="{{ url_for('entraineur') }}" class="nav-item nav-link active">
+            <i class="fa fa-tachometer-alt me-2"></i>Dashboard
+          </a>
+          <div class="nav-item">
+            <a href="javascript:void(0);" class="nav-link" id="changePasswordLink">
+              <i class="fa fa-key"></i> Mot de Passe
+            </a>
+          </div>
+          
+          <!-- Formulaire dans une fenêtre modale -->
+          <div id="modalChangerMotDePasse" style="display:none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000;">
+            <h4>Changer le mot de passe</h4>
+            <div>
+              <label for="nouveauMotDePasse">Nouveau mot de passe :</label>
+              <input type="password" id="nouveauMotDePasse" required><br>
+            </div>
+            <div>
+              <label for="confirmationMotDePasse">Confirmer le mot de passe :</label>
+              <input type="password" id="confirmationMotDePasse" required><br>
+            </div>
+            <button id="submitMotDePasse" style="margin-top: 10px;">Soumettre</button>
+            <button onclick="fermerModal()" style="margin-top: 10px;">Annuler</button>
+          </div>
+            <script>
+                // Fonction pour ouvrir la fenêtre modale
+            function ouvrirModal() {
+            document.getElementById('modalChangerMotDePasse').style.display = 'block';
+            }
+
+            // Fonction pour fermer la fenêtre modale
+            function fermerModal() {
+            document.getElementById('modalChangerMotDePasse').style.display = 'none';
+            }
+
+            // Attacher un événement au clic sur le lien "Mot de Passe"
+            document.getElementById('changePasswordLink').addEventListener('click', function() {
+            ouvrirModal(); // Ouvre la modale lorsque le lien est cliqué
+            });
+
+            // Soumettre le changement de mot de passe
+            document.getElementById('submitMotDePasse').addEventListener('click', function() {
+            const nouveauMotDePasse = document.getElementById('nouveauMotDePasse').value;
+            const confirmationMotDePasse = document.getElementById('confirmationMotDePasse').value;
+
+            // Vérification des mots de passe
+            if (nouveauMotDePasse !== confirmationMotDePasse) {
+                alert("Les mots de passe ne correspondent pas.");
+                return;
+            }
+
+            // Créer l'objet pour la requête
+            const data = {
+                nouveau_mot_de_passe: nouveauMotDePasse,
+                confirmation_mot_de_passe: confirmationMotDePasse
+            };
+
+            // Envoyer la requête POST pour changer le mot de passe
+            fetch('/changer_mot_de_passe', {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                alert(data.message);
+                } else {
+                alert(data.error);
+                }
+                fermerModal(); // Fermer la fenêtre modale après soumission
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Une erreur est survenue.');
+                fermerModal(); // Fermer la fenêtre modale en cas d'erreur
+            });
+            });
+
+            </script>          
+          <div class="nav-item">
+            <a href="{{ url_for('equipement') }}" class="nav-link">
+                <i class="fa fa-trophy me-2"></i>Tournois
+            </a>
+        </div>
+        <div class="nav-item">
+            <a href="{{ url_for('equipement') }}" class="nav-link">
+                <i class="fa fa-boxes me-2"></i>Équipement
+            </a>
+        </div>
+        <div class="nav-item">
+          <a href="{{ url_for('discussions') }}" class="nav-link">
+            <i class="fab fa-facebook-messenger"></i>Discussions
+          </a>
+      </div>
+
+        
+        <!-- Déconnexion -->
+        <div class="nav-item">
+            <a href="{{ url_for('logout') }}" class="nav-link">
+                <i class="fa fa-sign-out-alt me-2"></i>Déconnecter
+            </a>
+        </div>
+        </div>
+      </nav>
+    </div>
+    {% endif %}
+    <div class="content">
+      <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+        <a href="" class="navbar-brand d-flex d-lg-none me-4">
+          <h2 class="text-primary mb-0"></h2>
+        </a>
+        <a href="#" class="sidebar-toggler flex-shrink-0">
+          <i class="fa fa-bars"></i>
+        </a>
+        
+
+      </nav>
+
+      
+
+      <div class="container-fluid pt-4 px-4">
+        <div class="bg-light text-center rounded p-4">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <a href="{{ url_for('directeur_technique') }}" class="navbar-brand mx-4 mb-3">
+                    <h3 class="text-primary">TCHS</h3>
+                </a>
+                <h6>Bienvenue</h6>
+            </div>
+ <!-- Emploi du Temps Général -->
+<div class="mt-5">
+    <h4 class="text-start mb-4">Emploi du Temps Préparation Physique</h4>
+
+    <!-- Navigation semaine -->
+    <div class="mb-3 d-flex justify-content-between">
+        <div>
+            <a href="{{ url_for('planning_prep_physique', week_offset=week_offset-1) }}" class="btn btn-secondary">← Semaine précédente</a>
+            <a href="{{ url_for('planning_prep_physique', week_offset=week_offset+1) }}" class="btn btn-secondary">Semaine suivante →</a>
+        </div>
+    </div>
+
+    <!-- Export -->
+    <div class="mb-3 text-center">
+        <div class="btn-group">
+            <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fa fa-file-export"></i> Exporter
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="prepareExport('pdf')"><i class="fas fa-file-pdf mr-2"></i> PDF</a></li>
+                <li><a class="dropdown-item" href="#" onclick="prepareExport('excel')"><i class="fas fa-file-excel mr-2"></i> Excel</a></li>
+            </ul>
+        </div>
+        <div id="exportScope" style="display:none; margin-top:5px">
+            <div class="btn-group">
+                <button type="button" class="btn btn-secondary" onclick="triggerExport('day')">Jour actuel</button>
+                <button type="button" class="btn btn-secondary" onclick="triggerExport('week')">Semaine actuelle</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentExportType = null;
+        function prepareExport(type) {
+            currentExportType = type;
+            document.getElementById('exportScope').style.display = 'block';
+        }
+        function triggerExport(scope) {
+            const url = new URL(window.location.href);
+            const params = {
+                week_offset: {{ week_offset }},
+                day_offset: {{ day_offset }},
+                export_type: currentExportType,
+                scope: scope
+            };
+            window.location.href = `/export-schedule?${new URLSearchParams(params)}`;
+            document.getElementById('exportScope').style.display = 'none';
+        }
+    </script>
+
+    <!-- Tableau -->
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <colgroup>
+                <col style="width: 15%">
+                {% for _ in creneaux %}<col style="width: {{ 85 / creneaux|length }}%">{% endfor %}
+            </colgroup>
+            <thead class="table-dark text-center">
+                <tr>
+                    <th>Jour</th>
+                    {% for c in creneaux %}
+                        <th>{{ c.start.strftime('%H:%M') }} - {{ c.end.strftime('%H:%M') }}</th>
+                    {% endfor %}
+
+                </tr>
+            </thead>
+            <tbody>
+                {% set day_fr = {'Monday':'Lundi','Tuesday':'Mardi','Wednesday':'Mercredi',
+                                 'Thursday':'Jeudi','Friday':'Vendredi','Saturday':'Samedi','Sunday':'Dimanche'} %}
+                {% for day in days_of_week %}
+                    <tr>
+                        <td class="align-middle text-center bg-light">
+    {{ day_fr.get(day.strftime('%A'), day.strftime('%A')) }} {{ day.strftime('%d/%m/%Y') }}
+</td>
+
+                        {% for c in creneaux %}
+                            <td class="time-slot">
+                                {% for seance in seances_dict.get(day.date(), {}).get(c.start, []) %}
+                                    <div class="session-card">
+                                        <small>{{ seance.groupe }}</small>
+                                        <div class="text-muted" style="font-size:1em">{{ seance.entraineur }}</div>
+                                        <button class="btn btn-xs btn-danger float-middle" 
+                                                onclick="deleteSession({{ seance.seance_id }})">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                            <button class="btn btn-warning btn-sm"
+        onclick="openEditSessionModal(
+            {{ seance.seance_id }},
+            '{{ seance.date }}',
+            '{{ seance.heure_debut.strftime("%H:%M") }}',
+            '{{ seance.heure_fin.strftime("%H:%M") }}',
+            '{{ seance.terrain }}',
+            '{{ seance.entraineur.split(" ")[0] if seance.entraineur else "" }}'
+        )">
+    Éditer
+</button>
+
+
+
+                                    </div>
+                                {% endfor %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <style>
+        .time-slot {
+            height: 80px;
+            vertical-align: top;
+            position: relative;
+            padding: 3px;
+        }
+        .session-card {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 4px;
+            padding: 5px;
+            margin: 2px;
+            font-size: 0.85em;
+            min-height: 70px;
+        }
+        .session-card button {
+            padding: 0 3px;
+            line-height: 1;
+        }
+        td.align-middle {
+            min-width: 120px;
+        }
+        .table-dark th {
+            text-align: center;
+            vertical-align: middle;
+        }
+    </style>
+</div>
+
+
+
+<!-- Modal Éditer une Séance -->
+<div id="editSessionModal" style="display:none; position: fixed; top: 50%; left: 50%;
+transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px;
+box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); z-index: 1000; width: 350px;">
+    <h4 class="mb-3">Éditer la séance</h4>
+    <input type="hidden" id="editSessionId">
+
+    <!-- Date -->
+    <div class="mb-3">
+        <label for="editSessionDate" class="form-label">Date :</label>
+        <input type="text" id="editSessionDate" class="form-control" required>
+    </div>
+
+    <!-- Heure de début -->
+    <div class="mb-3">
+        <label for="editSessionTime" class="form-label">Heure de début :</label>
+        <input type="time" id="editSessionTime" class="form-control" required>
+    </div>
+
+    <!-- Heure de fin -->
+    <div class="mb-3">
+        <label for="editSessionEndTime" class="form-label">Heure de fin :</label>
+        <input type="time" id="editSessionEndTime" class="form-control" required>
+    </div>
+
+    <!-- Entraîneur -->
+    <div class="mb-3">
+        <label for="editSessionEntraineur" class="form-label">Entraîneur :</label>
+        <select id="editSessionEntraineur" class="form-select">
+            {% for entraineur in entraineurs %}
+            <option value="{{ entraineur.id_entraineur }}">{{ entraineur.nom }} {{ entraineur.prenom }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-end">
+        <button class="btn btn-secondary" onclick="closeEditSessionModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="submitEditSession()">Enregistrer</button>
+    </div>
+</div>
+
+<script>
+const editDatepicker = flatpickr("#editSessionDate", {
+    locale: "fr",
+    dateFormat: "d/m/Y",
+    altInput: true,
+    altFormat: "j F Y",
+    disableMobile: true,
+    allowInput: true
+});
+
+let currentSessionId = null;
+
+function openEditSessionModal(sessionId, date, heureDebut, heureFin, entraineurNom) {
+    currentSessionId = sessionId;
+
+    try {
+        // 🗓️ Convertir la date pour affichage
+        const [year, month, day] = date.split("-");
+        const formattedDate = `${day}/${month}/${year}`;
+
+        document.getElementById("editSessionId").value = sessionId;
+        document.getElementById("editSessionDate").value = formattedDate;
+        document.getElementById("editSessionTime").value = heureDebut;
+        document.getElementById("editSessionEndTime").value = heureFin;
+
+        // 👨‍🏫 Sélectionner l'entraîneur correspondant
+        const entraineurSelect = document.getElementById("editSessionEntraineur");
+        let found = false;
+        for (let opt of entraineurSelect.options) {
+            if (opt.text.includes(entraineurNom)) {
+                opt.selected = true;
+                found = true;
+                break;
+            }
+        }
+        if (!found && entraineurSelect.options.length > 0) entraineurSelect.selectedIndex = 0;
+
+        document.getElementById("editSessionModal").style.display = "block";
+    } catch (err) {
+        console.error("Erreur ouverture modal :", err);
+        alert("Impossible d’ouvrir le modal. Vérifie la console.");
+    }
+}
+
+function closeEditSessionModal() {
+    document.getElementById("editSessionModal").style.display = "none";
+}
+
+function submitEditSession() {
+    const sessionId = document.getElementById("editSessionId").value;
+    const date = document.getElementById("editSessionDate").value;
+    const heureDebut = document.getElementById("editSessionTime").value;
+    const heureFin = document.getElementById("editSessionEndTime").value;
+    const entraineur = document.getElementById("editSessionEntraineur").value;
+
+    fetch("/edit_session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            session_id: sessionId,
+            date: date,
+            heure_debut: heureDebut,
+            heure_fin: heureFin,
+            terrain: null, // plus de terrain
+            entraineur: entraineur
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+        closeEditSessionModal();
+    })
+    .catch(err => {
+        console.error("Erreur :", err);
+        alert("Une erreur est survenue.");
+        closeEditSessionModal();
+    });
+}
+</script>
+
+
+
+<style>
+/* Style cohérent avec le modal d'ajout */
+#editSessionModal .form-label {
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+}
+
+#editSessionModal .form-select {
+    border-radius: 4px;
+    padding: 0.375rem 0.75rem;
+}
+
+    .time-slot {
+height: 80px;
+vertical-align: top;
+position: relative;
+padding: 3px;
+}
+
+.session-card {
+background: #e3f2fd;
+border: 1px solid #90caf9;
+border-radius: 4px;
+padding: 5px;
+margin: 2px;
+font-size: 0.85em;
+min-height: 70px;
+}
+
+.session-card button {
+padding: 0 3px;
+line-height: 1;
+}
+
+td.align-middle {
+min-width: 120px;
+}
+
+.table-dark th {
+text-align: center;
+vertical-align: middle;
+}
+</style>
+
+
+
+<!-- Modal Supprimer Séance -->
+<div id="deleteSessionModal" style="display:none; position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 1000; width: 300px;">
+    <h5>Supprimer la séance</h5>
+    <p>Voulez-vous supprimer cette séance uniquement pour cette semaine ou pour toutes les semaines ?</p>
+    <div class="d-flex justify-content-between">
+        <button class="btn btn-secondary" onclick="closeDeleteSessionModal()">Annuler</button>
+        <button class="btn btn-warning" id="deleteWeekBtn">Cette semaine</button>
+        <button class="btn btn-danger" id="deleteAllBtn">Toutes les semaines</button>
+    </div>
+</div>
+<script>
+    let sessionToDelete = null;
+
+function deleteSession(sessionId) {
+    sessionToDelete = sessionId;
+    document.getElementById('deleteSessionModal').style.display = 'block';
+}
+
+function closeDeleteSessionModal() {
+    sessionToDelete = null;
+    document.getElementById('deleteSessionModal').style.display = 'none';
+}
+
+// Supprimer selon le scope choisi
+document.getElementById('deleteWeekBtn').addEventListener('click', () => {
+    confirmDelete('week');
+});
+
+document.getElementById('deleteAllBtn').addEventListener('click', () => {
+    confirmDelete('all');
+});
+
+function confirmDelete(scope) {
+    fetch('/delete_session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionToDelete, scope: scope })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.message) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.error);
+        }
+        closeDeleteSessionModal();
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Erreur lors de la suppression');
+        closeDeleteSessionModal();
+    });
+}
+
+</script>
+
+        <!-- Back to Top -->
+        <a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+    </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+<script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+<!-- Template Javascript -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+</body>
+
+</html>

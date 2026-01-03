@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Situation Financière Globale</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #2196f3;
+            --secondary-color: #1976d2;
+            --accent-color: #00bcd4;
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --danger-color: #f44336;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+            --hover-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .dashboard-title {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--secondary-color);
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .filters-container {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+        }
+
+        .filter-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--secondary-color);
+        }
+
+        .filter-select, .filter-input {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: white;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background-color: var(--card-background);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 10px 0;
+            color: var(--secondary-color);
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .positive {
+            color: var(--success-color);
+        }
+
+        .negative {
+            color: var(--danger-color);
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .chart-card {
+            background-color: var(--card-background);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--secondary-color);
+            margin: 0;
+        }
+
+        .chart-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #3d8b40;
+        }
+
+        .tables-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .table-card {
+            background-color: var(--card-background);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .table-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--secondary-color);
+            margin: 0;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th, .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            background-color: #f8f9fa;
+            color: var(--secondary-color);
+            font-weight: 500;
+        }
+
+        .data-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .charts-container, .tables-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .filters-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+     <!-- Sidebar Start -->
+    {% include 'sidebar.html' %}
+    <!-- Sidebar End -->
+
+    <!-- Content Start -->
+    <div class="content">
+        <!-- Navbar Start -->
+        <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+            <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+                <h2 class="text-primary mb-0"></h2>
+            </a>
+            
+        </nav>
+        <!-- Navbar End -->
+        
+        <div class="container">
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Situation Financière Globale</h1>
+            <div class="header-actions">
+                
+            </div>
+        </div>
+
+        <div class="filters-container">
+            <div class="filter-group">
+                <label class="filter-label">Période</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="start-date" class="filter-input" placeholder="Date de début" style="width: 150px;">
+                    <input type="text" id="end-date" class="filter-input" placeholder="Date de fin" style="width: 150px;">
+                </div>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Saison</label>
+                <select id="saison-filter" class="filter-select">
+                    <option value="">Toutes les saisons</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Type de données</label>
+                <select id="data-type" class="filter-select">
+                    <option value="all">Toutes les données</option>
+                    <option value="paiements">Paiements</option>
+                    <option value="locations">Locations</option>
+                    <option value="depenses">Dépenses</option>
+                </select>
+            </div>
+            
+            <div class="filter-group" style="align-self: flex-end;">
+                <button class="btn btn-primary" onclick="loadData()">
+                    <i class="fas fa-sync-alt"></i> Actualiser
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-label">Total des revenus</div>
+                <div class="stat-value" id="total-revenus">0,00 TND</div>
+                <div class="stat-change" id="revenus-change">--</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-label">Total des dépenses</div>
+                <div class="stat-value" id="total-depenses">0,00 TND</div>
+                <div class="stat-change" id="depenses-change">--</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-label">Bénéfice net</div>
+                <div class="stat-value" id="benefice-net">0,00 TND</div>
+                <div class="stat-change" id="benefice-change">--</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-label">Adhérents actifs</div>
+                <div class="stat-value" id="adherents-actifs">0</div>
+                <div class="stat-change" id="adherents-change">--</div>
+            </div>
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Évolution des revenus et dépenses</h3>
+                    <div class="chart-actions">
+                        <button class="btn btn-primary" onclick="exportChart('revenue-expense-chart', 'evolution-revenus-depenses')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+                <canvas id="revenue-expense-chart" height="300"></canvas>
+            </div>
+            
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Répartition des revenus par type</h3>
+                    <div class="chart-actions">
+                        <button class="btn btn-primary" onclick="exportChart('revenue-type-chart', 'repartition-revenus')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+                <canvas id="revenue-type-chart" height="300"></canvas>
+            </div>
+        </div>
+
+        <div class="tables-container">
+            <div class="table-card">
+                <div class="table-header">
+                    <h3 class="table-title">Derniers paiements</h3>
+                    
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="paiements-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Adhérent</th>
+                                <th>Montant</th>
+                                <th>Type</th>
+                                <th>Saison</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="loading">
+                                    <div class="spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="table-card">
+                <div class="table-header">
+                    <h3 class="table-title">Locations récentes</h3>
+                    
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table" id="locations-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Terrain</th>
+                                <th>Locateur</th>
+                                <th>Montant</th>
+                                <th>Durée</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="loading">
+                                    <div class="spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div></div>
+    <script>
+        // Variables globales pour stocker les données et les graphiques
+        let financialData = {};
+        let revenueExpenseChart = null;
+        let revenueTypeChart = null;
+        
+        // Initialisation du calendrier et chargement des données
+        document.addEventListener('DOMContentLoaded', function() {
+            flatpickr("#start-date", {
+                dateFormat: "Y-m-d",
+                defaultDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+            });
+            
+            flatpickr("#end-date", {
+                dateFormat: "Y-m-d",
+                defaultDate: new Date()
+            });
+            
+            // Charger les saisons disponibles
+            loadSaisons();
+            
+            // Charger les données initiales
+            loadData();
+        });
+        
+        // Charger les saisons disponibles depuis la base de données
+        async function loadSaisons() {
+            try {
+                const response = await fetch('/api/saisons');
+                const saisons = await response.json();
+                
+                const saisonFilter = document.getElementById('saison-filter');
+                saisons.forEach(saison => {
+                    const option = document.createElement('option');
+                    option.value = saison.code;
+                    option.textContent = saison.code;
+                    saisonFilter.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erreur lors du chargement des saisons:', error);
+            }
+        }
+        
+        // Charger toutes les données financières
+        async function loadData() {
+            showLoadingState();
+            
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            const saison = document.getElementById('saison-filter').value;
+            const dataType = document.getElementById('data-type').value;
+            
+            try {
+                // Charger les données depuis l'API
+                const response = await fetch(`/api/financial-data?startDate=${startDate}&endDate=${endDate}&saison=${saison}&dataType=${dataType}`);
+                financialData = await response.json();
+                
+                // Mettre à jour l'interface
+                updateStats();
+                updateCharts();
+                updateTables();
+            } catch (error) {
+                console.error('Erreur lors du chargement des données:', error);
+                alert('Erreur lors du chargement des données. Veuillez réessayer.');
+            }
+        }
+        
+        // Afficher l'état de chargement
+        function showLoadingState() {
+            document.querySelectorAll('.data-table tbody').forEach(tbody => {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="loading">
+                            <div class="spinner"></div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            document.getElementById('total-revenus').textContent = '0,00 TND';
+            document.getElementById('total-depenses').textContent = '0,00 TND';
+            document.getElementById('benefice-net').textContent = '0,00 TND';
+            document.getElementById('adherents-actifs').textContent = '0';
+        }
+        
+        // Mettre à jour les statistiques
+        function updateStats() {
+            const { stats } = financialData;
+            
+            document.getElementById('total-revenus').textContent = formatCurrency(stats.totalRevenus);
+            document.getElementById('total-depenses').textContent = formatCurrency(stats.totalDepenses);
+            document.getElementById('benefice-net').textContent = formatCurrency(stats.beneficeNet);
+            document.getElementById('adherents-actifs').textContent = stats.adherentsActifs;
+            
+            // Mettre à jour les indicateurs de changement
+            updateChangeIndicator('revenus-change', stats.revenusChange);
+            updateChangeIndicator('depenses-change', stats.depensesChange);
+            updateChangeIndicator('benefice-change', stats.beneficeChange);
+            updateChangeIndicator('adherents-change', stats.adherentsChange);
+        }
+        
+        // Mettre à jour les indicateurs de changement
+        function updateChangeIndicator(elementId, change) {
+            const element = document.getElementById(elementId);
+            
+            if (change === 0 || change === null) {
+                element.textContent = '--';
+                element.className = 'stat-change';
+                return;
+            }
+            
+            const sign = change > 0 ? '+' : '';
+            element.textContent = `${sign}${change}%`;
+            element.className = `stat-change ${change > 0 ? 'positive' : 'negative'}`;
+        }
+        
+        // Mettre à jour les graphiques
+        function updateCharts() {
+            updateRevenueExpenseChart();
+            updateRevenueTypeChart();
+        }
+        
+        // Mettre à jour le graphique d'évolution des revenus et dépenses
+        function updateRevenueExpenseChart() {
+            const ctx = document.getElementById('revenue-expense-chart').getContext('2d');
+            const { monthlyData } = financialData;
+            
+            if (revenueExpenseChart) {
+                revenueExpenseChart.destroy();
+            }
+            
+            revenueExpenseChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthlyData.labels,
+                    datasets: [
+                        {
+                            label: 'Revenus',
+                            data: monthlyData.revenues,
+                            borderColor: '#2196F3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Dépenses',
+                            data: monthlyData.expenses,
+                            borderColor: '#F44336',
+                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Évolution mensuelle des revenus et dépenses'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${formatCurrency(context.raw)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Mettre à jour le graphique de répartition des revenus
+        function updateRevenueTypeChart() {
+            const ctx = document.getElementById('revenue-type-chart').getContext('2d');
+            const { revenueByType } = financialData;
+            
+            if (revenueTypeChart) {
+                revenueTypeChart.destroy();
+            }
+            
+            revenueTypeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: revenueByType.labels,
+                    datasets: [{
+                        data: revenueByType.values,
+                        backgroundColor: [
+                            '#2196F3', '#4CAF50', '#FF9800', '#E91E63', 
+                            '#9C27B0', '#00BCD4', '#FFEB3B', '#795548'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${context.label}: ${formatCurrency(value)} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Mettre à jour les tableaux de données
+        function updateTables() {
+            updatePaiementsTable();
+            updateLocationsTable();
+        }
+        
+        // Mettre à jour le tableau des paiements
+        function updatePaiementsTable() {
+            const table = document.getElementById('paiements-table');
+            const tbody = table.querySelector('tbody');
+            const { recentPayments } = financialData;
+            
+            tbody.innerHTML = '';
+            
+            if (recentPayments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Aucun paiement trouvé</td></tr>';
+                return;
+            }
+            
+            recentPayments.forEach(payment => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDate(payment.date)}</td>
+                    <td>${payment.adherent}</td>
+                    <td>${formatCurrency(payment.montant)}</td>
+                    <td>${payment.type}</td>
+                    <td>${payment.saison}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Mettre à jour le tableau des locations
+        function updateLocationsTable() {
+            const table = document.getElementById('locations-table');
+            const tbody = table.querySelector('tbody');
+            const { recentLocations } = financialData;
+            
+            tbody.innerHTML = '';
+            
+            if (recentLocations.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Aucune location trouvée</td></tr>';
+                return;
+            }
+            
+            recentLocations.forEach(location => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDate(location.date)}</td>
+                    <td>Terrain ${location.terrain}</td>
+                    <td>${location.locateur}</td>
+                    <td>${formatCurrency(location.montant)}</td>
+                    <td>${location.duree}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Formater une date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR');
+        }
+        
+        // Formater une valeur monétaire
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('fr-FR', { 
+                style: 'currency', 
+                currency: 'TND',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(value);
+        }
+        
+        // Exporter un graphique en image
+        function exportChart(canvasId, fileName) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = `${fileName}.png`;
+            link.click();
+        }
+        
+        // Exporter un tableau en Excel
+        function exportTableToExcel(tableId, fileName) {
+            const table = document.getElementById(tableId);
+            const wb = XLSX.utils.table_to_book(table, {sheet: fileName});
+            XLSX.writeFile(wb, `${fileName}.xlsx`);
+        }
+        
+        // Exporter toutes les données
+        function exportAllData() {
+            // Créer un nouveau classeur Excel
+            const wb = XLSX.utils.book_new();
+            
+            // Ajouter les données des tableaux
+            const paymentsSheet = XLSX.utils.table_to_sheet(document.getElementById('paiements-table'));
+            XLSX.utils.book_append_sheet(wb, paymentsSheet, 'Paiements');
+            
+            const locationsSheet = XLSX.utils.table_to_sheet(document.getElementById('locations-table'));
+            XLSX.utils.book_append_sheet(wb, locationsSheet, 'Locations');
+            
+            // Ajouter les données des statistiques
+            const statsData = [
+                ['Statistiques Financières'],
+                [],
+                ['Total des revenus', financialData.stats.totalRevenus],
+                ['Total des dépenses', financialData.stats.totalDepenses],
+                ['Bénéfice net', financialData.stats.beneficeNet],
+                ['Adhérents actifs', financialData.stats.adherentsActifs]
+            ];
+            const statsSheet = XLSX.utils.aoa_to_sheet(statsData);
+            XLSX.utils.book_append_sheet(wb, statsSheet, 'Statistiques');
+            
+            // Exporter le fichier
+            XLSX.writeFile(wb, 'situation-financiere-complete.xlsx');
+        }
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

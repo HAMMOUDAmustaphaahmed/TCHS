@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <title>TCHS - Gestion des Réservations</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    
+    <!-- Favicon -->
+<link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}?v=2">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icon Font Stylesheet -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Libraries Stylesheet -->
+    <link href="{{ url_for('static', filename='lib/owlcarousel/assets/owl.carousel.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css') }}" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Template Stylesheet -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+    <style>
+        /* Styles améliorés */
+        .content {
+            min-height: 100vh;
+            width: 100%;
+            padding-bottom: 60px;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+
+        .table-responsive {
+            padding: 0.5rem;
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            white-space: nowrap;
+        }
+
+        .table td {
+            vertical-align: middle;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+
+        .action-buttons button {
+            min-width: 100px;
+            margin: 2px;
+        }
+
+        .badge {
+            font-size: 0.85em;
+            padding: 0.5em 0.8em;
+            white-space: nowrap;
+        }
+
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .table-responsive {
+                font-size: 0.9em;
+            }
+
+            .action-buttons button {
+                min-width: auto;
+                padding: 0.25rem 0.5rem;
+            }
+
+            .table td, .table th {
+                padding: 0.5rem;
+            }
+
+            .badge {
+                font-size: 0.8em;
+                padding: 0.4em 0.6em;
+            }
+        }
+
+        /* Loading spinner */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        /* Animations pour les actions */
+        .table tr {
+            transition: all 0.3s ease;
+        }
+
+        .fade-out {
+            opacity: 0;
+            transform: translateX(20px);
+        }
+    </style>
+</head>
+
+<body>
+    {% include 'sidebar.html' %}
+    
+    <!-- Loading Spinner -->
+    <div class="spinner-overlay" id="loadingSpinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="content">
+            <!-- Navbar -->
+            <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+                <a href="#" class="sidebar-toggler flex-shrink-0">
+                    <i class="fa fa-bars"></i>
+                </a>
+                <div class="navbar-nav align-items-center ms-auto">
+                    <div class="nav-item">
+                        <h4 class="mb-0">Gestion des Réservations</h4>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <div class="container-fluid pt-4 px-4">
+                <div class="table-container">
+                    <div class="d-flex justify-content-between align-items-center p-3">
+                        <h5 class="mb-0">Liste des Réservations</h5>
+                        <button onclick="chargerToutesReservations()" class="btn btn-primary">
+                            <i class="fas fa-sync-alt me-2"></i> Rafraîchir
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date Création</th>
+                                    <th>Entraîneur</th>
+                                    <th>Date</th>
+                                    <th>Horaire</th>
+                                    <th>Terrain</th>
+                                    <th>Status</th>
+                                    <th>Commentaire</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allReservationsList">
+                                <!-- Les réservations seront chargées ici dynamiquement -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='lib/chart/chart.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/easing/easing.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/waypoints/waypoints.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/owlcarousel/owl.carousel.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+
+    <!-- Template Javascript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <script>
+        // Fonction pour montrer/cacher le spinner
+        function toggleSpinner(show) {
+            document.getElementById('loadingSpinner').style.display = show ? 'flex' : 'none';
+        }
+
+        function chargerToutesReservations() {
+            toggleSpinner(true);
+            fetch('/api/all_reservations', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur réseau');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    afficherToutesReservations(data.reservations);
+                } else {
+                    console.error('Erreur:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des réservations:', error);
+                alert('Erreur lors du chargement des réservations');
+            })
+            .finally(() => {
+                toggleSpinner(false);
+            });
+        }
+
+        function afficherToutesReservations(reservations) {
+            const tbody = document.getElementById('allReservationsList');
+            tbody.innerHTML = '';
+
+            if (reservations.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td colspan="8" class="text-center">
+                        Aucune réservation trouvée
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                return;
+            }
+
+            reservations.forEach(reservation => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${formatDate(reservation.date_creation)}</td>
+                    <td>${reservation.entraineur}</td>
+                    <td>${reservation.date}</td>
+                    <td>${reservation.heure_debut} - ${reservation.heure_fin}</td>
+                    <td>${reservation.numero_terrain}</td>
+                    <td>
+                        <span class="badge ${getBadgeClass(reservation.status)}">
+                            ${reservation.status}
+                        </span>
+                    </td>
+                    <td>${reservation.commentaire || '-'}</td>
+                    <td>
+                        <div class="action-buttons">
+                            ${reservation.status === 'en_attente' ? `
+                                <button onclick="updateStatus(${reservation.id}, 'acceptée', this)" 
+                                        class="btn btn-sm btn-success">
+                                    <i class="fas fa-check me-1"></i> Accepter
+                                </button>
+                                <button onclick="updateStatus(${reservation.id}, 'refusée', this)" 
+                                        class="btn btn-sm btn-danger">
+                                    <i class="fas fa-times me-1"></i> Refuser
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function getBadgeClass(status) {
+            switch(status) {
+                case 'acceptée':
+                    return 'bg-success';
+                case 'refusée':
+                    return 'bg-danger';
+                default:
+                    return 'bg-warning';
+            }
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleString('fr-FR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function updateStatus(reservationId, newStatus, buttonElement) {
+            if (!confirm(`Êtes-vous sûr de vouloir ${newStatus === 'acceptée' ? 'accepter' : 'refuser'} cette réservation ?`)) {
+                return;
+            }
+
+            const tr = buttonElement.closest('tr');
+            tr.classList.add('fade-out');
+
+            toggleSpinner(true);
+            fetch('/api/update_reservation_status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    reservation_id: reservationId,
+                    status: newStatus
+                }),
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur réseau');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    setTimeout(() => {
+                        chargerToutesReservations();
+                    }, 300);
+                } else {
+                    alert('Erreur : ' + (data.error || 'Une erreur est survenue'));
+                    tr.classList.remove('fade-out');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la mise à jour du statut');
+                tr.classList.remove('fade-out');
+            })
+            .finally(() => {
+                toggleSpinner(false);
+            });
+        }
+
+        // Charger les réservations au chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            chargerToutesReservations();
+        });
+    </script>
+</body>
+</html>
