@@ -2772,6 +2772,245 @@ def get_next_matricule(code_saison):
     # Si aucun trou, retourner le max + 1
     return max(matricules_utilises) + 1
 
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, make_response
+from sqlalchemy import func
+from datetime import datetime
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from io import BytesIO
+
+# ==================== GESTION DES MATRICULES ====================
+
+def get_next_matricule(code_saison):
+    """
+    Trouve le prochain matricule disponible en vérifiant les trous dans la séquence
+    Exemple: Si vous avez [1, 2, 4], retourne 3 au lieu de 5
+    """
+    # Récupérer tous les matricules existants pour cette saison, triés
+    matricules_existants = db.session.query(Adherent.matricule)\
+        .filter_by(code_saison=code_saison)\
+        .order_by(Adherent.matricule)\
+        .all()
+    
+    matricules_list = [m[0] for m in matricules_existants]
+    
+    if not matricules_list:
+        # Première matricule pour cette saison
+        return 1
+    
+    # Chercher le premier trou dans la séquence
+    for i in range(1, max(matricules_list) + 2):
+        if i not in matricules_list:
+            return i
+    
+    # Si pas de trou, retourner le suivant
+    return max(matricules_list) + 1
+
+
+# Route AJAX pour obtenir le prochain matricule
+@app.route('/get_next_matricule', methods=['GET'])
+def api_get_next_matricule():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    code_saison = request.args.get('code_saison', session.get('saison_code'))
+    next_matricule = get_next_matricule(code_saison)
+    
+    return jsonify({
+        'matricule': next_matricule,
+        'code_saison': code_saison
+    })
+
+
+# ==================== GÉNÉRATION PDF ====================
+
+def creer_pdf_adherent(adherent_data):
+    """
+    Génère un PDF professionnel avec les informations de l'adhérent
+    """
+    buffer = BytesIO()
+    
+    # Créer le PDF
+    p = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    
+    # Couleurs personnalisées
+    color_primary = colors.HexColor('#0d6efd')
+    color_secondary = colors.HexColor('#6c757d')
+    color_success = colors.HexColor('#198754')
+    color_dark = colors.HexColor('#212529')
+    
+    # ========== EN-TÊTE ==========
+    # Fond coloré en haut
+    p.setFillColor(color_primary)
+    p.rect(0, height - 120, width, 120, fill=1, stroke=0)
+    
+    # Titre principal
+    p.setFillColor(colors.white)
+    p.setFont("Helvetica-Bold", 26)
+    p.drawCentredString(width/2, height - 50, "TENNIS CLUB HAMMAM SOUSSE")
+    
+    # Sous-titre
+    p.setFont("Helvetica", 16)
+    p.drawCentredString(width/2, height - 75, "FICHE D'ADHÉSION")
+    
+    # Matricule en évidence
+    p.setFillColor(color_success)
+    p.roundRect(width/2 - 100, height - 110, 200, 25, 5, fill=1, stroke=0)
+    p.setFillColor(colors.white)
+    p.setFont("Helvetica-Bold", 14)
+    p.drawCentredString(width/2, height - 101, f"MATRICULE: {adherent_data['matricule']}")
+    
+    # Ligne de séparation
+    p.setStrokeColor(color_primary)
+    p.setLineWidth(3)
+    p.line(40, height - 135, width - 40, height - 135)
+    
+    # ========== INFORMATIONS PERSONNELLES ==========
+    y = height - 170
+    p.setFillColor(color_dark)
+    
+    # Section title
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(50, y, "INFORMATIONS PERSONNELLES")
+    
+    # Ligne sous le titre
+    p.setStrokeColor(color_primary)
+    p.setLineWidth(2)
+    p.line(50, y - 5, 250, y - 5)
+    
+    y -= 35
+    p.setFont("Helvetica", 12)
+    
+    # Informations dans un tableau
+    infos_personnelles = [
+        ("Nom:", adherent_data['nom'].upper()),
+        ("Prénom:", adherent_data['prenom'].title()),
+        ("Date de naissance:", adherent_data['date_naissance']),
+        ("Sexe:", "Masculin" if adherent_data['sexe'] == 'M' else "Féminin"),
+    ]
+    
+    for label, value in infos_personnelles:
+        # Label en gras
+        p.setFont("Helvetica-Bold", 11)
+        p.setFillColor(color_secondary)
+        p.drawString(70, y, label)
+        
+        # Valeur
+        p.setFont("Helvetica", 11)
+        p.setFillColor(color_dark)
+        p.drawString(230, y, str(value))
+        
+        # Ligne pointillée
+        p.setDash(1, 2)
+        p.setStrokeColor(colors.lightgrey)
+        p.line(70, y - 3, width - 70, y - 3)
+        p.setDash()
+        
+        y -= 25
+    
+    # ========== COORDONNÉES ==========
+    y -= 15
+    p.setFont("Helvetica-Bold", 16)
+    p.setFillColor(color_dark)
+    p.drawString(50, y, "COORDONNÉES")
+    
+    p.setStrokeColor(color_primary)
+    p.setLineWidth(2)
+    p.line(50, y - 5, 200, y - 5)
+    
+    y -= 35
+    
+    coordonnees = [
+        ("Téléphone 1:", adherent_data['tel1']),
+        ("Téléphone 2:", adherent_data.get('tel2', 'Non renseigné')),
+        ("Email:", adherent_data.get('email', 'Non renseigné')),
+    ]
+    
+    for label, value in coordonnees:
+        p.setFont("Helvetica-Bold", 11)
+        p.setFillColor(color_secondary)
+        p.drawString(70, y, label)
+        
+        p.setFont("Helvetica", 11)
+        p.setFillColor(color_dark)
+        p.drawString(230, y, str(value) if value else 'Non renseigné')
+        
+        p.setDash(1, 2)
+        p.setStrokeColor(colors.lightgrey)
+        p.line(70, y - 3, width - 70, y - 3)
+        p.setDash()
+        
+        y -= 25
+    
+    # ========== INSCRIPTION ==========
+    y -= 15
+    p.setFont("Helvetica-Bold", 16)
+    p.setFillColor(color_dark)
+    p.drawString(50, y, "INFORMATIONS D'INSCRIPTION")
+    
+    p.setStrokeColor(color_primary)
+    p.setLineWidth(2)
+    p.line(50, y - 5, 310, y - 5)
+    
+    y -= 35
+    
+    infos_inscription = [
+        ("Date d'inscription:", adherent_data['date_inscription']),
+        ("Type d'abonnement:", adherent_data['type_abonnement']),
+        ("Saison:", adherent_data['code_saison']),
+        ("Statut de paiement:", "Non payé"),
+        ("Statut:", "Actif"),
+    ]
+    
+    for label, value in infos_inscription:
+        p.setFont("Helvetica-Bold", 11)
+        p.setFillColor(color_secondary)
+        p.drawString(70, y, label)
+        
+        p.setFont("Helvetica", 11)
+        p.setFillColor(color_dark)
+        p.drawString(230, y, str(value))
+        
+        p.setDash(1, 2)
+        p.setStrokeColor(colors.lightgrey)
+        p.line(70, y - 3, width - 70, y - 3)
+        p.setDash()
+        
+        y -= 25
+    
+    # ========== PIED DE PAGE ==========
+    # Ligne de séparation
+    p.setStrokeColor(color_primary)
+    p.setLineWidth(2)
+    p.setDash()
+    p.line(40, 100, width - 40, 100)
+    
+    # Informations de génération
+    p.setFont("Helvetica", 9)
+    p.setFillColor(color_secondary)
+    date_generation = datetime.now().strftime('%d/%m/%Y à %H:%M')
+    p.drawCentredString(width/2, 80, f"Document genere le {date_generation}")
+    p.drawCentredString(width/2, 65, "Tennis Club Hammam Sousse - Tous droits reserves")
+    
+    # Cadre décoratif extérieur
+    p.setStrokeColor(color_primary)
+    p.setLineWidth(4)
+    p.roundRect(25, 25, width - 50, height - 50, 10, fill=0, stroke=1)
+    
+    # Finaliser le PDF
+    p.showPage()
+    p.save()
+    
+    buffer.seek(0)
+    return buffer
+
+
+# ==================== ROUTES ====================
+
 @app.route('/ajouter_adherent', methods=['POST', 'GET'])
 def ajouter_adherent():
     if 'user_id' not in session or session.get('role') != 'admin':
@@ -2794,12 +3033,10 @@ def ajouter_adherent():
         ).first()
         
         if adherent_existant:
-            flash(
-                f"Un adhérent nommé {nom} {prenom} existe déjà pour la saison {code_saison} "
-                f"(Matricule: {adherent_existant.matricule}). Impossible d'ajouter un doublon.",
-                'danger'
-            )
-            return redirect(url_for('ajouter_adherent'))
+            return jsonify({
+                'success': False,
+                'message': f"Un adhérent nommé {nom} {prenom} existe déjà pour la saison {code_saison} (Matricule: {adherent_existant.matricule})."
+            }), 400
         
         # Calculer le prochain matricule disponible pour cette saison
         matricule = get_next_matricule(code_saison)
@@ -2829,16 +3066,22 @@ def ajouter_adherent():
         try:
             db.session.add(nouveau_adherent)
             db.session.commit()
-            flash(
-                f'Adhérent {nouveau_adherent.nom} {nouveau_adherent.prenom} ajouté avec succès '
-                f'(Matricule: {matricule}, Saison: {code_saison})', 
-                'success'
-            )
-            return redirect(url_for('gerer_adherent'))
+            
+            return jsonify({
+                'success': True,
+                'message': f'Adhérent {nouveau_adherent.nom} {nouveau_adherent.prenom} ajouté avec succès',
+                'adherent_id': nouveau_adherent.adherent_id,
+                'matricule': matricule
+            })
+            
         except Exception as e:
             db.session.rollback()
-            flash(f"Erreur : {str(e)}", 'danger')
+            return jsonify({
+                'success': False,
+                'message': f"Erreur : {str(e)}"
+            }), 500
     
+    # GET : Afficher le formulaire
     # Récupérer les adhérents existants de la saison pour le contrôle frontend
     adherents_existants = Adherent.query.filter_by(
         code_saison=code_saison_defaut
@@ -2858,10 +3101,54 @@ def ajouter_adherent():
         'status': a.status,
         'date_inscription': a.date_inscription.strftime('%d/%m/%Y')
     } for a in adherents_existants]
+    
+    # Calculer le prochain matricule pour affichage
+    prochain_matricule = get_next_matricule(code_saison_defaut)
 
     return render_template('ajouter_adherent.html', 
                          code_saison_defaut=code_saison_defaut,
-                         adherents_existants=adherents_list)
+                         adherents_existants=adherents_list,
+                         prochain_matricule=prochain_matricule)
+
+
+# Route pour télécharger le PDF de la fiche adhérent
+@app.route('/telecharger_fiche_adherent/<int:adherent_id>', methods=['GET'])
+def telecharger_fiche_adherent(adherent_id):
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    try:
+        # Récupérer l'adhérent
+        adherent = Adherent.query.get_or_404(adherent_id)
+        
+        # Préparer les données pour le PDF
+        adherent_data = {
+            'nom': adherent.nom,
+            'prenom': adherent.prenom,
+            'matricule': adherent.matricule,
+            'date_naissance': adherent.date_naissance.strftime('%d/%m/%Y'),
+            'date_inscription': adherent.date_inscription.strftime('%d/%m/%Y'),
+            'sexe': adherent.sexe,
+            'tel1': adherent.tel1,
+            'tel2': adherent.tel2 or '',
+            'email': adherent.email or '',
+            'type_abonnement': adherent.type_abonnement,
+            'code_saison': adherent.code_saison
+        }
+        
+        # Générer le PDF
+        pdf_buffer = creer_pdf_adherent(adherent_data)
+        
+        # Créer la réponse HTTP
+        response = make_response(pdf_buffer.getvalue())
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = f'inline; filename=fiche_adherent_{adherent.matricule}_{adherent.nom}_{adherent.prenom}.pdf'
+        
+        return response
+        
+    except Exception as e:
+        app.logger.error(f"Erreur lors de la génération du PDF: {str(e)}")
+        return jsonify({'error': f'Erreur lors de la génération du PDF: {str(e)}'}), 500
 
 # Route pour rechercher des anciens adhérents
 @app.route('/rechercher_ancien_adherent', methods=['POST'])
@@ -5408,57 +5695,177 @@ def ajouter_adherents_groupe(groupe_id):
         ).first()
         
         added_count = 0
+        already_in_group = []
+        not_found = []
+        errors = []
         
         for matricule in matricules:
-            adherent = Adherent.query.filter_by(
-                matricule=matricule,
-                code_saison=current_season_code,
-                status='Actif'
-            ).first()
-            
-            if adherent:
-                # Vérifier qu'il n'est pas déjà dans un autre groupe
-                if adherent.groupe and adherent.groupe != groupe.nom_groupe:
-                    print(f"Adhérent {matricule} déjà dans le groupe {adherent.groupe}")
+            try:
+                # Rechercher l'adhérent par matricule ET saison
+                adherent = Adherent.query.filter_by(
+                    matricule=int(matricule),
+                    code_saison=current_season_code
+                ).first()
+                
+                if not adherent:
+                    not_found.append(matricule)
+                    print(f"❌ Adhérent {matricule} non trouvé pour la saison {current_season_code}")
                     continue
                 
-                # Affecter le groupe, l'entraîneur ET la cotisation
+                # Vérifier le statut
+                if adherent.status != 'Actif':
+                    errors.append(f"Adhérent {matricule} n'est pas actif (statut: {adherent.status})")
+                    print(f"⚠️ Adhérent {matricule} statut: {adherent.status}")
+                    continue
+                
+                # Vérifier s'il est déjà dans CE groupe
+                if adherent.groupe == groupe.nom_groupe:
+                    already_in_group.append(matricule)
+                    print(f"ℹ️ Adhérent {matricule} déjà dans le groupe {groupe.nom_groupe}")
+                    continue
+                
+                # Si l'adhérent est dans un AUTRE groupe, on le déplace
+                if adherent.groupe and adherent.groupe != groupe.nom_groupe:
+                    print(f"🔄 Déplacement de l'adhérent {matricule} du groupe {adherent.groupe} vers {groupe.nom_groupe}")
+                
+                # Affecter le nouveau groupe et l'entraîneur
                 adherent.groupe = groupe.nom_groupe
                 adherent.entraineur = groupe.entraineur_nom
                 
                 # Définir la cotisation depuis le groupe
                 if cotisation_groupe:
                     adherent.cotisation = cotisation_groupe.montant_cotisation
-                    print(f"Cotisation {cotisation_groupe.montant_cotisation} affectée à {matricule}")
+                    print(f"💰 Cotisation {cotisation_groupe.montant_cotisation} TND affectée à {matricule}")
                 else:
-                    # Cotisation par défaut si pas trouvée
-                    adherent.cotisation = 0
-                    print(f"Aucune cotisation trouvée pour le groupe {groupe.nom_groupe}")
+                    # Si pas de cotisation définie pour le groupe, garder celle existante ou mettre 0
+                    if adherent.cotisation is None:
+                        adherent.cotisation = 0
+                    print(f"⚠️ Aucune cotisation trouvée pour le groupe {groupe.nom_groupe}, cotisation actuelle: {adherent.cotisation}")
                 
-                # La remise sera définie lors du premier paiement
+                # Initialiser la remise si elle n'existe pas
                 if adherent.remise is None:
                     adherent.remise = 0
                 
                 added_count += 1
-                print(f"Adhérent {matricule} ajouté au groupe {groupe.nom_groupe}")
-            else:
-                print(f"Adhérent {matricule} non trouvé pour la saison {current_season_code}")
+                print(f"✅ Adhérent {matricule} ({adherent.nom} {adherent.prenom}) ajouté au groupe {groupe.nom_groupe}")
+                
+            except Exception as e:
+                errors.append(f"Erreur pour matricule {matricule}: {str(e)}")
+                print(f"❌ Erreur pour matricule {matricule}: {str(e)}")
+                continue
         
-        db.session.commit()
+        # Commit si au moins un adhérent a été ajouté
+        if added_count > 0:
+            db.session.commit()
+            print(f"✅ {added_count} adhérent(s) ajouté(s) avec succès")
+        else:
+            db.session.rollback()
+            print(f"⚠️ Aucun adhérent ajouté")
+        
+        # Construire le message de retour détaillé
+        message = f"{added_count} adhérent(s) ajouté(s) avec succès"
+        
+        details = []
+        if already_in_group:
+            details.append(f"{len(already_in_group)} déjà dans ce groupe")
+        if not_found:
+            details.append(f"{len(not_found)} non trouvé(s)")
+        if errors:
+            details.append(f"{len(errors)} erreur(s)")
+        
+        if details:
+            message += f" ({', '.join(details)})"
         
         return jsonify({
-            "success": True,
+            "success": added_count > 0,
             "added_count": added_count,
+            "already_in_group": already_in_group,
+            "not_found": not_found,
+            "errors": errors,
+            "message": message,
             "saison_code": current_season_code
         })
         
     except Exception as e:
         db.session.rollback()
-        print(f"Erreur: {str(e)}")
+        print(f"❌ Erreur globale: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 400
 
+
+# Route pour obtenir les membres actuels d'un groupe
+@app.route('/api/get_current_members/<int:groupe_id>', methods=['GET'])
+def get_current_members(groupe_id):
+    if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
+        return jsonify({"error": "Accès non autorisé"}), 403
+    
+    try:
+        current_season_code = session.get('saison_code')
+        if not current_season_code:
+            return jsonify({"error": "Aucune saison sélectionnée"}), 400
+        
+        groupe = Groupe.query.get_or_404(groupe_id)
+        
+        # Récupérer les adhérents du groupe pour la saison actuelle
+        adherents = Adherent.query.filter_by(
+            groupe=groupe.nom_groupe,
+            code_saison=current_season_code,
+            status='Actif'
+        ).order_by(Adherent.nom, Adherent.prenom).all()
+        
+        return jsonify({
+            "success": True,
+            "members": [{
+                'matricule': a.matricule,
+                'nom': a.nom,
+                'prenom': a.prenom,
+                'adherent_id': a.adherent_id
+            } for a in adherents]
+        })
+        
+    except Exception as e:
+        print(f"Erreur get_current_members: {str(e)}")
+        return jsonify({"error": str(e)}), 400
+
+
+# Route pour retirer un adhérent d'un groupe
+@app.route('/api/remove_adherent_from_group', methods=['POST'])
+def remove_adherent_from_group():
+    if 'user_id' not in session or session.get('role') not in ['admin', 'directeur_technique']:
+        return jsonify({"error": "Accès non autorisé"}), 403
+    
+    try:
+        data = request.get_json()
+        matricule = data.get('matricule')
+        
+        if not matricule:
+            return jsonify({"error": "Matricule manquant"}), 400
+        
+        current_season_code = session.get('saison_code')
+        adherent = Adherent.query.filter_by(
+            matricule=matricule,
+            code_saison=current_season_code
+        ).first()
+        
+        if not adherent:
+            return jsonify({"error": "Adhérent non trouvé"}), 404
+        
+        # Retirer du groupe
+        adherent.groupe = None
+        adherent.entraineur = None
+        
+        db.session.commit()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Adhérent {matricule} retiré du groupe"
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erreur remove_adherent: {str(e)}")
+        return jsonify({"error": str(e)}), 400
 
 @app.route('/api/search-adherent')
 def search_adherent():
