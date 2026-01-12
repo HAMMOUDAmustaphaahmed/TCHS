@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="utf-8">
     <title>TCHS - Ajouter Adhérent</title>
@@ -26,6 +26,24 @@
             margin: 0 auto;
         }
         
+        .matricule-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            margin-bottom: 20px;
+        }
+        
+        .matricule-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
         .search-result-item {
             padding: 15px;
             border: 1px solid #dee2e6;
@@ -47,13 +65,34 @@
             border-width: 2px;
         }
         
-        .badge-saison {
-            font-size: 0.8rem;
+        .confirmation-modal .info-row {
+            display: flex;
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
         }
         
-        #searchResults {
-            max-height: 400px;
-            overflow-y: auto;
+        .confirmation-modal .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .confirmation-modal .info-label {
+            font-weight: 600;
+            color: #495057;
+            width: 200px;
+            flex-shrink: 0;
+        }
+        
+        .confirmation-modal .info-value {
+            color: #212529;
+            flex-grow: 1;
+        }
+        
+        .fiche-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            margin: -16px -16px 20px -16px;
         }
         
         .import-mode {
@@ -94,6 +133,15 @@
                     </div>
                 </div>
                 
+                <!-- Affichage du Matricule -->
+                <div class="matricule-display">
+                    <div class="matricule-label">
+                        <i class="fas fa-id-card me-2"></i>
+                        Matricule Assigné
+                    </div>
+                    <div id="matriculeValue">{{ prochain_matricule }}</div>
+                </div>
+                
                 <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
                     <i class="fas fa-info-circle me-2"></i>
                     <div id="infoMessage">
@@ -102,7 +150,7 @@
                     </div>
                 </div>
                 
-                <form method="post" action="{{ url_for('ajouter_adherent') }}" id="adherentForm">
+                <form method="post" id="adherentForm">
                     <div class="row">
                         <div class="col-12 mb-4">
                             <label class="form-label">
@@ -205,16 +253,83 @@
                     </div>
                     
                     <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
-                            <i class="fas fa-save me-2"></i>
-                            <span id="submitBtnText">Ajouter l'Adhérent</span>
+                        <button type="button" class="btn btn-primary btn-lg" id="previewBtn">
+                            <i class="fas fa-eye me-2"></i>
+                            Prévisualiser et Confirmer
                         </button>
-                        <button type="button" class="btn btn-outline-secondary" id="cancelBtn" onclick="window.location.href='{{ url_for('gerer_adherent') }}'">
+                        <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='{{ url_for('gerer_adherent') }}'">
                             <i class="fas fa-times me-2"></i>
                             Annuler
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de confirmation -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content confirmation-modal">
+                <div class="fiche-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-id-card me-3"></i>
+                        Fiche d'Adhésion - Confirmation
+                    </h4>
+                    <p class="mb-0 mt-2" style="opacity: 0.9; font-size: 0.95rem;">
+                        Veuillez vérifier les informations avant de confirmer l'ajout
+                    </p>
+                </div>
+                <div class="modal-body" style="padding: 20px;">
+                    <div class="info-row">
+                        <div class="info-label"><i class="fas fa-hashtag me-2 text-primary"></i>Matricule:</div>
+                        <div class="info-value" id="confirm-matricule"></div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label"><i class="fas fa-calendar me-2 text-primary"></i>Saison:</div>
+                        <div class="info-value" id="confirm-saison"></div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label"><i class="fas fa-user me-2 text-primary"></i>Nom complet:</div>
+                        <div class="info-value" id="confirm-nom"></div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label"><i class="fas fa-birthday-cake me-2 text-primary"></i>Date de naissance:</div>
+                        <div class="info-value" id="confirm-naissance"></div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label"><i class="fas fa-calendar-check me-2 text-primary"></i>Date d'inscription:</div>
+                        <div class="info-value" id="confirm-inscription"></div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label"><i class="fas fa-venus-mars me-2 text-primary"></i>Sexe:</div>
+                        <div class="info-value" id="confirm-sexe"></div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label"><i class="fas fa-clipboard-list me-2 text-primary"></i>Type d'abonnement:</div>
+                        <div class="info-value" id="confirm-type"></div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label"><i class="fas fa-phone me-2 text-primary"></i>Téléphone 1:</div>
+                        <div class="info-value" id="confirm-tel1"></div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label"><i class="fas fa-phone me-2 text-primary"></i>Téléphone 2:</div>
+                        <div class="info-value" id="confirm-tel2"></div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label"><i class="fas fa-envelope me-2 text-primary"></i>Email:</div>
+                        <div class="info-value" id="confirm-email"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Annuler
+                    </button>
+                    <button type="button" class="btn btn-success" id="confirmAddBtn">
+                        <i class="fas fa-check-circle me-2"></i>Confirmer et Imprimer PDF
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -261,12 +376,15 @@
     
     <script>
         let selectedAdherent = null;
+        let prochainMatricule = {{ prochain_matricule }};
         const adherentsExistants = {{ adherents_existants | tojson | safe }};
         
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date_inscription').value = today;
-            document.getElementById('date_naissance').value = today;
+            
+            // Bouton de prévisualisation
+            document.getElementById('previewBtn').addEventListener('click', showConfirmationModal);
             
             // Recherche d'anciens adhérents
             document.getElementById('searchBtn').addEventListener('click', searchAdherents);
@@ -288,16 +406,93 @@
             nomInput.addEventListener('input', checkDuplicate);
             prenomInput.addEventListener('input', checkDuplicate);
             
-            // Validation du formulaire
-            document.getElementById('adherentForm').addEventListener('submit', function(e) {
-                const submitBtn = document.getElementById('submitBtn');
-                if (submitBtn.disabled) {
-                    e.preventDefault();
-                    alert('❌ Impossible d\'ajouter un adhérent avec un nom et prénom déjà existant dans cette saison.');
-                    return false;
-                }
-            });
+            // Confirmation d'ajout avec PDF
+            document.getElementById('confirmAddBtn').addEventListener('click', submitWithPDF);
         });
+        
+        function showConfirmationModal() {
+            const form = document.getElementById('adherentForm');
+            
+            // Valider le formulaire
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            // Vérifier les doublons
+            if (document.getElementById('duplicate-alert').style.display !== 'none') {
+                alert('⚠️ Impossible de continuer : un adhérent avec ce nom et prénom existe déjà.');
+                return;
+            }
+            
+            // Remplir les informations dans le modal
+            document.getElementById('confirm-matricule').textContent = prochainMatricule;
+            document.getElementById('confirm-saison').textContent = document.getElementById('code_saison').value;
+            document.getElementById('confirm-nom').textContent = 
+                document.getElementById('nom').value + ' ' + document.getElementById('prenom').value;
+            
+            const dateNaissance = new Date(document.getElementById('date_naissance').value);
+            document.getElementById('confirm-naissance').textContent = dateNaissance.toLocaleDateString('fr-FR');
+            
+            const dateInscription = new Date(document.getElementById('date_inscription').value);
+            document.getElementById('confirm-inscription').textContent = dateInscription.toLocaleDateString('fr-FR');
+            
+            const sexe = document.getElementById('sexe').value;
+            document.getElementById('confirm-sexe').textContent = sexe === 'M' ? 'Masculin' : 'Féminin';
+            
+            document.getElementById('confirm-type').textContent = document.getElementById('type_abonnement').value;
+            document.getElementById('confirm-tel1').textContent = document.getElementById('tel1').value;
+            document.getElementById('confirm-tel2').textContent = document.getElementById('tel2').value || 'Non renseigné';
+            document.getElementById('confirm-email').textContent = document.getElementById('email').value || 'Non renseigné';
+            
+            // Afficher le modal
+            const modal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+            modal.show();
+        }
+        
+        function submitWithPDF() {
+            const form = document.getElementById('adherentForm');
+            const formData = new FormData(form);
+            
+            // Désactiver le bouton pendant le traitement
+            const confirmBtn = document.getElementById('confirmAddBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Traitement en cours...';
+            
+            // Soumettre via AJAX
+            fetch("{{ url_for('ajouter_adherent') }}", {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Fermer le modal de confirmation
+                    bootstrap.Modal.getInstance(document.getElementById('confirmationModal')).hide();
+                    
+                    // Ouvrir le PDF dans une nouvelle fenêtre
+                    window.open(`/telecharger_fiche_adherent/${data.adherent_id}`, '_blank');
+                    
+                    // Afficher un message de succès
+                    alert(`✅ ${data.message}\nMatricule: ${data.matricule}\n\nLe PDF de la fiche adhérent s'ouvre dans un nouvel onglet.`);
+                    
+                    // Rediriger vers la page de gestion
+                    setTimeout(() => {
+                        window.location.href = "{{ url_for('gerer_adherent') }}";
+                    }, 1500);
+                } else {
+                    alert('❌ ' + data.message);
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Confirmer et Imprimer PDF';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('❌ Une erreur est survenue lors de l\'ajout de l\'adhérent.');
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Confirmer et Imprimer PDF';
+            });
+        }
         
         function searchAdherents() {
             const searchTerm = document.getElementById('searchInput').value.trim();
@@ -374,10 +569,17 @@
         }
         
         function fillFormWithAdherent(adherent) {
+            // Mettre à jour le matricule
+            fetch(`/get_next_matricule?code_saison={{ code_saison_defaut }}`)
+                .then(response => response.json())
+                .then(data => {
+                    prochainMatricule = data.matricule;
+                    document.getElementById('matriculeValue').textContent = prochainMatricule;
+                });
+            
             // Changer le mode du formulaire
             document.getElementById('mainFormContainer').classList.add('import-mode');
-            document.getElementById('formTitle').innerHTML = '📥 Importation d\'un adhérent';
-            document.getElementById('submitBtnText').textContent = 'Confirmer l\'importation';
+            document.getElementById('formTitle').innerHTML = '🔥 Importation d\'un adhérent';
             document.getElementById('infoMessage').innerHTML = `
                 <strong>Mode Importation :</strong> Vous importez les coordonnées de 
                 <strong>${adherent.nom} ${adherent.prenom}</strong> (ancienne saison: ${adherent.code_saison}).
@@ -400,12 +602,6 @@
             
             // Désactiver la vérification des doublons pour l'importation
             document.getElementById('duplicate-alert').style.display = 'none';
-            document.getElementById('submitBtn').disabled = false;
-            document.getElementById('submitBtn').classList.remove('btn-secondary');
-            document.getElementById('submitBtn').classList.add('btn-primary');
-            
-            // Changer l'action du formulaire
-            document.getElementById('adherentForm').action = "{{ url_for('importer_adherent') }}";
             
             // Scroll vers le formulaire
             document.getElementById('mainFormContainer').scrollIntoView({behavior: 'smooth'});
@@ -415,11 +611,11 @@
             const nom = document.getElementById('nom').value.trim().toLowerCase();
             const prenom = document.getElementById('prenom').value.trim().toLowerCase();
             const duplicateAlert = document.getElementById('duplicate-alert');
-            const submitBtn = document.getElementById('submitBtn');
+            const previewBtn = document.getElementById('previewBtn');
             
             if (!nom || !prenom) {
                 duplicateAlert.style.display = 'none';
-                submitBtn.disabled = false;
+                previewBtn.disabled = false;
                 return;
             }
             
@@ -429,14 +625,14 @@
             
             if (doublon) {
                 duplicateAlert.style.display = 'block';
-                submitBtn.disabled = true;
-                submitBtn.classList.remove('btn-primary');
-                submitBtn.classList.add('btn-secondary');
+                previewBtn.disabled = true;
+                previewBtn.classList.remove('btn-primary');
+                previewBtn.classList.add('btn-secondary');
             } else {
                 duplicateAlert.style.display = 'none';
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('btn-secondary');
-                submitBtn.classList.add('btn-primary');
+                previewBtn.disabled = false;
+                previewBtn.classList.remove('btn-secondary');
+                previewBtn.classList.add('btn-primary');
             }
         }
     </script>
