@@ -418,37 +418,29 @@ def get_adherents_data():
         # Create season context
         season = SeasonContext(Adherent)
         
-        # MODIFICATION: Filtrer par saison
+        # Filtrer par saison
         all_adherents = season.filter_query(
             Adherent.query.filter(Adherent.code_saison == season_code)
         ).all()
 
-        adherents_list = []
+        # Utiliser to_dict_light pour optimiser
+        adherents_list = [a.to_dict_light() for a in all_adherents]
+        
+        # Extraire les types d'abonnement et groupes uniques
         types_abonnement = set()
         groupes = set()
 
-        for a in all_adherents:
-            adherent_data = {
-                'id': a.adherent_id,
-                'matricule': a.matricule,
-                'nom': a.nom,
-                'prenom': a.prenom,
-                'type_abonnement': a.type_abonnement or 'N/D',
-                'groupe': a.groupe or 'Non spécifié',
-                'paye': a.paye
-            }
-            adherents_list.append(adherent_data)
-            
-            if a.type_abonnement:
-                types_abonnement.add(a.type_abonnement)
-            if a.groupe:
-                groupes.add(a.groupe)  # MODIFICATION: Les groupes sont maintenant filtrés par saison
+        for adherent_data in adherents_list:
+            if adherent_data.get('type_abonnement') and adherent_data['type_abonnement'] != 'N/D':
+                types_abonnement.add(adherent_data['type_abonnement'])
+            if adherent_data.get('groupe') and adherent_data['groupe'] != 'Non affecté':
+                groupes.add(adherent_data['groupe'])
 
         return jsonify({
             'success': True,
             'adherents': adherents_list,
             'types_abonnement': sorted(list(types_abonnement)),
-            'groupes': sorted(list(groupes)),  # Groupes filtrés par saison
+            'groupes': sorted(list(groupes)),
             'saison_code': season_code,
             'total': len(adherents_list)
         })
@@ -1772,34 +1764,45 @@ def directeur_technique():
             groupe_id = request.form.get('groupe_id')
             nouvel_entraineur_id = request.form.get('entraineur_id')
             groupe = Groupe.query.get(groupe_id)
-            ancien_entraineur = groupe.entraineur_nom
-            nouveau_entraineur = Entraineur.query.get(nouvel_entraineur_id)
+            
+            if groupe and nouvel_entraineur_id:
+                ancien_entraineur = groupe.entraineur_nom
+                nouveau_entraineur = Entraineur.query.get(nouvel_entraineur_id)
+                
+                if nouveau_entraineur:
+                    # Mettre à jour les séances
+                    seance_season.filter_query(
+                        Seance.query.filter_by(entraineur=ancien_entraineur)
+                    ).update({'entraineur': f"{nouveau_entraineur.nom} {nouveau_entraineur.prenom}"})
 
-            seance_season.filter_query(
-                Seance.query.filter_by(entraineur=ancien_entraineur)
-            ).update({'entraineur': f"{nouveau_entraineur.nom} {nouveau_entraineur.prenom}"})
-
-            groupe.entraineur_nom = f"{nouveau_entraineur.nom} {nouveau_entraineur.prenom}"
-            db.session.commit()
-            flash("Entraîneur modifié avec succès", "success")
+                    # Mettre à jour le groupe
+                    groupe.entraineur_nom = f"{nouveau_entraineur.nom} {nouveau_entraineur.prenom}"
+                    db.session.commit()
+                    flash("Entraîneur modifié avec succès", "success")
+                else:
+                    flash("Entraîneur introuvable", "danger")
+            else:
+                flash("Groupe ou entraîneur invalide", "danger")
 
         elif action == 'changer_prep_physique':
             groupe_id = request.form.get('groupe_id')
             nouveau_prep_id = request.form.get('prep_physique_id')
             groupe = Groupe.query.get(groupe_id)
+            
+            if groupe:
+                if nouveau_prep_id:
+                    nouveau_prep = Entraineur.query.get(nouveau_prep_id)
+                    if nouveau_prep and nouveau_prep.type_abonnement == "prep_physique":
+                        groupe.preparateur_physique = f"{nouveau_prep.nom} {nouveau_prep.prenom}"
+                    else:
+                        groupe.preparateur_physique = None
+                else:
+                    groupe.preparateur_physique = None
 
-            if nouveau_prep_id:
-                nouveau_prep = Entraineur.query.get(nouveau_prep_id)
-                groupe.preparateur_physique = (
-                    f"{nouveau_prep.nom} {nouveau_prep.prenom}"
-                    if nouveau_prep and nouveau_prep.type_abonnement == "prep_physique"
-                    else None
-                )
+                db.session.commit()
+                flash("Préparateur physique modifié avec succès", "success")
             else:
-                groupe.preparateur_physique = None
-
-            db.session.commit()
-            flash("Préparateur physique modifié avec succès", "success")
+                flash("Groupe invalide", "danger")
 
         elif action == 'supprimer_seance':
             seance_id = request.form.get('seance_id')
@@ -1808,6 +1811,8 @@ def directeur_technique():
                 db.session.delete(seance)
                 db.session.commit()
                 flash("Séance supprimée", "success")
+            else:
+                flash("Séance introuvable", "danger")
 
     # --- LOGIQUE D'AFFICHAGE DES DONNÉES ---
     week_offset = request.args.get('week_offset', 0, type=int)
@@ -1817,11 +1822,17 @@ def directeur_technique():
     start_of_week = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
     current_day = start_of_week + timedelta(days=day_offset)
 
+    # Récupérer les groupes de la saison
     groupes = Groupe.query.filter_by(saison_code=current_season_code).all()
 
+    # Récupérer les entraîneurs actifs
     entraineurs = Entraineur.query.filter_by(status='Actif').all()
-    prep_physiques = Entraineur.query.filter_by(type_abonnement="prep_physique", status='Actif').all()
+    prep_physiques = Entraineur.query.filter_by(
+        type_abonnement="prep_physique", 
+        status='Actif'
+    ).all()
 
+    # Récupérer les séances de la semaine
     seances_week = seance_season.filter_query(
         Seance.query.filter(
             Seance.date >= start_of_week.date(),
@@ -1829,6 +1840,7 @@ def directeur_technique():
         )
     ).all()
 
+    # Récupérer les séances du jour
     seances_day = seance_season.filter_query(
         Seance.query.filter(Seance.date == current_day.date())
     ).all()
@@ -1838,17 +1850,15 @@ def directeur_technique():
     for seance in seances_week:
         seances_par_groupe[seance.groupe] = seances_par_groupe.get(seance.groupe, 0) + 1
 
-    # Liste des adhérents actifs de la saison
+    # Liste des adhérents actifs de la saison (pour autocomplete)
     all_adherents = adherent_season.filter_query(
         Adherent.query.filter_by(status='Actif')
     ).all()
 
-    adherents_list = [
-        {'matricule': a.matricule, 'nom': a.nom, 'prenom': a.prenom}
-        for a in all_adherents
-    ]
+    # Utiliser to_dict_minimal pour l'autocomplétion
+    adherents_list = [a.to_dict_minimal() for a in all_adherents]
 
-    # ← NOUVEAU : Récupérer les adhérents NON affectés à un groupe
+    # Récupérer les adhérents NON affectés à un groupe
     adherents_non_affectes = Adherent.query.filter(
         Adherent.code_saison == current_season_code,
         Adherent.status == 'Actif',
@@ -1859,15 +1869,8 @@ def directeur_technique():
         )
     ).order_by(Adherent.nom, Adherent.prenom).all()
 
-    # Transformer en liste de dictionnaires - CORRECTION ICI
-    adherents_non_affectes_list = [{
-        'matricule': a.matricule,
-        'nom': a.nom,
-        'prenom': a.prenom,
-        'type_abonnement': a.type_abonnement or 'N/D',
-        'date_naissance': a.date_naissance.strftime('%d/%m/%Y') if a.date_naissance and isinstance(a.date_naissance, (date, datetime)) else 'N/D',
-        'date_inscription': a.date_inscription.strftime('%d/%m/%Y') if a.date_inscription and isinstance(a.date_inscription, (date, datetime)) else 'N/D'
-    } for a in adherents_non_affectes]
+    # Utiliser to_dict_light pour le tableau des non affectés
+    adherents_non_affectes_list = [a.to_dict_light() for a in adherents_non_affectes]
 
     # Rendu de la page
     return render_template(
@@ -3288,7 +3291,7 @@ def gerer_adherent():
     # Filter adherents by exact season code
     adherents = Adherent.query.filter(
         Adherent.code_saison == current_season_code,
-        Adherent.status == 'Actif'  # Optionnel: filtrer aussi par statut
+        Adherent.status == 'Actif'
     ).order_by(Adherent.nom).all()
     
     return render_template('gerer_adherent.html',
@@ -4485,19 +4488,75 @@ class Adherent(db.Model):
     paye = db.Column(db.Enum('O', 'N'), nullable=False)
     status = db.Column(db.Enum('Actif', 'Non-Actif'), nullable=False)
     code_saison = db.Column(db.String(10), nullable=True)
-    cotisation = db.Column(db.Float, nullable=True)  # Nouveau champ
-    remise = db.Column(db.Float, nullable=True)      # Nouveau champ
+    cotisation = db.Column(db.Float, nullable=True)
+    remise = db.Column(db.Float, nullable=True)
 
     def __repr__(self):
         return f'<Adherent {self.nom} {self.prenom}>'
 
+    # ==================== MÉTHODES DE FORMATAGE DES DATES ====================
+    
+    @staticmethod
+    def _format_date(date_value, format_str='%d/%m/%Y'):
+        """
+        Méthode utilitaire pour formater les dates de manière sûre
+        
+        Args:
+            date_value: La valeur de date à formater (peut être None, str, date, ou datetime)
+            format_str: Le format de sortie souhaité (par défaut '%d/%m/%Y')
+        
+        Returns:
+            str: La date formatée ou 'N/D' si invalide
+        """
+        if not date_value:
+            return 'N/D'
+        
+        # Si c'est déjà une chaîne, on la retourne
+        if isinstance(date_value, str):
+            return date_value
+        
+        # Si c'est un objet date ou datetime, on le formate
+        if isinstance(date_value, (date, datetime)):
+            try:
+                return date_value.strftime(format_str)
+            except:
+                return 'N/D'
+        
+        # Sinon, retourner N/D
+        return 'N/D'
+    
+    def get_date_naissance_formatted(self, format_str='%d/%m/%Y'):
+        """Retourne la date de naissance formatée de manière sûre"""
+        return self._format_date(self.date_naissance, format_str)
+    
+    def get_date_inscription_formatted(self, format_str='%d/%m/%Y'):
+        """Retourne la date d'inscription formatée de manière sûre"""
+        return self._format_date(self.date_inscription, format_str)
+    
+    def get_age(self):
+        """Calcule l'âge de l'adhérent"""
+        if not self.date_naissance or isinstance(self.date_naissance, str):
+            return None
+        
+        if isinstance(self.date_naissance, (date, datetime)):
+            today = date.today()
+            return today.year - self.date_naissance.year - (
+                (today.month, today.day) < (self.date_naissance.month, self.date_naissance.day)
+            )
+        
+        return None
+
+    # ==================== MÉTHODES TO_DICT ====================
+    
     def to_dict(self):
+        """Version complète pour les détails d'un adhérent"""
         return {
             "adherent_id": self.adherent_id,
             "nom": self.nom,
             "prenom": self.prenom,
-            "date_naissance": self.date_naissance.isoformat(),
-            "date_inscription": self.date_inscription.isoformat(),
+            "date_naissance": self.get_date_naissance_formatted(),
+            "date_inscription": self.get_date_inscription_formatted(),
+            "age": self.get_age(),
             "sexe": self.sexe,
             "tel1": self.tel1,
             "tel2": self.tel2,
@@ -4513,7 +4572,29 @@ class Adherent(db.Model):
             "cotisation": self.cotisation,
             "remise": self.remise
         }
-
+    
+    def to_dict_light(self):
+        """Version légère pour les listes (optimisée pour les tableaux)"""
+        return {
+            'matricule': self.matricule,
+            'nom': self.nom,
+            'prenom': self.prenom,
+            'type_abonnement': self.type_abonnement or 'N/D',
+            'groupe': self.groupe or 'Non affecté',
+            'date_naissance': self.get_date_naissance_formatted(),
+            'date_inscription': self.get_date_inscription_formatted(),
+            'age': self.get_age(),
+            'status': self.status
+        }
+    
+    def to_dict_minimal(self):
+        """Version minimale pour les autocomplètes et sélections"""
+        return {
+            'matricule': self.matricule,
+            'nom': self.nom,
+            'prenom': self.prenom,
+            'label': f"{self.matricule} - {self.nom} {self.prenom}"
+        }
 
 
 class Groupe(db.Model):
@@ -5894,15 +5975,11 @@ def search_adherent():
     
     print(f"Adhérents trouvés: {len(adherents)}")
     
+    # Utiliser to_dict_minimal pour l'autocomplétion
     return jsonify([{
-        'id': a.adherent_id,
-        'matricule': a.matricule,
-        'nom': a.nom,
-        'prenom': a.prenom,
-        'label': f"{a.matricule} - {a.nom} {a.prenom}",
+        **a.to_dict_minimal(),
         'code_saison': a.code_saison
     } for a in adherents])
-
 @app.route('/api/situation-adherent/<int:matricule>')
 @season_required
 def get_situation_adherent(matricule):
