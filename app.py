@@ -1859,14 +1859,14 @@ def directeur_technique():
         )
     ).order_by(Adherent.nom, Adherent.prenom).all()
 
-    # Transformer en liste de dictionnaires
+    # Transformer en liste de dictionnaires - CORRECTION ICI
     adherents_non_affectes_list = [{
         'matricule': a.matricule,
         'nom': a.nom,
         'prenom': a.prenom,
         'type_abonnement': a.type_abonnement or 'N/D',
-        'date_naissance': a.date_naissance.strftime('%d/%m/%Y') if a.date_naissance else 'N/D',
-        'date_inscription': a.date_inscription.strftime('%d/%m/%Y') if a.date_inscription else 'N/D'
+        'date_naissance': a.date_naissance.strftime('%d/%m/%Y') if a.date_naissance and isinstance(a.date_naissance, (date, datetime)) else 'N/D',
+        'date_inscription': a.date_inscription.strftime('%d/%m/%Y') if a.date_inscription and isinstance(a.date_inscription, (date, datetime)) else 'N/D'
     } for a in adherents_non_affectes]
 
     # Rendu de la page
@@ -1885,12 +1885,11 @@ def directeur_technique():
         seances_par_groupe=seances_par_groupe,
         all_adherents=adherents_list,
         adherents_json=json.dumps(adherents_list),
-        adherents_non_affectes=adherents_non_affectes_list,  # ← NOUVEAU
+        adherents_non_affectes=adherents_non_affectes_list,
         saison_code=current_season_code,
         saison_type=session.get('saison_type'),
         saison_year=session.get('saison')
     )
-
 @app.route('/planning_prep_physique', methods=['GET', 'POST'])
 @season_required
 def planning_prep_physique():
