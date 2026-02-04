@@ -3868,6 +3868,7 @@ def paiement():
     montant_net = 0
     remise_montant = 0
     total_montant_paye = 0
+    is_first_payment = False
 
     # 🔎 Gestion du POST (recherche ou ajout de paiement)
     if request.method == 'POST':
@@ -3883,7 +3884,8 @@ def paiement():
                 saison_type=saison_type,
                 code_saison=code_saison,
                 saison_year=saison_year,
-                adherents_list=adherents_list
+                adherents_list=adherents_list,
+                is_first_payment=False
             )
         
         # ✅ Recherche flexible : par matricule, nom ou prénom
@@ -3908,7 +3910,8 @@ def paiement():
                 saison_type=saison_type,
                 code_saison=code_saison,
                 saison_year=saison_year,
-                adherents_list=adherents_list
+                adherents_list=adherents_list,
+                is_first_payment=False
             )
 
         # 🔹 Récupérer les paiements actifs
@@ -3917,6 +3920,9 @@ def paiement():
             code_saison=code_saison,
             etat='actif'
         ).order_by(Paiement.date_paiement.asc()).all()
+
+        # 🔍 Vérifier si c'est le premier paiement
+        is_first_payment = len(paiements) == 0
 
         # 💰 Si un paiement est ajouté
         if request.form.get('montant_paye'):
@@ -3930,23 +3936,54 @@ def paiement():
                 numero_cheque = request.form.get('numero_cheque')
                 banque = request.form.get('banque')
 
-                # Si première cotisation non définie
-                if not adherent.cotisation:
+                # 🎯 Gestion de la cotisation et de la remise (PREMIER PAIEMENT UNIQUEMENT)
+                if is_first_payment:
+                    # Récupérer ou définir la cotisation
                     cotisation_select = request.form.get('cotisation_select')
                     if cotisation_select:
                         cot = Cotisation.query.get(cotisation_select)
                         if cot:
                             adherent.cotisation = cot.montant_cotisation
+                    elif not adherent.cotisation:
+                        flash("Veuillez sélectionner une cotisation.", "danger")
+                        cotisations = Cotisation.query.filter_by(code_saison=code_saison).all()
+                        return render_template(
+                            'paiement.html',
+                            adherent=adherent,
+                            paiements=paiements,
+                            cotisations=cotisations,
+                            saison_type=saison_type,
+                            code_saison=code_saison,
+                            saison_year=saison_year,
+                            adherents_list=adherents_list,
+                            is_first_payment=is_first_payment
+                        )
                     
-                    remise_input = request.form.get('remise_input', 0)
-                    adherent.remise = float(remise_input) if remise_input else 0
+                    # 💎 Récupérer la remise (en pourcentage)
+                    remise_input = request.form.get('remise_input', '0').strip()
+                    try:
+                        remise_pourcentage = float(remise_input) if remise_input else 0
+                        
+                        # Validation de la remise (0-100%)
+                        if remise_pourcentage < 0 or remise_pourcentage > 100:
+                            flash("La remise doit être entre 0 et 100%.", "danger")
+                            return redirect(url_for('paiement', type=type_param))
+                        
+                        adherent.remise = remise_pourcentage
+                        
+                    except ValueError:
+                        flash("Veuillez entrer une valeur numérique pour la remise.", "danger")
+                        return redirect(url_for('paiement', type=type_param))
+                    
                     db.session.commit()
                 
+                # 📊 Calcul du montant net à payer
                 cotisation = float(adherent.cotisation or 0)
                 remise_pourcentage = float(adherent.remise) if adherent.remise else 0
                 remise_montant = (cotisation * remise_pourcentage) / 100
                 montant_net = cotisation - remise_montant
 
+                # Vérifier le total déjà payé
                 total_deja_paye = sum(float(p.montant_paye or 0) for p in paiements)
                 reste_avant_paiement = montant_net - total_deja_paye
 
@@ -3956,7 +3993,7 @@ def paiement():
 
                 montant_reste = reste_avant_paiement - montant_paye
 
-                # Génération des numéros de carnet et bon POUR CE PAIEMENT
+                # Génération des numéros de carnet et bon
                 dernier_paiement = Paiement.query.order_by(Paiement.id_paiement.desc()).first()
                 numero_carnet_actuel = dernier_paiement.numero_carnet if dernier_paiement else 1
                 numero_bon_actuel = (dernier_paiement.numero_bon + 1) if dernier_paiement else 1
@@ -3965,7 +4002,7 @@ def paiement():
                     numero_carnet_actuel += 1
                     numero_bon_actuel = 1
 
-                # Création du paiement avec les numéros ACTUELS
+                # Création du paiement
                 nouveau_paiement = Paiement(
                     matricule_adherent=str(adherent.matricule),
                     montant=montant_net,
@@ -3986,7 +4023,7 @@ def paiement():
                 adherent.paye = 'O' if montant_reste <= 0 else 'N'
                 db.session.commit()
 
-                # 🎫 GÉNÉRATION DU BON DE PAIEMENT PDF avec les numéros qui viennent d'être enregistrés
+                # 🎫 GÉNÉRATION DU BON DE PAIEMENT PDF
                 try:
                     pdf_path = generer_bon_paiement(
                         matricule_adherent=str(adherent.matricule),
@@ -4001,11 +4038,10 @@ def paiement():
                     
                     if pdf_path and os.path.exists(pdf_path):
                         flash("Paiement enregistré avec succès. Téléchargement du bon en cours...", "success")
-                        # Télécharger automatiquement le PDF
                         return send_file(
                             pdf_path,
                             as_attachment=True,
-                            download_name=f"bon_paiement_{numero_carnet}_{numero_bon}.pdf",
+                            download_name=f"bon_paiement_{numero_carnet_actuel}_{numero_bon_actuel}.pdf",
                             mimetype='application/pdf'
                         )
                     else:
@@ -4019,8 +4055,10 @@ def paiement():
             except Exception as e:
                 db.session.rollback()
                 flash(f"Erreur lors de l'enregistrement : {str(e)}", "danger")
+                import traceback
+                traceback.print_exc()
 
-        # 📊 Recalcul des montants
+        # 📊 Recalcul des montants pour l'affichage
         if adherent.cotisation:
             cotisation = float(adherent.cotisation)
             remise = float(adherent.remise or 0)
@@ -4028,10 +4066,9 @@ def paiement():
             montant_net = cotisation - remise_montant
             total_montant_paye = sum(float(p.montant_paye or 0) for p in paiements)
         
-        cotisations = Cotisation.query.all()
+        cotisations = Cotisation.query.filter_by(code_saison=code_saison).all()
 
-    # 🔢 Calcul des numéros de bon et carnet POUR L'AFFICHAGE (prochain disponible)
-    # On le fait toujours à la fin, que ce soit GET ou POST
+    # 🔢 Calcul des numéros de bon et carnet pour l'affichage
     dernier_paiement_affichage = Paiement.query.order_by(Paiement.id_paiement.desc()).first()
     if dernier_paiement_affichage:
         numero_carnet = dernier_paiement_affichage.numero_carnet
@@ -4061,7 +4098,8 @@ def paiement():
         code_saison=code_saison,
         saison_year=saison_year,
         adherents_list=adherents_list,
-        reste_a_payer=max(0, montant_net - total_montant_paye)
+        reste_a_payer=max(0, montant_net - total_montant_paye),
+        is_first_payment=is_first_payment
     )
 
 # 3. ROUTE POUR ANNULER UN PAIEMENT
