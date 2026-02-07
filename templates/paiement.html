@@ -24,6 +24,19 @@
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     
     <style>
+        input[type="datetime-local"] {
+        padding: 0.5rem;
+        font-size: 1rem;
+    }
+    
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        filter: brightness(0.8);
+    }
+    
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+        filter: brightness(1);
+    }
         #autocomplete-list {
             position: absolute;
             top: 100% !important;
@@ -366,7 +379,24 @@
                                         </div>
                                     </div>
                                 </div>
-
+<div class="row g-3 mb-4">
+    <div class="col-md-12">
+        <label for="date_paiement" class="form-label fw-bold">
+            Date et Heure du Paiement <span class="text-danger">*</span>
+        </label>
+        <input type="datetime-local" 
+               class="form-control" 
+               id="date_paiement" 
+               name="date_paiement" 
+               value="{{ datetime.now().strftime('%Y-%m-%dT%H:%M') }}"
+               required
+               onkeydown="return preventEnter(event)">
+        <div class="form-text">
+            <i class="bi bi-info-circle me-1"></i>
+            Sélectionnez la date et l'heure exactes du paiement
+        </div>
+    </div>
+</div>
                                 <div class="row g-3">
                                     <div class="col-md-4">
                                         <label for="montant_paye" class="form-label fw-bold">Montant à payer <span class="text-danger">*</span></label>
@@ -523,169 +553,267 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
-    <script>
-        // Fonction pour calculer et afficher le montant net en temps réel
-        function updateMontantNet() {
-            const cotisationSelect = document.getElementById('cotisation_select');
-            const remiseInput = document.getElementById('remise_input');
-            
-            if (!cotisationSelect || !remiseInput) return;
-            
-            const selectedOption = cotisationSelect.options[cotisationSelect.selectedIndex];
-            const cotisation = parseFloat(selectedOption.getAttribute('data-montant')) || 0;
-            const remisePourcentage = parseFloat(remiseInput.value) || 0;
-            
-            // Validation de la remise
-            if (remisePourcentage < 0 || remisePourcentage > 100) {
-                remiseInput.value = Math.max(0, Math.min(100, remisePourcentage));
-                return;
-            }
-            
-            // Calcul
-            const montantRemise = (cotisation * remisePourcentage) / 100;
-            const montantNet = cotisation - montantRemise;
-            
-            // Mise à jour de l'affichage
-            document.getElementById('cotisation_display').textContent = cotisation.toFixed(2);
-            document.getElementById('remise_display').textContent = remisePourcentage.toFixed(2);
-            document.getElementById('montant_remise_display').textContent = montantRemise.toFixed(2) + ' TND';
-            document.getElementById('montant_net_display').textContent = montantNet.toFixed(2);
+
+<script>
+    # CORRECTION JAVASCRIPT - paiement.html
+# ======================================
+
+## PROBLÈME IDENTIFIÉ
+Le timeout se déclenche car après la redirection POST → GET, 
+la variable `isSubmitting` reste à `true` dans le navigateur.
+
+## SOLUTION : Réinitialiser après redirection réussie
+
+# LOCALISATION : Lignes 665-726 dans paiement.html
+# REMPLACER TOUTE la fonction validatePaiement() et le code de protection
+
+# SUPPRIMER DE LA LIGNE 616 À LA LIGNE 726 (tout le bloc JavaScript de validation)
+# REMPLACER PAR CE CODE :
+
+<script>
+    // Variables pour la protection contre double soumission
+    let isSubmitting = false;
+    let lastSubmitTime = 0;
+    const MIN_SUBMIT_INTERVAL = 2000; // 2 secondes minimum entre deux soumissions
+
+    // Fonction pour empêcher la touche Enter
+    function preventEnter(event) {
+        if (event.keyCode === 13) {
+            event.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
+    // Fonction pour afficher/masquer les champs chèque
+    function toggleChequeFields() {
+        const typeReglement = document.getElementById('type_reglement').value;
+        const chequeField = document.getElementById('cheque_field');
+        const banqueField = document.getElementById('banque_field');
+        const numeroCheque = document.getElementById('numero_cheque');
+        const banque = document.getElementById('banque');
+        
+        if (typeReglement === 'chèque') {
+            chequeField.style.display = 'block';
+            banqueField.style.display = 'block';
+            numeroCheque.required = true;
+            banque.required = true;
+        } else {
+            chequeField.style.display = 'none';
+            banqueField.style.display = 'none';
+            numeroCheque.required = false;
+            banque.required = false;
+            numeroCheque.value = '';
+            banque.value = '';
+        }
+    }
+
+    // Calcul du montant net en temps réel
+    function updateMontantNet() {
+        const cotisationSelect = document.getElementById('cotisation_select');
+        const remiseInput = document.getElementById('remise_input');
+        
+        if (!cotisationSelect || !remiseInput) return;
+        
+        const selectedOption = cotisationSelect.options[cotisationSelect.selectedIndex];
+        const cotisation = parseFloat(selectedOption.getAttribute('data-montant')) || 0;
+        const remise = parseFloat(remiseInput.value) || 0;
+        
+        const montantRemise = (cotisation * remise) / 100;
+        const montantNet = cotisation - montantRemise;
+        
+        document.getElementById('cotisation_display').textContent = cotisation.toFixed(2);
+        document.getElementById('remise_display').textContent = remise.toFixed(2);
+        document.getElementById('montant_remise_display').textContent = montantRemise.toFixed(2) + ' TND';
+        document.getElementById('montant_net_display').textContent = montantNet.toFixed(2);
+    }
+
+    // ====================================================
+    // 🔧 FONCTION DE VALIDATION CORRIGÉE
+    // ====================================================
+    function validatePaiement() {
+        // Vérifier si une soumission est déjà en cours
+        if (isSubmitting) {
+            console.warn('Une soumission est déjà en cours...');
+            return false;
         }
 
-        // Fonction pour afficher/masquer les champs chèque
-        function toggleChequeFields() {
-            const typeReglement = document.getElementById('type_reglement').value;
-            const chequeField = document.getElementById('cheque_field');
-            const banqueField = document.getElementById('banque_field');
-            const numeroChequeInput = document.getElementById('numero_cheque');
-            const banqueInput = document.getElementById('banque');
+        // Vérifier l'intervalle minimum entre deux soumissions
+        const now = Date.now();
+        if (now - lastSubmitTime < MIN_SUBMIT_INTERVAL) {
+            alert('⚠️ Veuillez attendre quelques secondes avant de soumettre à nouveau.');
+            return false;
+        }
+
+        const montantInput = document.getElementById('montant_paye');
+        const montant = parseFloat(montantInput.value);
+        const resteAPayer = parseFloat('{{ reste_a_payer }}');
+        
+        if (montant > resteAPayer) {
+            alert('Erreur : Le montant payé (' + montant.toFixed(2) + ' TND) dépasse le reste à payer (' + resteAPayer.toFixed(2) + ' TND)');
+            montantInput.focus();
+            return false;
+        }
+        
+        if (montant <= 0) {
+            alert('Erreur : Le montant doit être supérieur à 0');
+            montantInput.focus();
+            return false;
+        }
+
+        const datePaiement = document.getElementById('date_paiement').value;
+        if (!datePaiement) {
+            alert('Erreur : Veuillez sélectionner la date et l\'heure du paiement');
+            document.getElementById('date_paiement').focus();
+            return false;
+        }
+
+        const selectedDate = new Date(datePaiement);
+        const now_date = new Date();
+        if (selectedDate > now_date) {
+            if (!confirm('La date sélectionnée est dans le futur. Voulez-vous continuer ?')) {
+                document.getElementById('date_paiement').focus();
+                return false;
+            }
+        }
+
+        const typeReglement = document.getElementById('type_reglement').value;
+        if (typeReglement === 'chèque') {
+            const numeroCheque = document.getElementById('numero_cheque').value.trim();
+            const banque = document.getElementById('banque').value.trim();
             
-            if (typeReglement === 'chèque') {
-                chequeField.style.display = 'block';
-                banqueField.style.display = 'block';
-                numeroChequeInput.required = true;
-                banqueInput.required = true;
+            if (!numeroCheque) {
+                alert('Erreur : Veuillez saisir le numéro de chèque');
+                document.getElementById('numero_cheque').focus();
+                return false;
+            }
+            
+            if (!banque) {
+                alert('Erreur : Veuillez saisir le nom de la banque');
+                document.getElementById('banque').focus();
+                return false;
+            }
+        }
+        
+        // Validation pour le premier paiement
+        {% if is_first_payment %}
+        const cotisationSelect = document.getElementById('cotisation_select');
+        if (!cotisationSelect.value) {
+            alert('Erreur : Veuillez sélectionner une cotisation');
+            cotisationSelect.focus();
+            return false;
+        }
+        
+        const remiseInput = document.getElementById('remise_input');
+        const remise = parseFloat(remiseInput.value) || 0;
+        if (remise < 0 || remise > 100) {
+            alert('Erreur : La remise doit être entre 0 et 100%');
+            remiseInput.focus();
+            return false;
+        }
+        {% endif %}
+        
+        // ====================================================
+        // ✅ MARQUER COMME EN COURS (SANS TIMEOUT)
+        // ====================================================
+        isSubmitting = true;
+        lastSubmitTime = now;
+        
+        const btnSubmit = document.getElementById('btnAjouterPaiement');
+        const form = document.getElementById('paiementForm');
+        
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Enregistrement en cours...';
+        
+        // Désactiver tous les inputs du formulaire
+        const inputs = form.querySelectorAll('input, select, button');
+        inputs.forEach(input => {
+            input.disabled = true;
+        });
+        
+        // ====================================================
+        // 🚫 PAS DE TIMEOUT - Le formulaire sera soumis normalement
+        // La page sera rechargée après la redirection, ce qui réinitialisera tout
+        // ====================================================
+        
+        return true;
+    }
+    // ====================================================
+
+    // Fonction pour annuler un paiement
+    function annulerPaiement(idPaiement) {
+        if (!confirm('Êtes-vous sûr de vouloir annuler ce paiement ? Cette action est irréversible.')) {
+            return;
+        }
+        
+        fetch('/annuler_paiement/' + idPaiement, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Mettre à jour l'interface
+                const row = document.getElementById('paiement-' + idPaiement);
+                if (row) {
+                    row.classList.add('paiement-annule');
+                    row.cells[8].innerHTML = '<span class="badge badge-annule"><i class="bi bi-x-circle me-1"></i>Annulé</span>';
+                    row.cells[9].innerHTML = '<span class="text-muted small">Annulé maintenant</span>';
+                }
+                
+                // Mettre à jour les totaux
+                location.reload();
             } else {
-                chequeField.style.display = 'none';
-                banqueField.style.display = 'none';
-                numeroChequeInput.required = false;
-                banqueInput.required = false;
-                numeroChequeInput.value = '';
-                banqueInput.value = '';
+                alert('Erreur: ' + data.message);
             }
-        }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Une erreur est survenue lors de l\'annulation du paiement.');
+        });
+    }
 
-        // Empêcher la soumission par Entrée
-        function preventEnter(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                return false;
-            }
-            return true;
-        }
-
-        // Validation du formulaire de paiement
-        function validatePaiement() {
-            const montantInput = document.getElementById('montant_paye');
-            const montant = parseFloat(montantInput.value);
-            const resteAPayer = parseFloat('{{ reste_a_payer }}');
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('paiementForm');
+        
+        // ====================================================
+        // ✅ RÉINITIALISER AU CHARGEMENT DE LA PAGE
+        // ====================================================
+        // Ceci garantit que les variables sont toujours réinitialisées
+        // après une redirection
+        isSubmitting = false;
+        lastSubmitTime = 0;
+        
+        // Réactiver tous les champs (au cas où ils seraient désactivés)
+        if (form) {
+            const allInputs = form.querySelectorAll('input, select, button');
+            allInputs.forEach(input => {
+                input.disabled = false;
+            });
             
-            if (montant > resteAPayer) {
-                alert('Erreur : Le montant payé (' + montant.toFixed(2) + ' TND) dépasse le reste à payer (' + resteAPayer.toFixed(2) + ' TND)');
-                montantInput.focus();
-                return false;
+            const btnSubmit = document.getElementById('btnAjouterPaiement');
+            if (btnSubmit) {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '<i class="bi bi-check-circle me-2"></i>Valider le Paiement';
             }
             
-            if (montant <= 0) {
-                alert('Erreur : Le montant doit être supérieur à 0');
-                montantInput.focus();
-                return false;
-            }
-
-            const typeReglement = document.getElementById('type_reglement').value;
-            if (typeReglement === 'chèque') {
-                const numeroCheque = document.getElementById('numero_cheque').value.trim();
-                const banque = document.getElementById('banque').value.trim();
-                
-                if (!numeroCheque) {
-                    alert('Erreur : Veuillez saisir le numéro de chèque');
-                    document.getElementById('numero_cheque').focus();
+            // Empêcher la double soumission via le listener de formulaire
+            form.addEventListener('submit', function(e) {
+                if (isSubmitting) {
+                    e.preventDefault();
                     return false;
                 }
-                
-                if (!banque) {
-                    alert('Erreur : Veuillez saisir le nom de la banque');
-                    document.getElementById('banque').focus();
-                    return false;
-                }
-            }
-            
-            // Validation pour le premier paiement
-            {% if is_first_payment %}
-            const cotisationSelect = document.getElementById('cotisation_select');
-            if (!cotisationSelect.value) {
-                alert('Erreur : Veuillez sélectionner une cotisation');
-                cotisationSelect.focus();
-                return false;
-            }
-            
-            const remiseInput = document.getElementById('remise_input');
-            const remise = parseFloat(remiseInput.value) || 0;
-            if (remise < 0 || remise > 100) {
-                alert('Erreur : La remise doit être entre 0 et 100%');
-                remiseInput.focus();
-                return false;
-            }
-            {% endif %}
-            
-            // Désactiver le bouton pour éviter les doubles clics
-            document.getElementById('btnAjouterPaiement').disabled = true;
-            document.getElementById('btnAjouterPaiement').innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Génération du bon en cours...';
-            
-            return true;
-        }
-
-        // Fonction pour annuler un paiement
-        function annulerPaiement(idPaiement) {
-            if (!confirm('Êtes-vous sûr de vouloir annuler ce paiement ? Cette action est irréversible.')) {
-                return;
-            }
-            
-            fetch('/annuler_paiement/' + idPaiement, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Mettre à jour l'interface
-                    const row = document.getElementById('paiement-' + idPaiement);
-                    if (row) {
-                        row.classList.add('paiement-annule');
-                        row.cells[8].innerHTML = '<span class="badge badge-annule"><i class="bi bi-x-circle me-1"></i>Annulé</span>';
-                        row.cells[9].innerHTML = '<span class="text-muted small">Annulé maintenant</span>';
-                    }
-                    
-                    // Mettre à jour les totaux
-                    location.reload(); // Recharger pour les nouveaux calculs
-                } else {
-                    alert('Erreur: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                alert('Une erreur est survenue lors de l\'annulation du paiement.');
             });
         }
+        // ====================================================
 
-        // Autocomplétion
-        document.addEventListener('DOMContentLoaded', function() {
-            const matriculeInput = document.getElementById('matriculeInput');
-            const autocompleteList = document.getElementById('autocomplete-list');
-            const adherentsData = {{ adherents_list | tojson }};
+        const matriculeInput = document.getElementById('matriculeInput');
+        const autocompleteList = document.getElementById('autocomplete-list');
+        const adherentsData = {{ adherents_list | tojson }};
 
+        if (matriculeInput && autocompleteList) {
             matriculeInput.addEventListener('input', function() {
                 const query = this.value.toLowerCase();
                 autocompleteList.innerHTML = '';
@@ -755,18 +883,20 @@
                     item.classList.toggle('active', index === selectedIndex);
                 });
             }
-            
-            // Initialiser le calcul du montant net au chargement si premier paiement
-            {% if is_first_payment %}
-            updateMontantNet();
-            {% endif %}
-            
-            // Activer les tooltips Bootstrap
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
+        }
+        
+        // Initialiser le calcul du montant net au chargement si premier paiement
+        {% if is_first_payment %}
+        updateMontantNet();
+        {% endif %}
+        
+        // Activer les tooltips Bootstrap
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
         });
-    </script>
+    });
+</script>
+</script>
 </body>
 </html>
