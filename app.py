@@ -3820,8 +3820,8 @@ from flask import send_file
 
 from flask import send_file
 
+
 @app.route('/paiement', methods=['GET', 'POST'])
-@season_required
 def paiement():
     # 🔐 Vérification d'accès
     if 'user_id' not in session or session.get('role') != 'admin':
@@ -3935,10 +3935,31 @@ def paiement():
                 type_reglement = request.form.get('type_reglement')
                 numero_cheque = request.form.get('numero_cheque')
                 banque = request.form.get('banque')
+                
+                # ✅ RÉCUPÉRER LA DATE DE PAIEMENT
+                date_paiement_str = request.form.get('date_paiement')
+                if date_paiement_str:
+                    date_paiement = datetime.strptime(date_paiement_str, '%Y-%m-%dT%H:%M')
+                else:
+                    date_paiement = datetime.now(pytz.timezone('Europe/Paris'))
+
+                # 🛡️ PROTECTION CONTRE LES DOUBLES SOUMISSIONS
+                temps_limite = datetime.now(pytz.timezone('Europe/Paris')) - timedelta(seconds=30)
+                paiement_recent = Paiement.query.filter(
+                    Paiement.matricule_adherent == str(adherent.matricule),
+                    Paiement.code_saison == code_saison,
+                    Paiement.montant_paye == montant_paye,
+                    Paiement.type_reglement == type_reglement,
+                    Paiement.date_paiement >= temps_limite,
+                    Paiement.etat == 'actif'
+                ).first()
+                
+                if paiement_recent:
+                    flash("⚠️ Ce paiement a déjà été enregistré il y a quelques secondes. Veuillez rafraîchir la page.", "warning")
+                    return redirect(url_for('paiement', type=type_param))
 
                 # 🎯 Gestion de la cotisation et de la remise (PREMIER PAIEMENT UNIQUEMENT)
                 if is_first_payment:
-                    # Récupérer ou définir la cotisation
                     cotisation_select = request.form.get('cotisation_select')
                     if cotisation_select:
                         cot = Cotisation.query.get(cotisation_select)
@@ -3964,7 +3985,6 @@ def paiement():
                     try:
                         remise_pourcentage = float(remise_input) if remise_input else 0
                         
-                        # Validation de la remise (0-100%)
                         if remise_pourcentage < 0 or remise_pourcentage > 100:
                             flash("La remise doit être entre 0 et 100%.", "danger")
                             return redirect(url_for('paiement', type=type_param))
@@ -4002,7 +4022,9 @@ def paiement():
                     numero_carnet_actuel += 1
                     numero_bon_actuel = 1
 
-                # Création du paiement
+                # ====================================================
+                # 💾 CRÉATION ET ENREGISTREMENT DU PAIEMENT
+                # ====================================================
                 nouveau_paiement = Paiement(
                     matricule_adherent=str(adherent.matricule),
                     montant=montant_net,
@@ -4016,41 +4038,20 @@ def paiement():
                     numero_bon=numero_bon_actuel,
                     numero_carnet=numero_carnet_actuel,
                     code_saison=code_saison,
-                    etat='actif'
+                    etat='actif',
+                    date_paiement=date_paiement
                 )
 
                 db.session.add(nouveau_paiement)
+                db.session.flush()
+                
                 adherent.paye = 'O' if montant_reste <= 0 else 'N'
                 db.session.commit()
-
-                # 🎫 GÉNÉRATION DU BON DE PAIEMENT PDF
-                try:
-                    pdf_path = generer_bon_paiement(
-                        matricule_adherent=str(adherent.matricule),
-                        montant_paye=montant_paye,
-                        type_reglement=type_reglement,
-                        code_saison=code_saison,
-                        numero_bon=numero_bon_actuel,
-                        numero_carnet=numero_carnet_actuel,
-                        numero_cheque=numero_cheque,
-                        banque=banque
-                    )
-                    
-                    if pdf_path and os.path.exists(pdf_path):
-                        flash("Paiement enregistré avec succès. Téléchargement du bon en cours...", "success")
-                        return send_file(
-                            pdf_path,
-                            as_attachment=True,
-                            download_name=f"bon_paiement_{numero_carnet_actuel}_{numero_bon_actuel}.pdf",
-                            mimetype='application/pdf'
-                        )
-                    else:
-                        flash("Paiement enregistré mais erreur lors de la génération du bon PDF.", "warning")
-                        return redirect(url_for('paiement', type=type_param))
-                        
-                except Exception as pdf_error:
-                    flash(f"Paiement enregistré mais erreur PDF : {str(pdf_error)}", "warning")
-                    return redirect(url_for('paiement', type=type_param))
+                
+                # ✅ PAIEMENT ENREGISTRÉ AVEC SUCCÈS - PAS DE PDF
+                flash(f"✅ Paiement de {montant_paye:.2f} TND enregistré avec succès ! (Bon N° {numero_carnet_actuel}-{numero_bon_actuel})", "success")
+                return redirect(url_for('paiement', type=type_param))
+                # ====================================================
 
             except Exception as e:
                 db.session.rollback()
@@ -4099,8 +4100,10 @@ def paiement():
         saison_year=saison_year,
         adherents_list=adherents_list,
         reste_a_payer=max(0, montant_net - total_montant_paye),
-        is_first_payment=is_first_payment
+        is_first_payment=is_first_payment,
+        datetime=datetime
     )
+
 
 # 3. ROUTE POUR ANNULER UN PAIEMENT
 
