@@ -171,10 +171,10 @@ Rendez-vous sur **[http://localhost:5001](http://localhost:5001)**
 
 | Rôle | Identifiant | Mot de passe |
 |------|-------------|--------------|
-| 🔴 Administrateur | `admin` | `1234` |
-| 🟠 Directeur technique | `manager` | `1234` |
-| 🟢 Entraîneur | `Zallila.Adam` | `entraineur` |
-| 🟢 Entraîneur | `jaber.ons` | `entraineur` |
+| 🔴 Administrateur | `Administrateur` | `****` |
+| 🟠 Directeur technique | `Directeur` | `****` |
+| 🟢 Entraîneur | `Nom.Prenom` | `****` |
+
 
 ---
 
