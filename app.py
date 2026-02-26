@@ -3856,7 +3856,7 @@ def generer_recu_paiement(paiement_id):
     x_right = largeur - 5*mm
 
     # Logo + infos club (gauche)
-    logo_path = os.path.join('static', 'images', 'logo_recu.png')
+    logo_path = os.path.join('static', 'img', 'logo_recu.png')
     if os.path.exists(logo_path):
         logo = ImageReader(logo_path)
         c.drawImage(logo, x_left, y_top - 10*mm, width=30, height=25, preserveAspectRatio=True, mask='auto')
