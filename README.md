@@ -1,181 +1,173 @@
-TCHS - Tennis Club Hammam Sousse
-Application web de gestion complète pour un club de tennis.
-Elle permet de gérer les adhérents, les entraîneurs, les paiements, les présences, les plannings, les locations de terrains, les dépenses, et bien plus encore.
+🎾 TCHS – Tennis Club Hammam Sousse
+La solution tout-en-un pour gérer votre club de tennis
+Adhérents, entraîneurs, paiements, planning, présences, finances… centralisez tout en un clic !
 
-🚀 Technologies utilisées
-Backend : Python 3.8+, Flask, SQLAlchemy
+https://img.shields.io/badge/Python-3.8%252B-blue?logo=python&logoColor=white
+https://img.shields.io/badge/Flask-2.0%252B-lightgrey?logo=flask
+https://img.shields.io/badge/MySQL-8.0%252B-orange?logo=mysql
+https://img.shields.io/badge/Bootstrap-5-purple?logo=bootstrap
+https://img.shields.io/badge/PDF-ReportLab-red
+https://img.shields.io/badge/license-MIT-green
 
-Base de données : MySQL (MariaDB) avec PyMySQL
+✨ Aperçu
+TCHS est une application web complète développée avec Flask pour répondre aux besoins spécifiques d’un club de tennis.
+Elle offre une interface intuitive et des fonctionnalités avancées pour :
+
+📋 Gérer les adhérents (inscriptions, renouvellements, historique)
+
+👨‍🏫 Administrer les entraîneurs et leurs comptes
+
+💳 Suivre les paiements et générer automatiquement des reçus PDF
+
+📅 Planifier les séances d’entraînement et de préparation physique
+
+✅ Pointer les présences (adhérents & entraîneurs)
+
+🏟️ Gérer les locations de terrains
+
+📊 Visualiser des statistiques financières en temps réel
+
+💬 Communiquer via une messagerie interne
+
+🚀 Fonctionnalités clés
+Domaine	Fonctionnalités
+Saisons	Gestion par saison (S2025, E2025…) – tout est filtré automatiquement
+Adhérents	Ajout, modification, suppression, import depuis une saison antérieure, fiche PDF
+Entraîneurs	Création automatique de compte, réinitialisation de mot de passe
+Paiements	Encaissement, historique, annulation, reçu PDF instantané (format 210×70 mm)
+Présences	Pointage par séance, suivi individuel/groupe, statistiques
+Planning	Création de séances récurrentes, gestion des conflits de terrains
+Locations	Réservation par des tiers, suivi des revenus
+Dépenses	Enregistrement et catégorisation
+Finances	Tableaux de bord interactifs, graphiques d’évolution, export Excel
+Groupes	Affectation des adhérents, cotisations associées
+Tournois	Création et gestion de tournois internes
+Messagerie	Communication entre administrateur, directeur technique et entraîneurs
+Rôles	Admin, Directeur technique, Entraîneur – chacun a ses permissions
+🛠️ Stack technique
+Backend : Python 3.8+, Flask, SQLAlchemy (ORM)
+
+Base de données : MySQL / MariaDB avec PyMySQL
 
 Frontend : HTML5, CSS3, Bootstrap 5, JavaScript (fetch API)
 
-Génération de PDF : ReportLab
+Génération PDF : ReportLab
 
-Export Excel : Pandas, XlsxWriter
+Exports Excel : Pandas, XlsxWriter
 
-Templates : Jinja2
+Templating : Jinja2
 
 Authentification : Sessions Flask, hash SHA-256
 
-Gestion des fichiers : Upload de documents (autres paiements)
+Fichiers : Upload sécurisé (autres paiements, documents)
 
-✅ Fonctionnalités principales
-Saisons sportives : Gestion par saison (S2025, E2025...)
+📦 Installation en 5 minutes
+1. Prérequis
+Python 3.8+
 
-Adhérents : Ajout, modification, suppression, import depuis une saison antérieure, génération de fiche PDF
+MySQL 10.4+
 
-Entraîneurs : Gestion avec création automatique de compte utilisateur
+pip
 
-Paiements : Encaissement des cotisations, historique, annulation, reçu PDF automatique
-
-Présences : Pointage par séance (entraînement ou préparation physique), suivi individuel et par groupe
-
-Planning : Création de séances récurrentes, gestion des terrains
-
-Locations de terrains : Réservation par des tiers, suivi financier
-
-Dépenses : Enregistrement et catégorisation
-
-Statistiques financières : Tableaux de bord, graphiques
-
-Messagerie interne : Communication entre utilisateurs
-
-Gestion des groupes : Affectation des adhérents, cotisations associées
-
-Tournois : Création et gestion de tournois internes
-
-Rôles : Admin, Directeur technique, Entraîneur
-
-📋 Prérequis
-Python 3.8 ou supérieur
-
-MySQL / MariaDB (version 10.4+ recommandée)
-
-pip (gestionnaire de paquets Python)
-
-Git (optionnel)
-
-⚙️ Installation
-1. Cloner le dépôt
+2. Cloner le projet
 bash
 git clone https://github.com/votre-utilisateur/tchs.git
 cd tchs
-2. Créer un environnement virtuel (recommandé)
+3. Environnement virtuel (recommandé)
 bash
 python -m venv venv
-source venv/bin/activate  # Sur Windows : venv\Scripts\activate
-3. Installer les dépendances
+source venv/bin/activate      # Linux/Mac
+venv\Scripts\activate         # Windows
+4. Installer les dépendances
 bash
 pip install -r requirements.txt
-Si le fichier requirements.txt n'existe pas, installez manuellement les paquets principaux :
-
-bash
+Si le fichier requirements.txt est absent, installez manuellement :
 pip install flask flask-sqlalchemy pymysql reportlab pandas xlsxwriter pytz
-4. Configurer la base de données
-Créez une base de données MySQL nommée tchs (par exemple) :
+
+5. Base de données
+Créez la base :
 
 sql
 CREATE DATABASE tchs CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-Importez la structure et les données de démonstration :
+Importez le dump fourni :
 
 bash
 mysql -u root -p tchs < tchs.sql
-Remarque : le fichier tchs.sql fourni contient déjà des données de test (adhérents, entraîneurs, paiements…).
-
-5. Adapter la configuration
-Dans app.py, modifiez l'URI de connexion si nécessaire :
+6. Configuration
+Dans app.py, ajustez l’URI de connexion si besoin :
 
 python
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:@localhost/tchs'
-Utilisateur/mot de passe : adaptez root et éventuellement le mot de passe.
-
-🚀 Lancement de l'application
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://utilisateur:motdepasse@localhost/tchs'
+7. Lancer l’application
 bash
 python app.py
-L'application démarre sur http://0.0.0.0:5001 (par défaut).
-Ouvrez votre navigateur à l'adresse http://localhost:5001.
+Rendez-vous sur http://localhost:5001
 
 🔐 Comptes par défaut
-Le fichier tchs.sql crée plusieurs utilisateurs avec le mot de passe 1234 (sauf pour les entraîneurs qui ont entraineur par défaut) :
-
 Rôle	Identifiant	Mot de passe
 Administrateur	admin	1234
 Directeur technique	manager	1234
 Entraîneur	Zallila.Adam	entraineur
 Entraîneur	jaber.ons	entraineur
-...	...	...
-Important : changez ces mots de passe après la première connexion.
+…	…	…
+⚠️ Changez ces mots de passe dès la première connexion !
 
 📁 Structure du projet
 text
 tchs/
-│
-├── app.py                  # Application principale Flask
-├── filter_functions.py     # Fonctions de filtrage par saison
-├── tchs.sql                # Dump de la base de données (structure + données)
+├── app.py                  # Cœur de l'application
+├── filter_functions.py     # Filtres par saison
+├── tchs.sql                # Structure + données de démo
 ├── requirements.txt        # Dépendances Python
-│
-├── static/                 # Fichiers statiques (CSS, JS, images)
+├── static/                 # CSS, JS, images, librairies
 │   ├── css/
 │   ├── js/
 │   ├── images/
-│   └── lib/                # Librairies tierces (Bootstrap, Owl Carousel...)
-│
-├── templates/              # Templates Jinja2
+│   └── lib/
+├── templates/              # Tous les templates Jinja2
 │   ├── admin.html
-│   ├── ajouter_adherent.html
-│   ├── ajouter_entraineur.html
 │   ├── paiement.html
 │   ├── planning.html
 │   ├── presence.html
 │   ├── situation-adherent.html
-│   ├── ... (tous les autres templates)
-│
-├── bon_de_recette/         # Dossier pour stocker les PDF générés (optionnel)
-├── autres-paiements/       # Uploads pour les autres paiements
-└── README.md               # Ce fichier
+│   └── ...
+├── bon_de_recette/         # Dossier pour les PDF générés
+├── autres-paiements/       # Uploads de documents
+└── README.md
+🌐 API internes (quelques exemples)
+POST /api/save_presences – Enregistre les présences d’une séance
 
+GET /api/recu_paiement/<int:paiement_id> – Télécharge le reçu PDF
 
+POST /api/search-paiements – Recherche de paiements par matricule
 
-📡 API internes
-Quelques routes JSON utilisées par l'interface :
-
-POST /api/save_presences – Enregistre les présences d'une séance
-
-GET /api/recu_paiement/<int:paiement_id> – Génère le reçu PDF d'un paiement
-
-POST /api/search-paiements – Recherche des paiements par matricule
-
-GET /api/adherents-data – Liste des adhérents (pour autocomplétion)
+GET /api/adherents-data – Liste des adhérents (autocomplétion)
 
 GET /api/financial-data – Données pour le tableau de bord financier
 
 POST /api/presences/search – Recherche avancée de présences
 
 🧪 Tests
-Aucune suite de tests automatisés n'est encore intégrée.
-Vous pouvez tester manuellement les fonctionnalités via l'interface.
+Aucune suite automatisée pour l’instant. Vous pouvez tester manuellement toutes les fonctionnalités via l’interface.
 
 🤝 Contribution
 Les contributions sont les bienvenues !
-Pour proposer une amélioration :
 
 Forkez le projet
 
 Créez une branche (git checkout -b feature/ma-feature)
 
-Committez vos changements (git commit -am 'Ajout de ma feature')
+Committez (git commit -am 'Ajout de ma feature')
 
-Poussez la branche (git push origin feature/ma-feature)
+Poussez (git push origin feature/ma-feature)
 
 Ouvrez une Pull Request
 
 📄 Licence
-Ce projet est sous licence MIT.
-Vous êtes libre de l'utiliser, le modifier et le distribuer.
+Ce projet est sous licence MIT. Vous êtes libre de l’utiliser, le modifier et le distribuer.
 
 📧 Contact
-Pour toute question ou suggestion, veuillez contacter l'administrateur du dépôt.
+Pour toute question ou suggestion, ouvrez une issue sur GitHub ou contactez l’administrateur du dépôt.
 
 TCHS – Tennis Club Hammam Sousse
-Gérez votre club simplement et efficacement.
+Gérez votre club simplement et efficacement. ⭐
