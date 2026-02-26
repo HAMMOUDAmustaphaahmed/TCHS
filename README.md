@@ -134,6 +134,9 @@ tchs/
 ├── bon_de_recette/         # Dossier pour stocker les PDF générés (optionnel)
 ├── autres-paiements/       # Uploads pour les autres paiements
 └── README.md               # Ce fichier
+
+
+
 📡 API internes
 Quelques routes JSON utilisées par l'interface :
 
